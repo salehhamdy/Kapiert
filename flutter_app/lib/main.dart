@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'config/app_config.dart';
 import 'constants/colors.dart';
 import 'services/storage_service.dart';
+import 'services/supabase_service.dart';
 import 'screens/lookup_screen.dart';
 import 'screens/quiz_screen.dart';
 import 'screens/history_screen.dart';
@@ -10,7 +12,9 @@ import 'screens/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppConfig.init();
   await StorageService.init();
+  await SupabaseService.init();
   runApp(const DerDieDasApp());
 }
 

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import '../config/app_config.dart';
 import '../constants/colors.dart';
+import '../services/article_service.dart';
 import '../services/storage_service.dart';
+import '../services/supabase_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback onThemeToggle;
@@ -18,11 +21,18 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _showHints = true;
+  bool? _serverOnline;
 
   @override
   void initState() {
     super.initState();
     _showHints = StorageService.getShowHints();
+    _checkServerHealth();
+  }
+
+  Future<void> _checkServerHealth() async {
+    final online = await ArticleService.forPlatform().checkHealth();
+    if (mounted) setState(() => _serverOnline = online);
   }
 
   @override
@@ -77,6 +87,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onChanged: (_) => widget.onThemeToggle(),
               activeTrackColor: AppColors.derBlue,
             ),
+          ),
+
+          const SizedBox(height: 28),
+
+          // ── Server Section ──
+          _SectionTitle(title: 'Server', isDark: isDark),
+          const SizedBox(height: 12),
+
+          _SettingsTile(
+            icon: Icons.cloud_outlined,
+            title: 'Backend API',
+            subtitle: _serverSubtitle(),
+            isDark: isDark,
+            onTap: _checkServerHealth,
+          ),
+
+          _SettingsTile(
+            icon: Icons.account_circle_outlined,
+            title: 'Account sync',
+            subtitle: SupabaseService.isEnabled
+                ? 'Supabase configured • Sign-in coming soon'
+                : 'Guest mode (local storage only)',
+            isDark: isDark,
           ),
 
           const SizedBox(height: 28),
@@ -139,6 +172,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  String _serverSubtitle() {
+    final url = AppConfig.apiBaseUrl;
+    if (_serverOnline == null) return '$url • checking…';
+    if (_serverOnline!) return '$url • online';
+    return '$url • offline (start backend locally)';
   }
 
   void _confirmClearHistory(BuildContext context, bool isDark) {

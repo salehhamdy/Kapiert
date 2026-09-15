@@ -2,14 +2,16 @@ services:
   - type: web
     name: kapiert-backend
     env: python
-    region: frankfurt          # Closest free region to Middle East/Europe
+    region: frankfurt
     plan: free
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python scripts/download_nouns.py
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.0"
       - key: NOUNS_CSV_PATH
-        value: /opt/render/project/src/nouns.csv   # Render's full path to repo root
-    healthCheckPath: /
+        value: /opt/render/project/src/backend/nouns.csv
+      - key: ALLOWED_ORIGINS
+        value: "*"
+    healthCheckPath: /health

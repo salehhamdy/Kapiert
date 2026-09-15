@@ -6,7 +6,17 @@ __pycache__/
 .Python
 backend/venv/
 backend/.venv/
+backend/.env
 *.egg-info/
+.pytest_cache/
+
+# Dataset (download via backend/scripts/download_nouns.py)
+nouns.csv
+backend/nouns.csv
+
+# Environment secrets
+.env
+.env.local
 
 # Flutter build outputs
 flutter_app/build/
