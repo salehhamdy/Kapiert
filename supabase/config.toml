@@ -1,0 +1,17 @@
+# Supabase local development config (optional)
+# Install CLI: https://supabase.com/docs/guides/cli
+# Start local stack: supabase start
+
+project_id = "kapiert"
+
+[api]
+enabled = true
+port = 54321
+
+[db]
+port = 54322
+major_version = 15
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"

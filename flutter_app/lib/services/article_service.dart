@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart';
+
+import '../config/app_config.dart';
 import '../models/word_model.dart';
+
 // ---------------------------------------------------------------------------
 // Sealed result types
 // ---------------------------------------------------------------------------
@@ -33,24 +36,24 @@ class LookupError extends LookupResult {
 // ---------------------------------------------------------------------------
 
 class ArticleService {
-  // Default to localhost for development.
-  // Update this to your deployed Railway URL for production.
-  static const String _defaultUrl = 'http://10.0.2.2:8000'; // Android emulator
-  static const String _localUrl = 'http://127.0.0.1:8000'; // Desktop/web
-
   final String baseUrl;
 
-  ArticleService({this.baseUrl = _defaultUrl});
+  ArticleService({String? baseUrl}) : baseUrl = baseUrl ?? AppConfig.apiBaseUrl;
 
-  /// Create a service configured for the current platform.
+  /// Create a service using the resolved [AppConfig.apiBaseUrl].
   factory ArticleService.forPlatform() {
-    // On Android emulator, localhost maps to 10.0.2.2
-    // On desktop/web, use localhost directly
-    String url = _localUrl;
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      url = _defaultUrl;
+    return ArticleService(baseUrl: AppConfig.apiBaseUrl);
+  }
+
+  /// Check backend connectivity (used by Settings screen).
+  Future<bool> checkHealth() async {
+    try {
+      final uri = Uri.parse('$baseUrl/health');
+      final response = await http.get(uri).timeout(const Duration(seconds: 5));
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
     }
-    return ArticleService(baseUrl: url);
   }
 
   /// Look up the article for a German noun.
@@ -60,7 +63,9 @@ class ArticleService {
     }
 
     try {
-      final uri = Uri.parse('$baseUrl/lookup/${Uri.encodeComponent(word.trim())}');
+      final uri = Uri.parse(
+        '$baseUrl/lookup/${Uri.encodeComponent(word.trim())}',
+      );
       // 30s timeout — words not in the CSV trigger a Wiktionary fallback
       // (3 word variants × 2 Wiktionary APIs), which can take ~20s.
       final response = await http.get(uri).timeout(
@@ -99,7 +104,9 @@ class ArticleService {
         return LookupError('Could not fetch a random word');
       }
     } catch (e) {
-      return LookupError('Could not connect to the server. Is the backend running?');
+      return LookupError(
+        'Could not connect to the server. Is the backend running?',
+      );
     }
   }
 
@@ -113,7 +120,9 @@ class ArticleService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List;
-        return data.map((e) => WordModel.fromJson(e as Map<String, dynamic>)).toList();
+        return data
+            .map((e) => WordModel.fromJson(e as Map<String, dynamic>))
+            .toList();
       }
     } catch (_) {}
     return [];
