@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'config/app_config.dart';
 import 'constants/colors.dart';
 import 'services/storage_service.dart';
@@ -12,11 +14,21 @@ import 'screens/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // sqflite on Windows/Linux/macOS requires the FFI database factory.
+  if (isDesktop()) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+
   await AppConfig.init();
   await StorageService.init();
   await SupabaseService.init();
   runApp(const DerDieDasApp());
 }
+
+bool isDesktop() =>
+    Platform.isWindows || Platform.isLinux || Platform.isMacOS;
 
 class DerDieDasApp extends StatefulWidget {
   const DerDieDasApp({super.key});
