@@ -9,7 +9,7 @@
   <a href="https://fastapi.tiangolo.com"><img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white" alt="FastAPI"/></a>
   <a href="https://supabase.com"><img src="https://img.shields.io/badge/Supabase-ready-3ECF8E?logo=supabase&logoColor=white" alt="Supabase"/></a>
   <a href="https://render.com"><img src="https://img.shields.io/badge/Render-deployed-46E3B7?logo=render&logoColor=white" alt="Render"/></a>
-  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License"/>
+  <img src="https://img.shields.io/badge/license-CC%20BY--NC%204.0-lightgrey" alt="License"/>
 </p>
 
 > **Kapiert** (*German: "got it"*) is a cross-platform app that helps you master German noun genders — one word at a time. Look up any German noun to get its article (der / die / das), quiz yourself, track your streak, and build real recall through daily practice.
