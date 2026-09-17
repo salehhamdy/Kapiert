@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'config/app_config.dart';
 import 'constants/colors.dart';
 import 'services/storage_service.dart';
@@ -9,14 +11,26 @@ import 'screens/lookup_screen.dart';
 import 'screens/quiz_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/auth/sign_in_screen.dart';
+import 'screens/auth/sign_up_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // sqflite on Windows/Linux/macOS requires the FFI database factory.
+  if (isDesktop()) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+
   await AppConfig.init();
   await StorageService.init();
   await SupabaseService.init();
   runApp(const DerDieDasApp());
 }
+
+bool isDesktop() =>
+    Platform.isWindows || Platform.isLinux || Platform.isMacOS;
 
 class DerDieDasApp extends StatefulWidget {
   const DerDieDasApp({super.key});
@@ -43,16 +57,28 @@ class _DerDieDasAppState extends State<DerDieDasApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Determine the initial screen:
+    // • Supabase NOT configured → guest mode, go straight to MainScaffold
+    // • Supabase configured + active session → go straight to MainScaffold
+    // • Supabase configured + no session  → show SignInScreen
+    // TESTING: always show SignInScreen to preview auth flow
+    const Widget home = SignInScreen();
+
     return MaterialApp(
       title: 'Kapiert',
       debugShowCheckedModeBanner: false,
       themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: _buildLightTheme(),
       darkTheme: _buildDarkTheme(),
-      home: MainScaffold(
-        isDarkMode: _isDarkMode,
-        onThemeToggle: _toggleTheme,
-      ),
+      home: home,
+      routes: {
+        '/home': (_) => MainScaffold(
+              isDarkMode: _isDarkMode,
+              onThemeToggle: _toggleTheme,
+            ),
+        '/signin': (_) => const SignInScreen(),
+        '/signup': (_) => const SignUpScreen(),
+      },
     );
   }
 
