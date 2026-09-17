@@ -1,35 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/colors.dart';
-import '../models/lookup_history.dart';
-import '../models/word_model.dart';
-import '../services/article_service.dart';
-import '../services/storage_service.dart';
+import '../providers/article_providers.dart';
 import '../widgets/article_pill.dart';
 import '../widgets/result_card.dart';
 
-class LookupScreen extends StatefulWidget {
+class LookupScreen extends ConsumerStatefulWidget {
   const LookupScreen({super.key});
 
   @override
-  State<LookupScreen> createState() => _LookupScreenState();
+  ConsumerState<LookupScreen> createState() => _LookupScreenState();
 }
 
-class _LookupScreenState extends State<LookupScreen> {
+class _LookupScreenState extends ConsumerState<LookupScreen> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
-  final _service = ArticleService.forPlatform();
-
-  bool _loading = false;
-  WordModel? _result;
-  String? _error;
-  int _streak = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _streak = StorageService.getStreak();
-  }
 
   @override
   void dispose() {
@@ -41,45 +27,14 @@ class _LookupScreenState extends State<LookupScreen> {
   Future<void> _lookup() async {
     final word = _controller.text.trim();
     if (word.isEmpty) return;
-
     _focusNode.unfocus();
-    setState(() {
-      _loading = true;
-      _result = null;
-      _error = null;
-    });
-
-    final result = await _service.lookupWord(word);
-
-    // Update streak on any successful activity
-    await StorageService.updateStreak();
-
-    setState(() {
-      _loading = false;
-      _streak = StorageService.getStreak();
-
-      switch (result) {
-        case LookupSuccess(:final word):
-          _result = word;
-          // Log to history
-          StorageService.addHistory(LookupHistory(
-            timestamp: DateTime.now(),
-            word: word.word,
-            article: word.article,
-            correct: true,
-            mode: 'lookup',
-          ));
-        case LookupNotFound(:final query):
-          _error = '"$query" was not found.';
-        case LookupError(:final message):
-          _error = message;
-      }
-    });
+    await ref.read(lookupProvider.notifier).lookup(word);
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final state = ref.watch(lookupProvider);
 
     return GestureDetector(
       onTap: () => _focusNode.unfocus(),
@@ -88,11 +43,11 @@ class _LookupScreenState extends State<LookupScreen> {
         child: Column(
           children: [
             // ── Header ──
-            _buildHeader(isDark),
+            _buildHeader(isDark, state.streak),
             const SizedBox(height: 24),
 
             // ── Article Legend ──
-            ArticleLegend(activeArticle: _result?.article)
+            ArticleLegend(activeArticle: state.result?.article)
                 .animate()
                 .fadeIn(duration: 400.ms),
             const SizedBox(height: 28),
@@ -102,24 +57,25 @@ class _LookupScreenState extends State<LookupScreen> {
             const SizedBox(height: 16),
 
             // ── Check Button ──
-            _buildCheckButton(isDark),
+            _buildCheckButton(isDark, state.loading),
             const SizedBox(height: 28),
 
             // ── Result / Error / Loading ──
-            if (_loading) _buildLoading(),
-            if (_error != null) _buildError(isDark),
-            if (_result != null) ResultCard(word: _result!),
+            if (state.loading) _buildLoading(),
+            if (state.hasError && !state.loading)
+              _buildError(isDark, ref.read(lookupProvider.notifier).notFoundQuery ?? ''),
+            if (state.result != null && !state.loading)
+              ResultCard(word: state.result!),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(bool isDark) {
+  Widget _buildHeader(bool isDark, int streak) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // ── Wordmark logo ───────────────────────────────────────────────────
         Expanded(
           child: Image.asset(
             'assets/images/wordmark.png',
@@ -128,8 +84,7 @@ class _LookupScreenState extends State<LookupScreen> {
             fit: BoxFit.contain,
           ),
         ),
-        // ── Streak badge ────────────────────────────────────────────────────
-        if (_streak > 0)
+        if (streak > 0)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
@@ -150,7 +105,7 @@ class _LookupScreenState extends State<LookupScreen> {
                 const Text('🔥', style: TextStyle(fontSize: 18)),
                 const SizedBox(width: 6),
                 Text(
-                  '$_streak',
+                  '$streak',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -192,7 +147,8 @@ class _LookupScreenState extends State<LookupScreen> {
         style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w500,
-          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+          color:
+              isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
         ),
         decoration: InputDecoration(
           hintText: 'Enter a German noun',
@@ -204,7 +160,9 @@ class _LookupScreenState extends State<LookupScreen> {
           ),
           prefixIcon: Icon(
             Icons.search_rounded,
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
           ),
           suffixIcon: _controller.text.isNotEmpty
               ? IconButton(
@@ -216,10 +174,7 @@ class _LookupScreenState extends State<LookupScreen> {
                   ),
                   onPressed: () {
                     _controller.clear();
-                    setState(() {
-                      _result = null;
-                      _error = null;
-                    });
+                    ref.read(lookupProvider.notifier).clear();
                   },
                 )
               : null,
@@ -235,12 +190,12 @@ class _LookupScreenState extends State<LookupScreen> {
     );
   }
 
-  Widget _buildCheckButton(bool isDark) {
+  Widget _buildCheckButton(bool isDark, bool loading) {
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: _loading ? null : _lookup,
+        onPressed: loading ? null : _lookup,
         style: ElevatedButton.styleFrom(
           backgroundColor: isDark
               ? const Color(0xFF3B82F6)
@@ -302,12 +257,13 @@ class _LookupScreenState extends State<LookupScreen> {
     );
   }
 
-  Widget _buildError(bool isDark) {
+  Widget _buildError(bool isDark, String message) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.incorrectRed.withValues(alpha: isDark ? 0.12 : 0.08),
+        color:
+            AppColors.incorrectRed.withValues(alpha: isDark ? 0.12 : 0.08),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: AppColors.incorrectRed.withValues(alpha: 0.2),
@@ -323,7 +279,7 @@ class _LookupScreenState extends State<LookupScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              _error!,
+              message,
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,

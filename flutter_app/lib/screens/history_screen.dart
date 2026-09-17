@@ -1,52 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/colors.dart';
+import '../providers/history_providers.dart';
 import '../models/lookup_history.dart';
-import '../services/storage_service.dart';
 import '../widgets/history_tile.dart';
 
-class HistoryScreen extends StatefulWidget {
+class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
   @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
-}
-
-class _HistoryScreenState extends State<HistoryScreen> {
-  List<LookupHistory> _entries = [];
-  Map<String, dynamic> _stats = {};
-  String _filter = 'all'; // 'all' | 'correct' | 'incorrect'
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() => _loading = true);
-
-    final filterArg = _filter == 'all' ? null : _filter;
-    final entries = await StorageService.getHistory(filter: filterArg);
-    final stats = await StorageService.getStats();
-
-    setState(() {
-      _entries = entries;
-      _stats = stats;
-      _loading = false;
-    });
-  }
-
-  void _setFilter(String filter) {
-    if (_filter == filter) return;
-    _filter = filter;
-    _loadData();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final state = ref.watch(historyProvider);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -68,30 +34,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
           const SizedBox(height: 20),
 
           // ── Stats Cards ──
-          _buildStatsRow(isDark),
+          _buildStatsRow(isDark, state.stats),
           const SizedBox(height: 20),
 
           // ── Filter Chips ──
-          _buildFilters(isDark),
+          _buildFilters(isDark, state.filter, ref),
           const SizedBox(height: 16),
 
           // ── List ──
           Expanded(
-            child: _loading
+            child: state.loading
                 ? const Center(child: CircularProgressIndicator())
-                : _entries.isEmpty
+                : state.entries.isEmpty
                     ? _buildEmptyState(isDark)
-                    : _buildList(),
+                    : _buildList(state.entries, ref),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatsRow(bool isDark) {
-    final total = _stats['total'] ?? 0;
-    final totalQuiz = _stats['totalQuiz'] ?? 0;
-    final accuracy = (_stats['accuracy'] ?? 0.0) as double;
+  Widget _buildStatsRow(bool isDark, Map<String, dynamic> stats) {
+    final total = stats['total'] ?? 0;
+    final totalQuiz = stats['totalQuiz'] ?? 0;
+    final accuracy = (stats['accuracy'] ?? 0.0) as double;
 
     return Row(
       children: [
@@ -132,28 +98,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
     ).animate().fadeIn(duration: 400.ms);
   }
 
-  Widget _buildFilters(bool isDark) {
+  Widget _buildFilters(bool isDark, String activeFilter, WidgetRef ref) {
     return Row(
       children: [
         _FilterChip(
           label: 'All',
-          isActive: _filter == 'all',
-          onTap: () => _setFilter('all'),
+          isActive: activeFilter == 'all',
+          onTap: () => ref.read(historyProvider.notifier).setFilter('all'),
           isDark: isDark,
         ),
         const SizedBox(width: 8),
         _FilterChip(
           label: '✓ Correct',
-          isActive: _filter == 'correct',
-          onTap: () => _setFilter('correct'),
+          isActive: activeFilter == 'correct',
+          onTap: () =>
+              ref.read(historyProvider.notifier).setFilter('correct'),
           isDark: isDark,
           activeColor: AppColors.correctGreen,
         ),
         const SizedBox(width: 8),
         _FilterChip(
           label: '✗ Incorrect',
-          isActive: _filter == 'incorrect',
-          onTap: () => _setFilter('incorrect'),
+          isActive: activeFilter == 'incorrect',
+          onTap: () =>
+              ref.read(historyProvider.notifier).setFilter('incorrect'),
           isDark: isDark,
           activeColor: AppColors.incorrectRed,
         ),
@@ -161,14 +129,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildList() {
+  Widget _buildList(List<LookupHistory> entries, WidgetRef ref) {
     return RefreshIndicator(
-      onRefresh: _loadData,
+      onRefresh: () => ref.read(historyProvider.notifier).refresh(),
       child: ListView.builder(
-        itemCount: _entries.length,
+        itemCount: entries.length,
         padding: const EdgeInsets.only(bottom: 40),
         itemBuilder: (context, index) {
-          return HistoryTile(entry: _entries[index])
+          return HistoryTile(entry: entries[index])
               .animate()
               .fadeIn(
                 delay: Duration(milliseconds: (index * 30).clamp(0, 300)),
@@ -193,7 +161,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Icon(
             Icons.history_rounded,
             size: 56,
-            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.12),
+            color:
+                (isDark ? Colors.white : Colors.black).withValues(alpha: 0.12),
           ),
           const SizedBox(height: 16),
           Text(
@@ -224,6 +193,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 }
 
+// ── Stat card ────────────────────────────────────────────────────────────────
+
 class _StatCard extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -246,9 +217,7 @@ class _StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withValues(alpha: 0.15),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -288,6 +257,8 @@ class _StatCard extends StatelessWidget {
   }
 }
 
+// ── Filter chip ──────────────────────────────────────────────────────────────
+
 class _FilterChip extends StatelessWidget {
   final String label;
   final bool isActive;
@@ -320,7 +291,8 @@ class _FilterChip extends StatelessWidget {
           border: Border.all(
             color: isActive
                 ? color.withValues(alpha: 0.4)
-                : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
+                : (isDark ? Colors.white : Colors.black)
+                    .withValues(alpha: 0.06),
           ),
         ),
         child: Text(

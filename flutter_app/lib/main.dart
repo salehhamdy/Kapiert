@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'config/app_config.dart';
 import 'constants/colors.dart';
+import 'providers/settings_providers.dart';
 import 'services/storage_service.dart';
 import 'services/supabase_service.dart';
 import 'screens/lookup_screen.dart';
@@ -26,56 +28,39 @@ void main() async {
   await AppConfig.init();
   await StorageService.init();
   await SupabaseService.init();
-  runApp(const DerDieDasApp());
+  runApp(const ProviderScope(child: DerDieDasApp()));
 }
 
 bool isDesktop() =>
     Platform.isWindows || Platform.isLinux || Platform.isMacOS;
 
-class DerDieDasApp extends StatefulWidget {
+// ---------------------------------------------------------------------------
+// Root app — reads themeProvider from Riverpod
+// ---------------------------------------------------------------------------
+
+class DerDieDasApp extends ConsumerWidget {
   const DerDieDasApp({super.key});
 
   @override
-  State<DerDieDasApp> createState() => _DerDieDasAppState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDarkMode = ref.watch(themeProvider);
 
-class _DerDieDasAppState extends State<DerDieDasApp> {
-  late bool _isDarkMode;
-
-  @override
-  void initState() {
-    super.initState();
-    _isDarkMode = StorageService.getDarkMode();
-  }
-
-  void _toggleTheme() {
-    setState(() {
-      _isDarkMode = !_isDarkMode;
-      StorageService.setDarkMode(_isDarkMode);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Determine the initial screen:
-    // • Supabase NOT configured → guest mode, go straight to MainScaffold
-    // • Supabase configured + active session → go straight to MainScaffold
-    // • Supabase configured + no session  → show SignInScreen
-    // TESTING: always show SignInScreen to preview auth flow
+    // TESTING: always show SignInScreen to preview auth flow.
+    // Replace with logic once auth is fully wired:
+    //   SupabaseService.isEnabled && SupabaseService.currentUser == null
+    //     ? const SignInScreen()
+    //     : const MainScaffold()
     const Widget home = SignInScreen();
 
     return MaterialApp(
       title: 'Kapiert',
       debugShowCheckedModeBanner: false,
-      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: _buildLightTheme(),
       darkTheme: _buildDarkTheme(),
       home: home,
       routes: {
-        '/home': (_) => MainScaffold(
-              isDarkMode: _isDarkMode,
-              onThemeToggle: _toggleTheme,
-            ),
+        '/home': (_) => const MainScaffold(),
         '/signin': (_) => const SignInScreen(),
         '/signup': (_) => const SignUpScreen(),
       },
@@ -222,24 +207,17 @@ class _DerDieDasAppState extends State<DerDieDasApp> {
 }
 
 // ---------------------------------------------------------------------------
-// Main Scaffold with Bottom Navigation
+// Main Scaffold with Bottom Navigation — no prop drilling needed
 // ---------------------------------------------------------------------------
 
-class MainScaffold extends StatefulWidget {
-  final bool isDarkMode;
-  final VoidCallback onThemeToggle;
-
-  const MainScaffold({
-    super.key,
-    required this.isDarkMode,
-    required this.onThemeToggle,
-  });
+class MainScaffold extends ConsumerStatefulWidget {
+  const MainScaffold({super.key});
 
   @override
-  State<MainScaffold> createState() => _MainScaffoldState();
+  ConsumerState<MainScaffold> createState() => _MainScaffoldState();
 }
 
-class _MainScaffoldState extends State<MainScaffold> {
+class _MainScaffoldState extends ConsumerState<MainScaffold> {
   int _selectedIndex = 0;
 
   @override
@@ -250,14 +228,11 @@ class _MainScaffoldState extends State<MainScaffold> {
       body: SafeArea(
         child: IndexedStack(
           index: _selectedIndex,
-          children: [
-            const LookupScreen(),
-            const QuizScreen(),
-            const HistoryScreen(),
-            SettingsScreen(
-              isDarkMode: widget.isDarkMode,
-              onThemeToggle: widget.onThemeToggle,
-            ),
+          children: const [
+            LookupScreen(),
+            QuizScreen(),
+            HistoryScreen(),
+            SettingsScreen(),
           ],
         ),
       ),

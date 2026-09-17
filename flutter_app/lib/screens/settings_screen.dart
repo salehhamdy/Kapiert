@@ -1,45 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../config/app_config.dart';
 import '../constants/colors.dart';
-import '../services/article_service.dart';
+import '../providers/auth_providers.dart';
+import '../providers/settings_providers.dart';
 import '../services/storage_service.dart';
-import '../services/supabase_service.dart';
 import 'auth/logout_dialog.dart';
 import 'auth/signed_out_screen.dart';
 
-class SettingsScreen extends StatefulWidget {
-  final VoidCallback onThemeToggle;
-  final bool isDarkMode;
-
-  const SettingsScreen({
-    super.key,
-    required this.onThemeToggle,
-    required this.isDarkMode,
-  });
+class SettingsScreen extends ConsumerStatefulWidget {
+  const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool _showHints = true;
-  bool? _serverOnline;
-
-  @override
-  void initState() {
-    super.initState();
-    _showHints = StorageService.getShowHints();
-    _checkServerHealth();
-  }
-
-  Future<void> _checkServerHealth() async {
-    final online = await ArticleService.forPlatform().checkHealth();
-    if (mounted) setState(() => _serverOnline = online);
-  }
-
-  // ── Logout flow ────────────────────────────────────────────────────────────
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _showLogoutConfirmation() async {
     final confirmed = await showDialog<bool>(
@@ -54,14 +32,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _performLogout() async {
+    final repo = ref.read(authRepositoryProvider);
     final streak = StorageService.getStreak();
-    final user = SupabaseService.currentUser;
+    final user = repo.currentUser;
     final displayName = user?.userMetadata?['full_name'] as String? ??
         user?.userMetadata?['name'] as String? ??
         user?.email?.split('@').first ??
         'there';
 
-    await SupabaseService.signOut();
+    await repo.signOut();
 
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(
@@ -79,7 +58,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final user = SupabaseService.currentUser;
+    final isDarkMode = ref.watch(themeProvider);
+    final showHints = ref.watch(showHintsProvider);
+    final serverHealth = ref.watch(serverHealthProvider);
+    final user = ref.watch(currentUserProvider);
+
+    final serverSubtitle = switch (serverHealth) {
+      AsyncData(:final value) =>
+        '${AppConfig.apiBaseUrl} • ${value ? 'online' : 'offline'}',
+      AsyncLoading() => '${AppConfig.apiBaseUrl} • checking…',
+      _ => '${AppConfig.apiBaseUrl} • unknown',
+    };
 
     return SingleChildScrollView(
       child: Column(
@@ -106,15 +95,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
 
                 _SettingsTile(
-                  icon: isDark
+                  icon: isDarkMode
                       ? Icons.dark_mode_rounded
                       : Icons.light_mode_rounded,
                   title: 'Dark mode',
                   subtitle: 'Switch app appearance',
                   isDark: isDark,
                   trailing: Switch.adaptive(
-                    value: widget.isDarkMode,
-                    onChanged: (_) => widget.onThemeToggle(),
+                    value: isDarkMode,
+                    onChanged: (_) =>
+                        ref.read(themeProvider.notifier).toggle(),
                     activeTrackColor: AppColors.derBlue,
                   ),
                 ),
@@ -139,11 +129,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: 'Display extra info on result cards',
                   isDark: isDark,
                   trailing: Switch.adaptive(
-                    value: _showHints,
-                    onChanged: (val) {
-                      setState(() => _showHints = val);
-                      StorageService.setShowHints(val);
-                    },
+                    value: showHints,
+                    onChanged: (val) =>
+                        ref.read(showHintsProvider.notifier).toggle(val),
                     activeTrackColor: AppColors.derBlue,
                   ),
                 ),
@@ -157,9 +145,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _SettingsTile(
                   icon: Icons.cloud_outlined,
                   title: 'Backend API',
-                  subtitle: _serverSubtitle(),
+                  subtitle: serverSubtitle,
                   isDark: isDark,
-                  onTap: _checkServerHealth,
+                  onTap: () => ref.invalidate(serverHealthProvider),
                 ),
 
                 const SizedBox(height: 28),
@@ -195,7 +183,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: 'Change password',
                   subtitle: 'Update your account password',
                   isDark: isDark,
-                  onTap: SupabaseService.isEnabled ? () {} : null,
+                  onTap: ref.read(authRepositoryProvider).isEnabled
+                      ? () {}
+                      : null,
                 ),
 
                 // Log out — destructive, uses die-red
@@ -243,12 +233,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  String _serverSubtitle() {
-    final url = AppConfig.apiBaseUrl;
-    if (_serverOnline == null) return '$url • checking…';
-    if (_serverOnline!) return '$url • online';
-    return '$url • offline';
-  }
 
   void _confirmClearHistory(BuildContext context, bool isDark) {
     showDialog(

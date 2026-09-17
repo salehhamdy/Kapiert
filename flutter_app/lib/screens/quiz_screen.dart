@@ -1,122 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/colors.dart';
-import '../models/lookup_history.dart';
-import '../models/word_model.dart';
-import '../services/article_service.dart';
-import '../services/storage_service.dart';
+import '../providers/quiz_providers.dart';
 
-class QuizScreen extends StatefulWidget {
+class QuizScreen extends ConsumerWidget {
   const QuizScreen({super.key});
 
   @override
-  State<QuizScreen> createState() => _QuizScreenState();
-}
-
-class _QuizScreenState extends State<QuizScreen> {
-  final _service = ArticleService.forPlatform();
-
-  WordModel? _currentWord;
-  bool _loading = true;
-  String? _selectedArticle;
-  bool? _isCorrect;
-  int _score = 0;
-  int _total = 0;
-
-  // Pre-fetched words queue
-  final List<WordModel> _wordQueue = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadNextWord();
-  }
-
-  Future<void> _loadNextWord() async {
-    setState(() {
-      _loading = true;
-      _selectedArticle = null;
-      _isCorrect = null;
-    });
-
-    // If queue is low, pre-fetch more
-    if (_wordQueue.isEmpty) {
-      final batch = await _service.getRandomBatch(count: 15);
-      _wordQueue.addAll(batch);
-    }
-
-    if (_wordQueue.isNotEmpty) {
-      setState(() {
-        _currentWord = _wordQueue.removeAt(0);
-        _loading = false;
-      });
-    } else {
-      // Fallback to single fetch
-      final result = await _service.getRandomWord();
-      setState(() {
-        _loading = false;
-        if (result is LookupSuccess) {
-          _currentWord = result.word;
-        }
-      });
-    }
-  }
-
-  void _onArticleTap(String article) {
-    if (_selectedArticle != null || _currentWord == null) return;
-
-    final correct = article == _currentWord!.article;
-
-    setState(() {
-      _selectedArticle = article;
-      _isCorrect = correct;
-      _total++;
-      if (correct) _score++;
-    });
-
-    // Log to history
-    StorageService.addHistory(LookupHistory(
-      timestamp: DateTime.now(),
-      word: _currentWord!.word,
-      article: _currentWord!.article,
-      correct: correct,
-      mode: 'quiz',
-    ));
-
-    // Update streak
-    StorageService.updateStreak();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final state = ref.watch(quizProvider);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
       child: Column(
         children: [
           // ── Header + Score ──
-          _buildHeader(isDark),
+          _buildHeader(isDark, state),
           const SizedBox(height: 12),
 
           // ── Progress bar ──
-          if (_total > 0) _buildProgressBar(isDark),
+          if (state.total > 0) _buildProgressBar(isDark, state),
           const SizedBox(height: 32),
 
           // ── Word Display ──
           Expanded(
-            child: _loading
+            child: state.loading
                 ? _buildLoading(isDark)
-                : _currentWord == null
-                    ? _buildError(isDark)
-                    : _buildQuizContent(isDark),
+                : state.currentWord == null
+                    ? _buildError(isDark, ref)
+                    : _buildQuizContent(isDark, state, ref),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(bool isDark) {
+  Widget _buildHeader(bool isDark, QuizState state) {
     return Row(
       children: [
         Column(
@@ -147,7 +68,6 @@ class _QuizScreenState extends State<QuizScreen> {
           ],
         ),
         const Spacer(),
-        // Score
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
@@ -159,15 +79,15 @@ class _QuizScreenState extends State<QuizScreen> {
           child: Row(
             children: [
               Text(
-                '$_score',
-                style: TextStyle(
+                '${state.score}',
+                style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: AppColors.correctGreen,
                 ),
               ),
               Text(
-                ' / $_total',
+                ' / ${state.total}',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -183,8 +103,8 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
-  Widget _buildProgressBar(bool isDark) {
-    final accuracy = _total > 0 ? _score / _total : 0.0;
+  Widget _buildProgressBar(bool isDark, QuizState state) {
+    final accuracy = state.accuracy;
     return Column(
       children: [
         ClipRRect(
@@ -221,89 +141,83 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
-  Widget _buildQuizContent(bool isDark) {
+  Widget _buildQuizContent(bool isDark, QuizState state, WidgetRef ref) {
+    final word = state.currentWord!;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Spacer(flex: 1),
 
-        // Word display
         Text(
-          _currentWord!.word,
+          word.word,
           style: TextStyle(
             fontSize: 38,
             fontWeight: FontWeight.w700,
-            color: isDark
-                ? AppColors.textPrimaryDark
-                : AppColors.textPrimaryLight,
+            color:
+                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
             letterSpacing: -0.5,
           ),
           textAlign: TextAlign.center,
-        ).animate(key: ValueKey(_currentWord!.word))
+        ).animate(key: ValueKey(word.word))
             .fadeIn(duration: 400.ms)
             .slideY(begin: 0.1, end: 0, duration: 400.ms),
 
         const SizedBox(height: 40),
 
-        // Three article buttons
         Row(
           children: [
-            _buildArticleButton('der', isDark),
+            _buildArticleButton('der', isDark, state, ref),
             const SizedBox(width: 12),
-            _buildArticleButton('die', isDark),
+            _buildArticleButton('die', isDark, state, ref),
             const SizedBox(width: 12),
-            _buildArticleButton('das', isDark),
+            _buildArticleButton('das', isDark, state, ref),
           ],
         ),
 
         const SizedBox(height: 28),
 
-        // Feedback / explanation
-        if (_selectedArticle != null) _buildFeedback(isDark),
+        if (state.hasAnswered) _buildFeedback(isDark, state),
 
         const Spacer(flex: 2),
 
-        // Next button
-        if (_selectedArticle != null) _buildNextButton(isDark),
+        if (state.hasAnswered) _buildNextButton(isDark, ref),
       ],
     );
   }
 
-  Widget _buildArticleButton(String article, bool isDark) {
+  Widget _buildArticleButton(
+      String article, bool isDark, QuizState state, WidgetRef ref) {
     final color = AppColors.colorForArticle(article);
-    final isSelected = _selectedArticle == article;
-    final isCorrectAnswer = _currentWord?.article == article;
-    final hasAnswered = _selectedArticle != null;
+    final isSelected = state.selectedArticle == article;
+    final isCorrectAnswer = state.currentWord?.article == article;
+    final hasAnswered = state.hasAnswered;
 
-    Color bgColor;
-    Color borderColor;
-    Color textColor;
+    Color bgColor, borderColor, textColor;
 
     if (!hasAnswered) {
-      // Default state
       bgColor = color.withValues(alpha: isDark ? 0.12 : 0.08);
       borderColor = color.withValues(alpha: 0.25);
       textColor = color;
     } else if (isCorrectAnswer) {
-      // Always highlight the correct answer
       bgColor = AppColors.correctGreen.withValues(alpha: 0.15);
       borderColor = AppColors.correctGreen;
       textColor = AppColors.correctGreen;
-    } else if (isSelected && !_isCorrect!) {
-      // Wrong selection
+    } else if (isSelected && !(state.isCorrect!)) {
       bgColor = AppColors.incorrectRed.withValues(alpha: 0.12);
       borderColor = AppColors.incorrectRed;
       textColor = AppColors.incorrectRed;
     } else {
-      // Unselected, not correct — dimmed
-      bgColor = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03);
-      borderColor = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06);
-      textColor = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2);
+      bgColor =
+          (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03);
+      borderColor =
+          (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06);
+      textColor =
+          (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2);
     }
 
     return Expanded(
       child: GestureDetector(
-        onTap: () => _onArticleTap(article),
+        onTap: () => ref.read(quizProvider.notifier).answer(article),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           height: 80,
@@ -334,9 +248,11 @@ class _QuizScreenState extends State<QuizScreen> {
                 ),
               ),
               if (hasAnswered && isCorrectAnswer)
-                const Icon(Icons.check_rounded, color: AppColors.correctGreen, size: 20)
-              else if (hasAnswered && isSelected && !_isCorrect!)
-                const Icon(Icons.close_rounded, color: AppColors.incorrectRed, size: 20),
+                const Icon(Icons.check_rounded,
+                    color: AppColors.correctGreen, size: 20)
+              else if (hasAnswered && isSelected && !(state.isCorrect!))
+                const Icon(Icons.close_rounded,
+                    color: AppColors.incorrectRed, size: 20),
             ],
           ),
         ),
@@ -344,9 +260,10 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
-  Widget _buildFeedback(bool isDark) {
-    final word = _currentWord!;
-    final feedbackColor = _isCorrect! ? AppColors.correctGreen : AppColors.incorrectRed;
+  Widget _buildFeedback(bool isDark, QuizState state) {
+    final word = state.currentWord!;
+    final feedbackColor =
+        state.isCorrect! ? AppColors.correctGreen : AppColors.incorrectRed;
 
     return Container(
       width: double.infinity,
@@ -354,9 +271,7 @@ class _QuizScreenState extends State<QuizScreen> {
       decoration: BoxDecoration(
         color: feedbackColor.withValues(alpha: isDark ? 0.10 : 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: feedbackColor.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: feedbackColor.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -364,13 +279,15 @@ class _QuizScreenState extends State<QuizScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                _isCorrect! ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                state.isCorrect!
+                    ? Icons.check_circle_rounded
+                    : Icons.cancel_rounded,
                 color: feedbackColor,
                 size: 22,
               ),
               const SizedBox(width: 8),
               Text(
-                _isCorrect! ? 'Correct!' : 'Incorrect',
+                state.isCorrect! ? 'Correct!' : 'Incorrect',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -413,21 +330,20 @@ class _QuizScreenState extends State<QuizScreen> {
         );
   }
 
-  Widget _buildNextButton(bool isDark) {
+  Widget _buildNextButton(bool isDark, WidgetRef ref) {
     return SizedBox(
       width: double.infinity,
       height: 54,
       child: ElevatedButton.icon(
-        onPressed: _loadNextWord,
+        onPressed: () => ref.read(quizProvider.notifier).loadNext(),
         icon: const Icon(Icons.arrow_forward_rounded, size: 20),
         label: const Text(
           'Next Word',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: isDark
-              ? const Color(0xFF3B82F6)
-              : const Color(0xFF1A5CAA),
+          backgroundColor:
+              isDark ? const Color(0xFF3B82F6) : const Color(0xFF1A5CAA),
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -466,7 +382,7 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
-  Widget _buildError(bool isDark) {
+  Widget _buildError(bool isDark, WidgetRef ref) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -491,7 +407,7 @@ class _QuizScreenState extends State<QuizScreen> {
           ),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: _loadNextWord,
+            onPressed: () => ref.read(quizProvider.notifier).loadNext(),
             child: const Text('Retry'),
           ),
         ],
