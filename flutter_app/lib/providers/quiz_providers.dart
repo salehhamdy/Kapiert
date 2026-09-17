@@ -5,6 +5,7 @@ import '../repositories/history_repository.dart';
 import '../repositories/word_repository.dart';
 import '../services/article_service.dart';
 import 'article_providers.dart';
+import 'history_providers.dart';
 
 // ---------------------------------------------------------------------------
 // Quiz state
@@ -60,12 +61,14 @@ class QuizState {
 // ---------------------------------------------------------------------------
 
 class QuizNotifier extends StateNotifier<QuizState> {
-  QuizNotifier(this._wordRepo, this._historyRepo) : super(const QuizState()) {
+  QuizNotifier(this._wordRepo, this._historyRepo, this._ref)
+      : super(const QuizState()) {
     loadNext();
   }
 
   final WordRepository _wordRepo;
   final HistoryRepository _historyRepo;
+  final Ref _ref;
 
   Future<void> loadNext() async {
     state = state.copyWith(loading: true, clearAnswer: true);
@@ -118,6 +121,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
       mode: 'quiz',
     ));
     _historyRepo.updateStreak();
+    _ref.invalidate(historyProvider);
   }
 }
 
@@ -125,5 +129,6 @@ final quizProvider = StateNotifierProvider<QuizNotifier, QuizState>((ref) {
   return QuizNotifier(
     ref.watch(wordRepositoryProvider),
     ref.watch(historyRepositoryProvider),
+    ref,
   );
 });

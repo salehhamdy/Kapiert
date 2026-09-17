@@ -21,6 +21,15 @@ class AuthRepository {
 
   Future<void> signOut() => SupabaseService.signOut();
 
+  Future<void> resetPassword({required String email}) =>
+      SupabaseService.resetPassword(email: email);
+
+  Future<void> verifyOTP({required String email, required String token}) =>
+      SupabaseService.verifyOTP(email: email, token: token);
+
+  Future<void> resendOTP({required String email}) =>
+      SupabaseService.resendOTP(email: email);
+
   dynamic get currentUser => SupabaseService.currentUser;
 
   bool get isEnabled => SupabaseService.isEnabled;

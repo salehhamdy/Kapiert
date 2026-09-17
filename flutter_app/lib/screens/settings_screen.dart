@@ -5,8 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../config/app_config.dart';
 import '../constants/colors.dart';
 import '../providers/auth_providers.dart';
+import '../providers/history_providers.dart';
+import '../providers/article_providers.dart';
 import '../providers/settings_providers.dart';
-import '../services/storage_service.dart';
 import 'auth/logout_dialog.dart';
 import 'auth/signed_out_screen.dart';
 
@@ -33,7 +34,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _performLogout() async {
     final repo = ref.read(authRepositoryProvider);
-    final streak = StorageService.getStreak();
+    final historyRepo = ref.read(historyRepositoryProvider);
+    final streak = historyRepo.getStreak();
     final user = repo.currentUser;
     final displayName = user?.userMetadata?['full_name'] as String? ??
         user?.userMetadata?['name'] as String? ??
@@ -264,12 +266,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              StorageService.clearHistory();
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('History cleared')),
-              );
+            onPressed: () async {
+              await ref.read(historyRepositoryProvider).clearHistory();
+              ref.invalidate(historyProvider);
+              if (context.mounted) {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('History cleared')),
+                );
+              }
             },
             child: Text(
               'Clear',
@@ -311,12 +316,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              StorageService.resetStreak();
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Streak reset')),
-              );
+            onPressed: () async {
+              await ref.read(historyRepositoryProvider).resetStreak();
+              ref.invalidate(historyProvider);
+              ref.read(lookupProvider.notifier).refreshStreak();
+              if (context.mounted) {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Streak reset')),
+                );
+              }
             },
             child: Text(
               'Reset',

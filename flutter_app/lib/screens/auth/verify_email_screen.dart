@@ -2,21 +2,22 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../constants/colors.dart';
-import '../../services/supabase_service.dart';
+import '../../providers/auth_providers.dart';
 import 'welcome_screen.dart';
 
-class VerifyEmailScreen extends StatefulWidget {
+class VerifyEmailScreen extends ConsumerStatefulWidget {
   final String email;
 
   const VerifyEmailScreen({super.key, required this.email});
 
   @override
-  State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
+  ConsumerState<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
 }
 
-class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
+class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   static const int _otpLength = 6;
   static const int _timerSeconds = 9 * 60 + 47; // 09:47 matching mockup
 
@@ -80,7 +81,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     });
 
     try {
-      await SupabaseService.verifyOTP(
+      await ref.read(authRepositoryProvider).verifyOTP(
         email: widget.email,
         token: _otp,
       );
@@ -99,7 +100,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   Future<void> _resend() async {
     if (_remainingSeconds > 0) return;
     try {
-      await SupabaseService.resendOTP(email: widget.email);
+      await ref.read(authRepositoryProvider).resendOTP(email: widget.email);
       _startTimer();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

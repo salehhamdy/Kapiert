@@ -4,6 +4,7 @@ import '../models/word_model.dart';
 import '../repositories/history_repository.dart';
 import '../repositories/word_repository.dart';
 import '../services/article_service.dart';
+import 'history_providers.dart';
 
 // ---------------------------------------------------------------------------
 // Infrastructure providers
@@ -62,11 +63,12 @@ class LookupState {
 // ---------------------------------------------------------------------------
 
 class LookupNotifier extends StateNotifier<LookupState> {
-  LookupNotifier(this._wordRepo, this._historyRepo)
+  LookupNotifier(this._wordRepo, this._historyRepo, this._ref)
       : super(LookupState(streak: _historyRepo.getStreak()));
 
   final WordRepository _wordRepo;
   final HistoryRepository _historyRepo;
+  final Ref _ref;
 
   // Non-null means word was not found; reuse `query` for the error text.
   String? notFoundQuery;
@@ -90,6 +92,7 @@ class LookupNotifier extends StateNotifier<LookupState> {
           correct: true,
           mode: 'lookup',
         ));
+        _ref.invalidate(historyProvider);
         state = state.copyWith(
           result: word,
           loading: false,
@@ -121,5 +124,6 @@ final lookupProvider =
   return LookupNotifier(
     ref.watch(wordRepositoryProvider),
     ref.watch(historyRepositoryProvider),
+    ref,
   );
 });
