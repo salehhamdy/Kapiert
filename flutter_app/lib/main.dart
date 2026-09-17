@@ -12,6 +12,7 @@ import 'screens/quiz_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/auth/sign_in_screen.dart';
+import 'screens/auth/sign_up_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,6 +77,7 @@ class _DerDieDasAppState extends State<DerDieDasApp> {
               onThemeToggle: _toggleTheme,
             ),
         '/signin': (_) => const SignInScreen(),
+        '/signup': (_) => const SignUpScreen(),
       },
     );
   }
