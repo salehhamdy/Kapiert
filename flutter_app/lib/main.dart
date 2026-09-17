@@ -11,6 +11,8 @@ import 'screens/lookup_screen.dart';
 import 'screens/quiz_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/auth/sign_in_screen.dart';
+import 'screens/auth/sign_up_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,16 +57,28 @@ class _DerDieDasAppState extends State<DerDieDasApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Determine the initial screen:
+    // • Supabase NOT configured → guest mode, go straight to MainScaffold
+    // • Supabase configured + active session → go straight to MainScaffold
+    // • Supabase configured + no session  → show SignInScreen
+    // TESTING: always show SignInScreen to preview auth flow
+    const Widget home = SignInScreen();
+
     return MaterialApp(
       title: 'Kapiert',
       debugShowCheckedModeBanner: false,
       themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: _buildLightTheme(),
       darkTheme: _buildDarkTheme(),
-      home: MainScaffold(
-        isDarkMode: _isDarkMode,
-        onThemeToggle: _toggleTheme,
-      ),
+      home: home,
+      routes: {
+        '/home': (_) => MainScaffold(
+              isDarkMode: _isDarkMode,
+              onThemeToggle: _toggleTheme,
+            ),
+        '/signin': (_) => const SignInScreen(),
+        '/signup': (_) => const SignUpScreen(),
+      },
     );
   }
 

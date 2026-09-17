@@ -43,3 +43,17 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Platforms not in use
+/web/
+/windows/
+
+# Test files
+/test/
+
+# Auth screens (sensitive / in-progress)
+lib/screens/auth/sign_in_screen.dart
+lib/screens/auth/sign_up_screen.dart
+
+# Sign-in/up prototype folder (sibling directory)
+../signinup/
