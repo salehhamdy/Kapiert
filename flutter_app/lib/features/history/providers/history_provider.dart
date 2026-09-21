@@ -52,6 +52,7 @@ class HistoryNotifier extends StateNotifier<HistoryState> {
     final filterArg = state.filter == 'all' ? null : state.filter;
     final entries = await _repo.getHistory(filter: filterArg);
     final stats = await _repo.getStats();
+    if (!mounted) return;
     state = state.copyWith(entries: entries, stats: stats, loading: false);
   }
 

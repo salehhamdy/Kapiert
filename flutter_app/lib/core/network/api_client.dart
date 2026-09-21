@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
@@ -7,9 +7,11 @@ import '../errors/failures.dart';
 
 /// Low-level HTTP client. All API calls go through here.
 class ApiClient {
-  ApiClient({required this.baseUrl});
+  ApiClient({required this.baseUrl, http.Client? client})
+      : _client = client ?? http.Client();
 
   final String baseUrl;
+  final http.Client _client;
 
   /// GET request. Returns decoded JSON body on success.
   /// Throws a [Failure] subtype on error.
@@ -19,7 +21,7 @@ class ApiClient {
   }) async {
     try {
       final uri = Uri.parse('$baseUrl$path');
-      final response = await http.get(uri).timeout(timeout);
+      final response = await _client.get(uri).timeout(timeout);
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
@@ -47,7 +49,7 @@ class ApiClient {
   }) async {
     try {
       final uri = Uri.parse('$baseUrl$path');
-      final response = await http.get(uri).timeout(timeout);
+      final response = await _client.get(uri).timeout(timeout);
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as List<dynamic>;
@@ -68,7 +70,7 @@ class ApiClient {
     try {
       final uri = Uri.parse('$baseUrl/health');
       final response =
-          await http.get(uri).timeout(const Duration(seconds: 5));
+          await _client.get(uri).timeout(const Duration(seconds: 5));
       return response.statusCode == 200;
     } catch (_) {
       return false;
