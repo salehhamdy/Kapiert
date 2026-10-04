@@ -57,6 +57,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(user: _repo.currentUser, loading: false);
     } catch (e) {
       state = state.copyWith(loading: false, error: e.toString());
+      rethrow;
     }
   }
 
@@ -70,6 +71,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(user: _repo.currentUser, loading: false);
     } catch (e) {
       state = state.copyWith(loading: false, error: e.toString());
+      rethrow;
     }
   }
 
@@ -80,6 +82,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(user: _repo.currentUser, loading: false);
     } catch (e) {
       state = state.copyWith(loading: false, error: e.toString());
+      rethrow;
     }
   }
 
@@ -90,6 +93,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(loading: false, clearUser: true);
     } catch (e) {
       state = state.copyWith(loading: false, error: e.toString());
+      rethrow;
     }
   }
 
@@ -100,6 +104,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(user: _repo.currentUser, loading: false);
     } catch (e) {
       state = state.copyWith(loading: false, error: e.toString());
+      rethrow;
     }
   }
 
@@ -108,6 +113,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _repo.resendOTP(email: email);
     } catch (e) {
       state = state.copyWith(error: e.toString());
+      rethrow;
     }
   }
 
@@ -116,6 +122,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _repo.resetPassword(email: email);
     } catch (e) {
       state = state.copyWith(error: e.toString());
+      rethrow;
     }
   }
 

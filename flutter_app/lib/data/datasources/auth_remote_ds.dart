@@ -1,4 +1,4 @@
-﻿import 'package:google_sign_in/google_sign_in.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/app_config.dart';
@@ -70,16 +70,36 @@ class AuthRemoteDS {
     required String token,
   }) async {
     _requireClient();
-    await _client!.auth.verifyOTP(
-      email: email,
-      token: token,
-      type: OtpType.signup,
-    );
+    try {
+      await _client!.auth.verifyOTP(
+        email: email,
+        token: token,
+        type: OtpType.signup,
+      );
+    } catch (e) {
+      try {
+        await _client!.auth.verifyOTP(
+          email: email,
+          token: token,
+          type: OtpType.email,
+        );
+      } catch (_) {
+        throw e;
+      }
+    }
   }
 
   static Future<void> resendOTP({required String email}) async {
     _requireClient();
-    await _client!.auth.resend(type: OtpType.signup, email: email);
+    try {
+      await _client!.auth.resend(type: OtpType.signup, email: email);
+    } catch (e) {
+      try {
+        await _client!.auth.resend(type: OtpType.email, email: email);
+      } catch (_) {
+        throw e;
+      }
+    }
   }
 
   static Future<void> resetPassword({required String email}) async {

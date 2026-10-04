@@ -21,10 +21,8 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   static const int _otpLength = 6;
   static const int _timerSeconds = 9 * 60 + 47; // 09:47 matching mockup
 
-  final List<TextEditingController> _controllers =
-      List.generate(_otpLength, (_) => TextEditingController());
-  final List<FocusNode> _focusNodes =
-      List.generate(_otpLength, (_) => FocusNode());
+  late final List<TextEditingController> _controllers;
+  late final List<FocusNode> _focusNodes;
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -34,10 +32,36 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   @override
   void initState() {
     super.initState();
+    _controllers = List.generate(_otpLength, (_) => TextEditingController());
+    _focusNodes = List.generate(_otpLength, (_) => FocusNode());
+
     _startTimer();
-    // Listen to each box for auto-advance
+
     for (int i = 0; i < _otpLength; i++) {
-      _controllers[i].addListener(() => _onDigitChanged(i));
+      final index = i;
+      // Auto-select text on focus so typing immediately replaces it
+      _focusNodes[index].addListener(() {
+        if (_focusNodes[index].hasFocus && mounted) {
+          _controllers[index].selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: _controllers[index].text.length,
+          );
+        }
+      });
+
+      // Handle backspace when field is empty to jump back to previous box
+      _focusNodes[index].onKeyEvent = (node, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.backspace) {
+          if (_controllers[index].text.isEmpty && index > 0) {
+            _controllers[index - 1].clear();
+            _focusNodes[index - 1].requestFocus();
+            if (mounted) setState(() {});
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
+      };
     }
   }
 
@@ -48,22 +72,84 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       if (_remainingSeconds <= 0) {
         t.cancel();
       } else {
-        setState(() => _remainingSeconds--);
+        if (mounted) setState(() => _remainingSeconds--);
       }
     });
   }
 
-  void _onDigitChanged(int index) {
-    final text = _controllers[index].text;
-    if (text.length == 1 && index < _otpLength - 1) {
-      // Auto-advance to next box
-      _focusNodes[index + 1].requestFocus();
+  void _onDigitInput(int index, String value) {
+    if (value.isEmpty) {
+      if (mounted) setState(() {});
+      return;
     }
-    setState(() {}); // update filled/empty visual states
+
+    // Keep only numbers
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) {
+      _controllers[index].clear();
+      if (mounted) setState(() {});
+      return;
+    }
+
+    // Case 1: Full 6-digit OTP pasted
+    if (digits.length == _otpLength) {
+      for (int k = 0; k < _otpLength; k++) {
+        _controllers[k].text = digits[k];
+      }
+      _focusNodes.last.unfocus();
+      if (mounted) setState(() {});
+      if (_otpComplete) _verify();
+      return;
+    }
+
+    // Case 2: Multi-digit partial paste
+    if (digits.length > 2) {
+      for (int k = 0; k < digits.length && (index + k) < _otpLength; k++) {
+        _controllers[index + k].text = digits[k];
+      }
+      final nextIndex = (index + digits.length).clamp(0, _otpLength - 1);
+      if (index + digits.length >= _otpLength) {
+        _focusNodes.last.unfocus();
+        if (mounted) setState(() {});
+        if (_otpComplete) _verify();
+      } else {
+        _focusNodes[nextIndex].requestFocus();
+        if (mounted) setState(() {});
+      }
+      return;
+    }
+
+    // Case 3: Typed into a field that already had a digit (e.g. value length 2)
+    if (digits.length == 2 && _controllers[index].text.isNotEmpty) {
+      final old = _controllers[index].text;
+      final newChar = digits[0] == old ? digits[1] : digits[0];
+      _controllers[index].text = newChar;
+      _controllers[index].selection = const TextSelection.collapsed(offset: 1);
+      if (index < _otpLength - 1) {
+        _focusNodes[index + 1].requestFocus();
+      } else {
+        _focusNodes[index].unfocus();
+        if (_otpComplete) _verify();
+      }
+      if (mounted) setState(() {});
+      return;
+    }
+
+    // Case 4: Single digit entered
+    _controllers[index].text = digits;
+    _controllers[index].selection = const TextSelection.collapsed(offset: 1);
+    if (index < _otpLength - 1) {
+      _focusNodes[index + 1].requestFocus();
+    } else {
+      _focusNodes[index].unfocus();
+      if (mounted) setState(() {});
+      if (_otpComplete) _verify();
+      return;
+    }
+    if (mounted) setState(() {});
   }
 
-  String get _otp =>
-      _controllers.map((c) => c.text).join();
+  String get _otp => _controllers.map((c) => c.text).join();
 
   bool get _otpComplete => _otp.length == _otpLength;
 
@@ -74,7 +160,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   }
 
   Future<void> _verify() async {
-    if (!_otpComplete) return;
+    if (!_otpComplete || _isLoading) return;
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -85,13 +171,19 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
         email: widget.email,
         token: _otp,
       );
+      final authError = ref.read(authProvider).error;
+      if (authError != null && authError.isNotEmpty) {
+        throw Exception(authError);
+      }
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const WelcomeScreen()),
         );
       }
     } catch (e) {
-      setState(() => _errorMessage = _friendlyError(e.toString()));
+      if (mounted) {
+        setState(() => _errorMessage = _friendlyError(e.toString()));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -117,16 +209,17 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   }
 
   String _friendlyError(String raw) {
-    if (raw.contains('Token has expired') || raw.contains('otp_expired')) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('expired')) {
       return 'Code expired. Please request a new one.';
     }
-    if (raw.contains('Invalid') || raw.contains('invalid')) {
+    if (lower.contains('invalid') || lower.contains('bad')) {
       return 'Incorrect code. Check your email and try again.';
     }
-    if (raw.contains('not configured') || raw.contains('StateError')) {
+    if (lower.contains('not configured') || lower.contains('stateerror')) {
       return 'Auth is not configured yet.';
     }
-    return 'Verification failed. Please try again.';
+    return 'Verification failed. Please check the code and try again.';
   }
 
   @override
@@ -211,14 +304,8 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                     child: _OtpBox(
                       controller: _controllers[i],
                       focusNode: _focusNodes[i],
-                      onBackspace: i > 0
-                          ? () {
-                              if (_controllers[i].text.isEmpty) {
-                                _focusNodes[i - 1].requestFocus();
-                                _controllers[i - 1].clear();
-                              }
-                            }
-                          : null,
+                      autofocus: i == 0,
+                      onChanged: (val) => _onDigitInput(i, val),
                     ),
                   );
                 }),
@@ -335,12 +422,14 @@ class _EnvelopeIcon extends StatelessWidget {
 class _OtpBox extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
-  final VoidCallback? onBackspace;
+  final bool autofocus;
+  final ValueChanged<String> onChanged;
 
   const _OtpBox({
     required this.controller,
     required this.focusNode,
-    this.onBackspace,
+    this.autofocus = false,
+    required this.onChanged,
   });
 
   @override
@@ -350,74 +439,63 @@ class _OtpBox extends StatelessWidget {
     final textPrimary =
         isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
 
-    return ValueListenableBuilder<TextEditingValue>(
-      valueListenable: controller,
-      builder: (context, value, _) {
-        final isFilled = value.text.isNotEmpty;
+    return AnimatedBuilder(
+      animation: Listenable.merge([controller, focusNode]),
+      builder: (context, _) {
+        final isFilled = controller.text.isNotEmpty;
+        final isActive = focusNode.hasFocus;
 
-        return Focus(
-          focusNode: focusNode,
-          child: Builder(
-            builder: (ctx) {
-              final isActive = Focus.of(ctx).hasFocus;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 44,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: isFilled
-                      ? AppColors.dasGreen.withValues(alpha: 0.08)
-                      : surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isFilled
-                        ? AppColors.dasGreen
-                        : isActive
-                            ? AppColors.derBlue
-                            : AppColors.dividerLight.withValues(alpha: 0.8),
-                    width: isActive || isFilled ? 2 : 1.2,
-                  ),
-                  boxShadow: isActive
-                      ? [
-                          BoxShadow(
-                            color: AppColors.derBlue.withValues(alpha: 0.15),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: KeyboardListener(
-                  focusNode: FocusNode(),
-                  onKeyEvent: (event) {
-                    if (event is KeyDownEvent &&
-                        event.logicalKey == LogicalKeyboardKey.backspace &&
-                        controller.text.isEmpty) {
-                      onBackspace?.call();
-                    }
-                  },
-                  child: TextFormField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    textAlign: TextAlign.center,
-                    keyboardType: TextInputType.number,
-                    maxLength: 1,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    showCursor: isActive,
-                    style: GoogleFonts.nunito(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: isFilled ? AppColors.dasGreen : textPrimary,
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 44,
+          height: 52,
+          decoration: BoxDecoration(
+            color: isFilled
+                ? AppColors.dasGreen.withValues(alpha: 0.08)
+                : surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isFilled
+                  ? AppColors.dasGreen
+                  : isActive
+                      ? AppColors.derBlue
+                      : AppColors.dividerLight.withValues(alpha: 0.8),
+              width: isActive || isFilled ? 2 : 1.2,
+            ),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: AppColors.derBlue.withValues(alpha: 0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
-                    decoration: const InputDecoration(
-                      counterText: '',
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ),
-              );
-            },
+                  ]
+                : null,
+          ),
+          alignment: Alignment.center,
+          child: TextFormField(
+            controller: controller,
+            focusNode: focusNode,
+            autofocus: autofocus,
+            textAlign: TextAlign.center,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(6),
+            ],
+            showCursor: isActive,
+            onChanged: onChanged,
+            style: GoogleFonts.nunito(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: isFilled ? AppColors.dasGreen : textPrimary,
+            ),
+            decoration: const InputDecoration(
+              counterText: '',
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+              isDense: true,
+            ),
           ),
         );
       },
@@ -459,5 +537,3 @@ class _InlineError extends StatelessWidget {
     );
   }
 }
-
-
