@@ -248,7 +248,7 @@ flutter analyze
 ## 🗺️ Roadmap
 
 ### Phase 2 — Accounts & Sync
-- [x] Sign-up / sign-in UI (email OTP + Google OAuth)
+- [x] Sign-up / sign-in UI (email + OAuth)
 - [x] Merge local history to cloud on first login
 - [x] Cross-device history & streak sync via Supabase
 - [ ] User profile screen
