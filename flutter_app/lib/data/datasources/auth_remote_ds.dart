@@ -144,7 +144,11 @@ class AuthRemoteDS {
 
     // Try native Google Sign-In first on Android/iOS
     try {
-      final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+      final googleSignIn = GoogleSignIn(
+        serverClientId:
+            '313248263818-it8fb3rllht9orifqrut6v49bav37pbf.apps.googleusercontent.com',
+        scopes: ['email', 'profile'],
+      );
       final googleUser = await googleSignIn.signIn();
       if (googleUser != null) {
         final googleAuth = await googleUser.authentication;
