@@ -136,26 +136,39 @@ class AuthRemoteDS {
 
   static Future<void> signInWithGoogle() async {
     _requireClient();
+
     if (kIsWeb) {
-      await _client!.auth.signInWithOAuth(
-        OAuthProvider.google,
-      );
+      await _client!.auth.signInWithOAuth(OAuthProvider.google);
       return;
     }
-    final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
-    final googleUser = await googleSignIn.signIn();
-    if (googleUser == null) throw SignInCancelledException();
-    final googleAuth = await googleUser.authentication;
-    final idToken = googleAuth.idToken;
-    if (idToken == null) {
-      throw const AuthFailure(
-        'Google Sign-In did not return an ID token. Check your OAuth client configuration.',
-      );
+
+    // Try native Google Sign-In first on Android/iOS
+    try {
+      final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser != null) {
+        final googleAuth = await googleUser.authentication;
+        final idToken = googleAuth.idToken;
+        if (idToken != null) {
+          await _client!.auth.signInWithIdToken(
+            provider: OAuthProvider.google,
+            idToken: idToken,
+            accessToken: googleAuth.accessToken,
+          );
+          return;
+        }
+      } else {
+        throw SignInCancelledException();
+      }
+    } on SignInCancelledException {
+      rethrow;
+    } catch (_) {
+      // Fallback to Supabase browser OAuth with deep linking on mobile
     }
-    await _client!.auth.signInWithIdToken(
-      provider: OAuthProvider.google,
-      idToken: idToken,
-      accessToken: googleAuth.accessToken,
+
+    await _client!.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: 'io.supabase.kapiert://login-callback/',
     );
   }
 }
