@@ -112,16 +112,20 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   }
 
   String _friendlyGoogleError(String raw) {
-    if (raw.contains('network') || raw.contains('SocketException')) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('network') || lower.contains('socketexception')) {
       return 'No internet connection.';
     }
-    if (raw.contains('not configured') || raw.contains('StateError')) {
+    if (lower.contains('not configured') || lower.contains('stateerror')) {
       return 'Auth is not configured yet.';
     }
-    if (raw.contains('ID token')) {
-      return 'Google Sign-In failed. Check your OAuth setup.';
+    if (lower.contains('popup_closed') || lower.contains('user cancelled')) {
+      return 'Google Sign-In was cancelled.';
     }
-    return 'Google Sign-In failed. Please try again.';
+    if (lower.contains('not enabled') || lower.contains('provider')) {
+      return 'Google provider is not enabled in your Supabase Dashboard.';
+    }
+    return 'Google Sign-In requires setting up Google OAuth in Supabase (Authentication → Providers).';
   }
 
   @override

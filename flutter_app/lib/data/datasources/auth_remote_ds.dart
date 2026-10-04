@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -135,6 +136,12 @@ class AuthRemoteDS {
 
   static Future<void> signInWithGoogle() async {
     _requireClient();
+    if (kIsWeb) {
+      await _client!.auth.signInWithOAuth(
+        OAuthProvider.google,
+      );
+      return;
+    }
     final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
     final googleUser = await googleSignIn.signIn();
     if (googleUser == null) throw SignInCancelledException();
