@@ -2,74 +2,71 @@
 
 > **Master German articles — der, die & das — through smart quizzes, instant lookup, and spaced repetition.**
 
-Kapiert is a Flutter mobile app (Android & iOS) that helps German learners memorise the grammatical gender of nouns. It combines a local SQLite word database with optional Supabase cloud sync and Google Sign-In so progress follows the learner across devices.
+Kapiert is a Flutter mobile and desktop application (Android, iOS, Windows, Web) that helps German learners memorise the grammatical gender of nouns. It combines a local SQLite word database with optional Supabase cloud sync and Google Sign-In so progress follows the learner across devices.
 
 ---
 
-## Features
+## ✨ Features
 
 | Feature | Description |
 |---|---|
 | 🔍 **Word Lookup** | Search any German noun and instantly see its article, meaning, and gender colour |
 | 🧠 **Quiz Mode** | Rapid-fire der / die / das quiz with streak tracking and performance history |
-| 📜 **History** | Review every word you've looked up, filterable by article |
-| ☁️ **Cloud Sync** | Optional Supabase backend syncs progress when signed in |
-| 🔐 **Auth** | Email/password sign-up with OTP verification **and** native Google Sign-In |
-| 🌙 **Dark Mode** | Full light & dark theme support |
+| 📜 **History** | Review every word you've looked up, filterable by article and outcome |
+| 🔥 **Streak Tracking** | Daily activity tracker and streak counter |
+| ☁️ **Cloud Sync** | Local-first architecture synced via Supabase backend when signed in |
+| 🔐 **Authentication** | Email OTP verification **and** native Google Sign-In |
+| ⚙️ **In-App Config** | Connect Supabase URL & Anon Key directly via an in-app setup sheet without rebuilds |
+| 🌙 **Dark Mode** | Full light & dark theme support with custom AppColors palette |
 | 📴 **Offline First** | All core features work without an internet connection via local SQLite |
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Framework | Flutter 3 / Dart |
-| Local storage | SQLite (`sqflite`) + `shared_preferences` |
-| Cloud backend | Supabase (Auth + Database) |
-| Google Sign-In | `google_sign_in` (native Android & iOS) |
+| Framework | Flutter 3.x / Dart 3.x |
+| Local Storage | SQLite (`sqflite` / `sqflite_common_ffi`) + `shared_preferences` |
+| Cloud Backend | Supabase (`supabase_flutter` Auth + Postgres Database) |
+| Google Sign-In | `google_sign_in` (native Android & Web OAuth flow) |
 | Animations | `flutter_animate` |
-| Fonts | `google_fonts` (Nunito) |
-| HTTP | `http` |
+| Typography | `google_fonts` (Nunito) |
+| Networking | `http` |
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 lib/
-├── config/            # App-level config (Supabase URL, keys via --dart-define)
-├── constants/         # Colour palette (AppColors)
-├── models/            # Data models
-├── screens/
-│   ├── auth/
-│   │   ├── welcome_screen.dart
-│   │   ├── sign_in_screen.dart      # gitignored
-│   │   ├── sign_up_screen.dart      # gitignored
-│   │   └── verify_email_screen.dart
-│   ├── history_screen.dart
-│   ├── lookup_screen.dart
-│   ├── quiz_screen.dart
-│   └── settings_screen.dart
-├── services/
-│   ├── article_service.dart   # SQLite word DB queries
-│   ├── storage_service.dart   # Local persistence
-│   ├── supabase_service.dart  # Supabase Auth + Google Sign-In
-│   └── sync_service.dart      # Cloud sync logic
-├── widgets/
-│   ├── auth_logo_header.dart
-│   └── auth_widgets.dart      # Shared auth UI components
-└── main.dart
+├── config/                      # AppConfig (API base URLs, dynamic Supabase credentials)
+├── constants/                   # Colour palette (AppColors), UI constants
+├── data/                        # Data layer
+│   ├── datasources/             # Remote & Local data sources (auth_remote_ds, etc.)
+│   ├── repositories/            # Concrete repository implementations
+│   └── services/                # Local SQLite database & sync services
+├── domain/                      # Domain layer
+│   ├── models/                  # WordModel, HistoryEntry, SyncStatus
+│   └── repositories/            # Abstract contracts
+├── features/                    # Feature modules (Clean Architecture)
+│   ├── auth/                    # Sign In, Sign Up, Verify Email (OTP), Configure Supabase
+│   ├── history/                 # Search & quiz history with filter tabs
+│   ├── lookup/                  # Word lookup and dictionary details
+│   ├── quiz/                    # der/die/das training and answer evaluation
+│   └── settings/                # Themes, account info, cloud sync status
+├── shared/                      # Reusable UI components & auth widgets
+└── main.dart                    # Application entry point & theme initialization
 ```
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
 - Flutter SDK `^3.11`
-- An Android or iOS device / emulator
+- An Android / iOS device / emulator or Chrome / Desktop target
 - (Optional) A Supabase project with Google OAuth configured
 
 ### 1. Clone & install dependencies
@@ -80,18 +77,22 @@ cd Kapiert/flutter_app
 flutter pub get
 ```
 
-### 2. Run without cloud (guest / offline mode)
+### 2. Run without cloud (Guest / Offline mode)
 
 ```bash
 flutter run
 ```
 
-No credentials needed — the app runs fully offline using the local SQLite database.
+No credentials required — the app runs fully offline using the local SQLite database.
 
-### 3. Run with Supabase (cloud sync + auth)
+### 3. Connect Supabase & Google Sign-In
 
-Pass your project credentials via `--dart-define`:
+You can configure Supabase in two ways:
 
+#### Option A: In-App Setup (Easiest)
+Run the app, go to the Sign In or Sign Up screen, and tap **Setup Supabase** (or click the warning banner). Enter your Supabase Project URL and Anon Key. The configuration is securely saved to local preferences and takes effect immediately without rebuilding!
+
+#### Option B: Compile-time `--dart-define`
 ```bash
 flutter run \
   --dart-define=SUPABASE_URL=https://your-project.supabase.co \
@@ -100,61 +101,55 @@ flutter run \
 
 ---
 
-## Google Sign-In Setup
+## 🔐 Google Sign-In Configuration
 
-Google Sign-In uses the native `google_sign_in` package and Supabase's `signInWithIdToken` for the token exchange.
+Google Sign-In uses native token exchange on Android (`google_sign_in`) and browser OAuth on Web.
 
-### Google Cloud Console
+### 1. Android Package & SHA-1
+- **Package Name**: `com.kapiert.app`
+- Get your debug keystore SHA-1 fingerprint:
+  ```bash
+  keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+  ```
 
-1. Create an **OAuth 2.0 Client ID** for:
-   - **Android** — use `applicationId` + SHA-1 fingerprint from `keytool`
-   - **iOS** — use your bundle identifier
-2. Also create a **Web** client ID (required by Supabase for token exchange)
+### 2. Google Cloud Console
+1. Create an **Android OAuth Client ID**:
+   - Package name: `com.kapiert.app`
+   - SHA-1 certificate fingerprint: *(your debug/release SHA-1)*
+2. Create a **Web Application OAuth Client ID**:
+   - Save the Web Client ID and Client Secret.
 
-### Android — `android/app/src/main/res/values/strings.xml`
-
+### 3. Android Resources — `android/app/src/main/res/values/strings.xml`
+Ensure the Web Client ID is defined:
 ```xml
 <resources>
   <string name="default_web_client_id">YOUR_WEB_CLIENT_ID.apps.googleusercontent.com</string>
 </resources>
 ```
 
-### Supabase Dashboard
-
-1. Go to **Authentication → Providers → Google**
-2. Enable it and paste your **Web Client ID + Secret**
-
----
-
-## Branches
-
-| Branch | Purpose |
-|---|---|
-| `main` | Stable production code |
-| `loggingfeatures` | Google Sign-In + auth UI + .gitignore updates |
+### 4. Supabase Dashboard
+1. Under **Authentication → Providers → Google**:
+   - Enable Google provider.
+   - Enter your **Web Client ID** and **Client Secret**.
+   - Add your Android Client ID to **Authorized Client IDs**.
+2. Under **Authentication → URL Configuration → Redirect URLs**, add:
+   - `io.supabase.kapiert://login-callback/` (for Android deep linking)
+   - `http://localhost:**` (for local Web testing)
 
 ---
 
-## .gitignore Notes
+## 🧪 Testing
 
-The following are intentionally excluded from version control:
+Run all unit and widget tests:
 
-- `/web/` and `/windows/` — unused platform targets
-- `/test/` — test files
-- `lib/screens/auth/sign_in_screen.dart` and `sign_up_screen.dart` — sensitive in-progress screens
-- `../signinup/` — local design prototype assets
+```bash
+flutter test
+```
 
----
-
-## Contributing
-
-1. Fork the repo and create a feature branch off `main`
-2. Follow the existing code style (Nunito font, `AppColors` palette, `flutter_animate` for animations)
-3. Run `flutter analyze` — zero issues expected before opening a PR
-4. Open a pull request with a clear description of your changes
+All 31 tests cover data source serialization, word models, sync mapping, and auth screens (including OTP verification focus navigation).
 
 ---
 
-## License
+## 📄 License
 
 MIT © Saleh Hamdy

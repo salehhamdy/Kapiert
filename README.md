@@ -28,7 +28,7 @@
 | 🌐 Wiktionary fallback for unknown words | ✅ Live |
 | 📱 Android, Windows, Web | ✅ Live |
 | ☁️ Cloud sync via Supabase (history, streak, settings) | ✅ Live |
-| 🔐 User accounts (email, Google, Apple) | 🔜 Planned |
+| 🔐 User accounts (email OTP, Google Sign-In) | ✅ Live |
 
 ---
 
@@ -192,14 +192,23 @@ Base URL: `http://127.0.0.1:8000` (local) or your Render deployment URL.
 
 ---
 
-## 🗄️ Supabase Setup (when enabling accounts)
+## 🗄️ Supabase & Authentication Setup
 
 1. Create a project at [supabase.com](https://supabase.com)
 2. Run the migrations **in order**:
    - **Option A** — Supabase Dashboard → SQL Editor → paste each file from `supabase/migrations/` (oldest first)
    - **Option B** — `supabase db push` (with Supabase CLI)
-3. Enable auth providers (Email, Google, Apple) in the Supabase Dashboard
-4. Pass `SUPABASE_URL` and `SUPABASE_ANON_KEY` via `--dart-define`
+3. **Configure Authentication**:
+   - **Email/Password**: Toggle ON under **Authentication → Providers → Email**
+   - **Google Sign-In**: Toggle ON under **Authentication → Providers → Google**, and provide:
+     - Web Client ID & Client Secret from Google Cloud Console
+     - Authorized Client IDs (for Android): `313248263818-rdr3vlio02o8qfr0bus0vv9ualac2hcq.apps.googleusercontent.com`
+   - **Redirect URLs**: Under **Authentication → URL Configuration**, add:
+     - `io.supabase.kapiert://login-callback/` (Android)
+     - `http://localhost:**` (Web local testing)
+4. **Connect the App**:
+   - **In-App Setup**: Tap the red banner's **`Setup Supabase`** button directly in the app to connect instantly without rebuilding!
+   - **Or via build flags**: Pass `SUPABASE_URL` and `SUPABASE_ANON_KEY` via `--dart-define`
 
 **How sync works** (local-first): the app always reads from local SQLite / SharedPreferences, so it stays fast and works offline. When signed in:
 - **History** — each row has a client UUID; pushes are idempotent and new rows are pulled with an id cursor. Guest history is merged into the account on first sign-in.
@@ -226,8 +235,11 @@ cd backend
 pip install -r requirements-dev.txt
 pytest tests/ -v
 
-# Flutter static analysis
+# Flutter unit, widget & sync tests (31 tests)
 cd flutter_app
+flutter test
+
+# Flutter static analysis
 flutter analyze
 ```
 
@@ -236,7 +248,7 @@ flutter analyze
 ## 🗺️ Roadmap
 
 ### Phase 2 — Accounts & Sync
-- [ ] Sign-up / sign-in UI (email + OAuth)
+- [x] Sign-up / sign-in UI (email OTP + Google OAuth)
 - [x] Merge local history to cloud on first login
 - [x] Cross-device history & streak sync via Supabase
 - [ ] User profile screen
