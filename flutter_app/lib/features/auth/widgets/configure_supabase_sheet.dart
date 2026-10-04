@@ -11,18 +11,43 @@ Future<void> showConfigureSupabaseDialog(
   BuildContext context, {
   VoidCallback? onConfigured,
 }) {
+  final isWide = MediaQuery.of(context).size.width > 600;
+  if (isWide) {
+    return showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: _ConfigureSupabaseModal(
+            onConfigured: onConfigured,
+            isDialog: true,
+          ),
+        ),
+      ),
+    );
+  }
+
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => _ConfigureSupabaseModal(onConfigured: onConfigured),
+    builder: (ctx) => _ConfigureSupabaseModal(
+      onConfigured: onConfigured,
+      isDialog: false,
+    ),
   );
 }
 
 class _ConfigureSupabaseModal extends StatefulWidget {
   final VoidCallback? onConfigured;
+  final bool isDialog;
 
-  const _ConfigureSupabaseModal({this.onConfigured});
+  const _ConfigureSupabaseModal({
+    this.onConfigured,
+    this.isDialog = false,
+  });
 
   @override
   State<_ConfigureSupabaseModal> createState() =>
@@ -108,9 +133,23 @@ class _ConfigureSupabaseModalState extends State<_ConfigureSupabaseModal> {
     return Container(
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: widget.isDialog
+            ? BorderRadius.circular(20)
+            : const BorderRadius.vertical(top: Radius.circular(24)),
+        border: widget.isDialog
+            ? Border.all(
+                color: isDark
+                    ? AppColors.dividerDark
+                    : AppColors.dividerLight.withValues(alpha: 0.5),
+              )
+            : null,
       ),
-      padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + bottomInset),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        widget.isDialog ? 24 : 20,
+        24,
+        24 + (widget.isDialog ? 0 : bottomInset),
+      ),
       child: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -118,18 +157,20 @@ class _ConfigureSupabaseModalState extends State<_ConfigureSupabaseModal> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Handle bar
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: textSecondary.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
+              // Handle bar (bottom sheet only)
+              if (!widget.isDialog) ...[
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: textSecondary.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 18),
+                const SizedBox(height: 18),
+              ],
 
               // Title
               Row(

@@ -319,21 +319,28 @@ class AuthErrorBanner extends StatelessWidget {
           ),
           if (onAction != null) ...[
             const SizedBox(width: 8),
-            GestureDetector(
-              onTap: onAction,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.dieRed.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  actionLabel ?? 'Configure',
-                  style: GoogleFonts.nunito(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.dieRed,
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onAction,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.dieRed.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppColors.dieRed.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Text(
+                    actionLabel ?? 'Configure',
+                    style: GoogleFonts.nunito(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.dieRed,
+                    ),
                   ),
                 ),
               ),
