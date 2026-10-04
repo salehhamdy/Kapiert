@@ -48,9 +48,6 @@ app.*.map.json
 /web/
 /windows/
 
-# Test files
-/test/
-
 # Auth screens (sensitive / in-progress)
 lib/screens/auth/sign_in_screen.dart
 lib/screens/auth/sign_up_screen.dart

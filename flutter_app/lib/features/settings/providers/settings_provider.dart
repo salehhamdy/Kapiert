@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../domain/repositories/i_settings_repository.dart';
+import '../../sync/providers/sync_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Settings state
@@ -47,6 +48,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     state = state.copyWith(showHints: value);
     await _repo.setShowHints(value);
   }
+
+  /// Re-read settings from storage (e.g. after cloud sync applied changes).
+  void reload() {
+    state = SettingsState(
+      isDarkMode: _repo.getDarkMode(),
+      showHints: _repo.getShowHints(),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -55,7 +64,9 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
 final settingsProvider =
     StateNotifierProvider<SettingsNotifier, SettingsState>((ref) {
-  return SettingsNotifier(ref.watch(settingsRepositoryProvider));
+  final notifier = SettingsNotifier(ref.watch(settingsRepositoryProvider));
+  ref.listen<int>(syncRevisionProvider, (_, _) => notifier.reload());
+  return notifier;
 });
 
 /// Convenience derived provider for theme - used by [MaterialApp.themeMode].

@@ -1,9 +1,14 @@
-﻿import '../../domain/models/auth_user.dart';
+import '../../domain/models/auth_user.dart';
 import '../../domain/repositories/i_auth_repository.dart';
+import '../../domain/repositories/i_sync_repository.dart';
 import '../datasources/auth_remote_ds.dart';
 
 /// Concrete implementation of [IAuthRepository] using [AuthRemoteDS].
 class AuthRepositoryImpl implements IAuthRepository {
+  AuthRepositoryImpl(this._sync);
+
+  final ISyncRepository _sync;
+
   @override
   AppUser? get currentUser => AuthRemoteDS.currentUser;
 
@@ -22,7 +27,11 @@ class AuthRepositoryImpl implements IAuthRepository {
   Future<void> signInWithGoogle() => AuthRemoteDS.signInWithGoogle();
 
   @override
-  Future<void> signOut() => AuthRemoteDS.signOut();
+  Future<void> signOut() async {
+    // Push anything still pending; local account data is wiped after sign-out.
+    await _sync.flushBeforeSignOut();
+    await AuthRemoteDS.signOut();
+  }
 
   @override
   Future<void> resetPassword({required String email}) =>

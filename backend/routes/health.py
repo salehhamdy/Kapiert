@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from config import get_settings
-from dataset import dataset_ready, nouns_loaded
+from dataset import dataset_ready, nouns_loaded, plurals_loaded
 from models import HealthResponse
 
 router = APIRouter(tags=["health"])
@@ -20,6 +20,7 @@ async def health_check() -> HealthResponse:
         version=settings.app_version,
         status="ok" if dataset_ready() else "degraded",
         nouns_loaded=nouns_loaded(),
+        plurals_loaded=plurals_loaded(),
         dataset_ready=dataset_ready(),
         supabase_configured=settings.supabase_enabled,
         endpoints=[

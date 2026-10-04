@@ -7,7 +7,7 @@ import re
 import httpx
 
 from config import get_settings
-from dataset import GENDER_TO_ARTICLE
+from dataset import GENDER_TO_ARTICLE, generate_transcription_variants
 
 WIKTIONARY_API = "https://en.wiktionary.org/api/rest_v1/page/definition"
 _TAG_STRIP = re.compile(r"<[^>]+>")
@@ -36,12 +36,17 @@ async def wiktionary_lookup(word: str) -> dict | None:
     settings = get_settings()
     headers = {"User-Agent": settings.wiktionary_user_agent}
 
+    variants = [word.capitalize(), word, word.lower()]
+    for tvar in generate_transcription_variants(word.lower()):
+        if tvar not in variants:
+            variants.extend([tvar.capitalize(), tvar])
+
     async with httpx.AsyncClient(
         timeout=settings.wiktionary_timeout_seconds,
         follow_redirects=True,
         headers=headers,
     ) as client:
-        for variant in [word.capitalize(), word, word.lower()]:
+        for variant in variants:
             try:
                 wiki_url = (
                     "https://en.wiktionary.org/w/api.php"

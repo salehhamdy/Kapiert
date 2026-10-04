@@ -22,6 +22,7 @@ class HealthResponse(BaseModel):
     version: str
     status: str
     nouns_loaded: int
+    plurals_loaded: int = 0
     dataset_ready: bool
     supabase_configured: bool
     endpoints: list[str]

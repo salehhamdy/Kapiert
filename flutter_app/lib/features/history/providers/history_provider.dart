@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/di/providers.dart';
 import '../../../domain/models/lookup_history.dart';
 import '../../../domain/repositories/i_history_repository.dart';
+import '../../sync/providers/sync_provider.dart';
 
 // ---------------------------------------------------------------------------
 // History state
@@ -81,5 +82,8 @@ class HistoryNotifier extends StateNotifier<HistoryState> {
 
 final historyProvider =
     StateNotifierProvider<HistoryNotifier, HistoryState>((ref) {
-  return HistoryNotifier(ref.watch(historyRepositoryProvider));
+  final notifier = HistoryNotifier(ref.watch(historyRepositoryProvider));
+  // Reload when cloud sync pulls new entries or clears account data.
+  ref.listen<int>(syncRevisionProvider, (_, _) => notifier.refresh());
+  return notifier;
 });

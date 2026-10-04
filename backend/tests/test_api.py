@@ -5,14 +5,28 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
+from dataset import normalize_word
 from main import app
-
-client = TestClient(app)
 
 WORD_FIELDS = {"word", "article", "gender", "plural", "translation", "source", "found"}
 
 
-def test_health_endpoint():
+@pytest.fixture(scope="session")
+def client():
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+def test_normalize_word():
+    assert normalize_word("Buch") == "Buch"
+    assert normalize_word("das Buch") == "Buch"
+    assert normalize_word("der Hund") == "Hund"
+    assert normalize_word("die Katze!") == "Katze"
+    assert normalize_word(" ein Auto... ") == "Auto"
+    assert normalize_word("  einen Apfel  ") == "Apfel"
+
+
+def test_health_endpoint(client):
     response = client.get("/health")
     assert response.status_code == 200
     data = response.json()
@@ -22,33 +36,86 @@ def test_health_endpoint():
     assert "GET /lookup/{word}" in data["endpoints"]
 
 
-def test_root_endpoint():
+def test_root_endpoint(client):
     response = client.get("/")
     assert response.status_code == 200
     assert response.json()["status"] in {"ok", "degraded"}
 
 
-def test_lookup_not_found_without_dataset():
+def test_lookup_known_word(client):
+    response = client.get("/lookup/Buch")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["word"].lower() == "buch"
+    assert data["article"] == "das"
+    assert data["gender"] == "n"
+    assert data["source"] == "dataset"
+    assert data["found"] is True
+
+
+def test_lookup_with_article_prefix(client):
+    response = client.get("/lookup/das%20Buch")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["article"] == "das"
+    assert data["gender"] == "n"
+    assert data["source"] == "dataset"
+
+
+def test_lookup_compound_noun_fallback(client):
+    # A compound noun ending in a known head noun like "Buch"
+    response = client.get("/lookup/Notizbuch")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["article"] == "das"
+    assert data["gender"] == "n"
+
+
+def test_lookup_plural_form(client):
+    # Looking up plural "Bücher" should resolve to "das Buch"
+    response = client.get("/lookup/Bücher")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["word"] == "Buch"
+    assert data["article"] == "das"
+    assert data["gender"] == "n"
+    assert data["plural"] == "Bücher"
+
+
+def test_lookup_transcription_variant(client):
+    # Foreign keyboards typing 'Strasse' or 'Maedchen'
+    resp_strasse = client.get("/lookup/Strasse")
+    assert resp_strasse.status_code == 200
+    assert resp_strasse.json()["article"] == "die"
+
+    resp_maedchen = client.get("/lookup/Maedchen")
+    assert resp_maedchen.status_code == 200
+    assert resp_maedchen.json()["article"] == "das"
+
+
+def test_lookup_not_found(client):
     response = client.get("/lookup/xyznotaword12345")
     assert response.status_code == 404
     assert "detail" in response.json()
 
 
-def test_random_returns_503_without_dataset():
+def test_random_returns_word(client):
     response = client.get("/random")
-    if response.status_code == 503:
-        assert response.json()["detail"] == "Dataset not loaded"
-    else:
-        data = response.json()
-        assert WORD_FIELDS.issubset(data.keys())
+    assert response.status_code == 200
+    data = response.json()
+    assert WORD_FIELDS.issubset(data.keys())
+    assert data["article"] in {"der", "die", "das"}
 
 
-def test_random_batch_returns_503_or_list():
+def test_random_batch_bounds(client):
     response = client.get("/random/batch/5")
-    if response.status_code == 503:
-        assert response.json()["detail"] == "Dataset not loaded"
-    else:
-        data = response.json()
-        assert isinstance(data, list)
-        if data:
-            assert WORD_FIELDS.issubset(data[0].keys())
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 5
+    assert WORD_FIELDS.issubset(data[0].keys())
+
+    # Capped at max 50
+    response_large = client.get("/random/batch/100")
+    assert response_large.status_code == 200
+    assert len(response_large.json()) <= 50

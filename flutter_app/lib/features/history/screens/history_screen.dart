@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../providers/history_provider.dart';
+import '../../sync/providers/sync_provider.dart';
 import '../../../domain/models/lookup_history.dart';
 import 'history_tile.dart';
 
@@ -131,7 +132,10 @@ class HistoryScreen extends ConsumerWidget {
 
   Widget _buildList(List<LookupHistory> entries, WidgetRef ref) {
     return RefreshIndicator(
-      onRefresh: () => ref.read(historyProvider.notifier).refresh(),
+      onRefresh: () async {
+        await ref.read(syncProvider.notifier).sync();
+        await ref.read(historyProvider.notifier).refresh();
+      },
       child: ListView.builder(
         itemCount: entries.length,
         padding: const EdgeInsets.only(bottom: 40),

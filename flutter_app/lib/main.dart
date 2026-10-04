@@ -8,6 +8,7 @@ import 'core/storage/storage_service.dart';
 import 'data/datasources/auth_remote_ds.dart';
 import 'features/auth/screens/sign_in_screen.dart';
 import 'features/settings/providers/settings_provider.dart';
+import 'features/sync/providers/sync_provider.dart';
 import 'shared/router/app_router.dart';
 import 'shared/theme/app_theme.dart';
 
@@ -40,6 +41,9 @@ class KapiertApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDarkMode = ref.watch(themeProvider);
+
+    // Keep cloud sync alive for the app's lifetime (reacts to auth events).
+    ref.listen<SyncState>(syncProvider, (_, _) {});
 
     // Show sign-in when Supabase is configured and user is not signed in.
     // Falls back to MainScaffold in guest/offline mode.

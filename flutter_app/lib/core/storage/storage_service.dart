@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/lookup_history.dart';
+import '../utils/uuid.dart';
 
 /// Manages local storage: SQLite for history, SharedPreferences for settings.
 class StorageService {
@@ -23,19 +24,51 @@ class StorageService {
 
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id TEXT NOT NULL,
             timestamp TEXT NOT NULL,
             word TEXT NOT NULL,
             article TEXT NOT NULL,
             correct INTEGER NOT NULL DEFAULT 1,
-            mode TEXT NOT NULL DEFAULT 'lookup'
+            mode TEXT NOT NULL DEFAULT 'lookup',
+            synced INTEGER NOT NULL DEFAULT 0
           )
         ''');
+        await _createSyncIndexes(db);
       },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE history ADD COLUMN client_id TEXT');
+          await db.execute(
+            'ALTER TABLE history ADD COLUMN synced INTEGER NOT NULL DEFAULT 0',
+          );
+          final rows = await db.query('history', columns: ['id']);
+          final batch = db.batch();
+          for (final row in rows) {
+            batch.update(
+              'history',
+              {'client_id': uuidV4()},
+              where: 'id = ?',
+              whereArgs: [row['id']],
+            );
+          }
+          await batch.commit(noResult: true);
+          await _createSyncIndexes(db);
+        }
+      },
+    );
+  }
+
+  static Future<void> _createSyncIndexes(Database db) async {
+    await db.execute(
+      'CREATE UNIQUE INDEX IF NOT EXISTS history_client_id_idx ON history (client_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS history_synced_idx ON history (synced)',
     );
   }
 
@@ -53,9 +86,13 @@ class StorageService {
   // History (SQLite)
   // ---------------------------------------------------------------------------
 
-  /// Add an entry to the history log.
+  /// Add an entry to the history log (marked as not yet synced).
   static Future<void> addHistory(LookupHistory entry) async {
-    await _db.insert('history', entry.toMap());
+    await _db.insert('history', {
+      ...entry.toMap(),
+      'client_id': entry.clientId ?? uuidV4(),
+      'synced': 0,
+    });
   }
 
   /// Get all history entries, most recent first.
@@ -112,6 +149,60 @@ class StorageService {
   }
 
   // ---------------------------------------------------------------------------
+  // History sync helpers
+  // ---------------------------------------------------------------------------
+
+  /// Raw rows that have not been pushed to the cloud yet, oldest first.
+  static Future<List<Map<String, dynamic>>> getUnsyncedHistory({
+    int limit = 500,
+  }) {
+    return _db.query(
+      'history',
+      where: 'synced = 0',
+      orderBy: 'id ASC',
+      limit: limit,
+    );
+  }
+
+  /// Mark rows as pushed.
+  static Future<void> markHistorySynced(List<String> clientIds) async {
+    if (clientIds.isEmpty) return;
+    final batch = _db.batch();
+    for (final id in clientIds) {
+      batch.update(
+        'history',
+        {'synced': 1},
+        where: 'client_id = ?',
+        whereArgs: [id],
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  /// Insert rows pulled from the cloud. Rows we already have (same
+  /// client_id) are ignored.
+  static Future<void> insertSyncedHistory(
+    List<Map<String, dynamic>> rows,
+  ) async {
+    if (rows.isEmpty) return;
+    final batch = _db.batch();
+    for (final row in rows) {
+      batch.insert(
+        'history',
+        {...row, 'synced': 1},
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  /// Delete rows that came from (or were pushed to) the cloud, keeping any
+  /// local-only guest entries.
+  static Future<void> deleteSyncedHistory() async {
+    await _db.delete('history', where: 'synced = 1');
+  }
+
+  // ---------------------------------------------------------------------------
   // Streak (SharedPreferences)
   // ---------------------------------------------------------------------------
 
@@ -153,16 +244,82 @@ class StorageService {
     await _p.remove(_keyLastActive);
   }
 
+  /// Last active day as `yyyy-MM-dd`, or null if never active.
+  static String? getLastActiveDate() => _p.getString(_keyLastActive);
+
+  /// Overwrite the local streak (used when applying the merged cloud value).
+  static Future<void> setStreak(int count, String? lastActiveDate) async {
+    await _p.setInt(_keyStreak, count);
+    if (lastActiveDate == null) {
+      await _p.remove(_keyLastActive);
+    } else {
+      await _p.setString(_keyLastActive, lastActiveDate);
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Settings (SharedPreferences)
   // ---------------------------------------------------------------------------
 
   static const _keyShowHints = 'show_hints';
   static const _keyDarkMode = 'dark_mode';
+  static const _keySettingsUpdatedAt = 'settings_updated_at';
 
   static bool getShowHints() => _p.getBool(_keyShowHints) ?? true;
-  static Future<void> setShowHints(bool value) => _p.setBool(_keyShowHints, value);
+  static Future<void> setShowHints(bool value) async {
+    await _p.setBool(_keyShowHints, value);
+    await _touchSettings();
+  }
 
   static bool getDarkMode() => _p.getBool(_keyDarkMode) ?? false;
-  static Future<void> setDarkMode(bool value) => _p.setBool(_keyDarkMode, value);
+  static Future<void> setDarkMode(bool value) async {
+    await _p.setBool(_keyDarkMode, value);
+    await _touchSettings();
+  }
+
+  /// When settings were last changed on this device (null = never changed).
+  static DateTime? getSettingsUpdatedAt() {
+    final raw = _p.getString(_keySettingsUpdatedAt);
+    return raw == null ? null : DateTime.tryParse(raw);
+  }
+
+  static Future<void> _touchSettings() => _p.setString(
+        _keySettingsUpdatedAt,
+        DateTime.now().toUtc().toIso8601String(),
+      );
+
+  /// Apply settings that came from the cloud without bumping the timestamp.
+  static Future<void> applySyncedSettings({
+    required bool showHints,
+    required bool darkMode,
+    required DateTime updatedAt,
+  }) async {
+    await _p.setBool(_keyShowHints, showHints);
+    await _p.setBool(_keyDarkMode, darkMode);
+    await _p.setString(
+      _keySettingsUpdatedAt,
+      updatedAt.toUtc().toIso8601String(),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sync metadata (SharedPreferences)
+  // ---------------------------------------------------------------------------
+
+  static const _keySyncOwner = 'sync_owner_uid';
+  static const _keySyncCursorPrefix = 'sync_history_cursor_';
+
+  /// The user whose cloud data is currently mirrored locally.
+  static String? getSyncOwner() => _p.getString(_keySyncOwner);
+  static Future<void> setSyncOwner(String? uid) => uid == null
+      ? _p.remove(_keySyncOwner)
+      : _p.setString(_keySyncOwner, uid);
+
+  /// Highest remote `lookup_history.id` already pulled for [uid].
+  static int getHistoryCursor(String uid) =>
+      _p.getInt('$_keySyncCursorPrefix$uid') ?? 0;
+  static Future<void> setHistoryCursor(String uid, int cursor) =>
+      _p.setInt('$_keySyncCursorPrefix$uid', cursor);
+  static Future<void> clearHistoryCursor(String uid) =>
+      _p.remove('$_keySyncCursorPrefix$uid');
 }

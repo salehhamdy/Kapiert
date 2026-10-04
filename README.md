@@ -27,7 +27,7 @@
 | 🌙 Dark / Light mode | ✅ Live |
 | 🌐 Wiktionary fallback for unknown words | ✅ Live |
 | 📱 Android, Windows, Web | ✅ Live |
-| ☁️ Cloud sync via Supabase | 🔜 Planned |
+| ☁️ Cloud sync via Supabase (history, streak, settings) | ✅ Live |
 | 🔐 User accounts (email, Google, Apple) | 🔜 Planned |
 
 ---
@@ -75,6 +75,15 @@
 ## 🚀 Quick Start
 
 ### 1. Backend
+
+#### Option A — Docker (recommended, zero local Python setup)
+
+```bash
+docker compose up -d
+# → http://127.0.0.1:8000
+```
+
+#### Option B — Local Python
 
 ```bash
 cd backend
@@ -186,12 +195,17 @@ Base URL: `http://127.0.0.1:8000` (local) or your Render deployment URL.
 ## 🗄️ Supabase Setup (when enabling accounts)
 
 1. Create a project at [supabase.com](https://supabase.com)
-2. Run the migration:
-   - **Option A** — Supabase Dashboard → SQL Editor → paste `supabase/migrations/20260101000000_initial_schema.sql`
+2. Run the migrations **in order**:
+   - **Option A** — Supabase Dashboard → SQL Editor → paste each file from `supabase/migrations/` (oldest first)
    - **Option B** — `supabase db push` (with Supabase CLI)
 3. Enable auth providers (Email, Google, Apple) in the Supabase Dashboard
 4. Pass `SUPABASE_URL` and `SUPABASE_ANON_KEY` via `--dart-define`
-5. Build the sign-in UI using the `SupabaseService` stubs already in place
+
+**How sync works** (local-first): the app always reads from local SQLite / SharedPreferences, so it stays fast and works offline. When signed in:
+- **History** — each row has a client UUID; pushes are idempotent and new rows are pulled with an id cursor. Guest history is merged into the account on first sign-in.
+- **Streak** — merged server-side by the `merge_streak` RPC (overlapping day-runs are unioned, otherwise the newest wins).
+- **Settings** — last-write-wins on `updated_at`.
+- **Sign-out** — pending changes are flushed, then the account's data is removed from the device.
 
 **Database schema:**
 - `profiles` — user display name, avatar
@@ -223,8 +237,8 @@ flutter analyze
 
 ### Phase 2 — Accounts & Sync
 - [ ] Sign-up / sign-in UI (email + OAuth)
-- [ ] Merge local history to cloud on first login (`SyncService`)
-- [ ] Cross-device history & streak sync via Supabase
+- [x] Merge local history to cloud on first login
+- [x] Cross-device history & streak sync via Supabase
 - [ ] User profile screen
 
 ### Phase 3 — Learning Features
