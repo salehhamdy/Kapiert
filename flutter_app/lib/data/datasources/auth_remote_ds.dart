@@ -29,6 +29,32 @@ class AuthRemoteDS {
 
   static Future<void> init() async {
     if (!AppConfig.supabaseConfigured) return;
+    if (_initialized) return;
+    try {
+      await Supabase.initialize(
+        url: AppConfig.supabaseUrl,
+        publishableKey: AppConfig.supabaseAnonKey,
+      );
+      _initialized = true;
+    } catch (_) {
+      try {
+        Supabase.instance.client;
+        _initialized = true;
+      } catch (_) {}
+    }
+  }
+
+  static Future<void> configure({
+    required String url,
+    required String anonKey,
+  }) async {
+    await AppConfig.setSupabaseCredentials(url: url, anonKey: anonKey);
+    if (_initialized) {
+      try {
+        await Supabase.instance.dispose();
+      } catch (_) {}
+      _initialized = false;
+    }
     await Supabase.initialize(
       url: AppConfig.supabaseUrl,
       publishableKey: AppConfig.supabaseAnonKey,

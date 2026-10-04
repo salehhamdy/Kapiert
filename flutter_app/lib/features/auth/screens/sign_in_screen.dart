@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../../../core/errors/failures.dart';
 import '../../../shared/widgets/auth_logo_header.dart';
 import '../../../shared/widgets/auth_widgets.dart';
+import '../widgets/configure_supabase_sheet.dart';
 import 'sign_up_screen.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -175,7 +176,17 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
                 // ── Error banner ───────────────────────────────────────────
                 if (_errorMessage != null) ...[
-                  AuthErrorBanner(message: _errorMessage!),
+                  AuthErrorBanner(
+                    message: _errorMessage!,
+                    onAction: _errorMessage == 'Auth is not configured yet.'
+                        ? () => showConfigureSupabaseDialog(
+                              context,
+                              onConfigured: () =>
+                                  setState(() => _errorMessage = null),
+                            )
+                        : null,
+                    actionLabel: 'Setup Supabase',
+                  ),
                   const SizedBox(height: 16),
                 ],
 

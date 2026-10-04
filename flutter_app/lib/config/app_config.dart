@@ -14,6 +14,8 @@ class AppConfig {
       String.fromEnvironment('SUPABASE_ANON_KEY');
 
   static const String _prefsApiBaseUrlKey = 'api_base_url';
+  static const String _prefsSupabaseUrlKey = 'supabase_url';
+  static const String _prefsSupabaseAnonKey = 'supabase_anon_key';
 
   static const String _androidEmulatorUrl = 'http://10.0.2.2:8000';
   static const String _localUrl = 'http://127.0.0.1:8000';
@@ -30,6 +32,31 @@ class AppConfig {
     final prefs = await SharedPreferences.getInstance();
 
     apiBaseUrl = _resolveApiBaseUrl(prefs);
+    supabaseUrl = _supabaseUrlDefine.isNotEmpty
+        ? _supabaseUrlDefine
+        : (prefs.getString(_prefsSupabaseUrlKey) ?? '');
+    supabaseAnonKey = _supabaseAnonKeyDefine.isNotEmpty
+        ? _supabaseAnonKeyDefine
+        : (prefs.getString(_prefsSupabaseAnonKey) ?? '');
+  }
+
+  /// Save Supabase credentials to SharedPreferences and update memory state.
+  static Future<void> setSupabaseCredentials({
+    required String url,
+    required String anonKey,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefsSupabaseUrlKey, url.trim());
+    await prefs.setString(_prefsSupabaseAnonKey, anonKey.trim());
+    supabaseUrl = url.trim();
+    supabaseAnonKey = anonKey.trim();
+  }
+
+  /// Clear saved Supabase credentials.
+  static Future<void> clearSupabaseCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefsSupabaseUrlKey);
+    await prefs.remove(_prefsSupabaseAnonKey);
     supabaseUrl = _supabaseUrlDefine;
     supabaseAnonKey = _supabaseAnonKeyDefine;
   }

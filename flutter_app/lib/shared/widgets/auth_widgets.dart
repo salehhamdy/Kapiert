@@ -284,7 +284,15 @@ class _GoogleLogoPainter extends CustomPainter {
 
 class AuthErrorBanner extends StatelessWidget {
   final String message;
-  const AuthErrorBanner({super.key, required this.message});
+  final VoidCallback? onAction;
+  final String? actionLabel;
+
+  const AuthErrorBanner({
+    super.key,
+    required this.message,
+    this.onAction,
+    this.actionLabel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -309,6 +317,28 @@ class AuthErrorBanner extends StatelessWidget {
               ),
             ),
           ),
+          if (onAction != null) ...[
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: onAction,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.dieRed.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  actionLabel ?? 'Configure',
+                  style: GoogleFonts.nunito(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.dieRed,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
