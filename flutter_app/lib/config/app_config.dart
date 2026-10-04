@@ -34,7 +34,8 @@ class AppConfig {
     apiBaseUrl = _resolveApiBaseUrl(prefs);
     supabaseUrl = _supabaseUrlDefine.isNotEmpty
         ? _supabaseUrlDefine
-        : (prefs.getString(_prefsSupabaseUrlKey) ?? '');
+        : (prefs.getString(_prefsSupabaseUrlKey) ??
+            'https://dydcdfzbynoeashxoerv.supabase.co');
     supabaseAnonKey = _supabaseAnonKeyDefine.isNotEmpty
         ? _supabaseAnonKeyDefine
         : (prefs.getString(_prefsSupabaseAnonKey) ?? '');

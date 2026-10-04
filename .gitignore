@@ -17,6 +17,7 @@ backend/nouns.csv
 # Environment secrets
 .env
 .env.local
+client_secret_*.json
 
 # Flutter build outputs
 flutter_app/build/
