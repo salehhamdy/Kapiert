@@ -22,6 +22,7 @@ class QuizState {
     this.selectedArticle,
     this.isCorrect,
     this.loading = true,
+    this.isFavoritesMode = false,
   });
 
   final WordModel? currentWord;
@@ -31,6 +32,7 @@ class QuizState {
   final String? selectedArticle;
   final bool? isCorrect;
   final bool loading;
+  final bool isFavoritesMode;
 
   bool get hasAnswered => selectedArticle != null;
   double get accuracy => total > 0 ? score / total : 0;
@@ -43,6 +45,7 @@ class QuizState {
     String? selectedArticle,
     bool? isCorrect,
     bool? loading,
+    bool? isFavoritesMode,
     bool clearAnswer = false,
     bool clearWord = false,
   }) {
@@ -55,6 +58,7 @@ class QuizState {
           clearAnswer ? null : selectedArticle ?? this.selectedArticle,
       isCorrect: clearAnswer ? null : isCorrect ?? this.isCorrect,
       loading: loading ?? this.loading,
+      isFavoritesMode: isFavoritesMode ?? this.isFavoritesMode,
     );
   }
 }
@@ -77,6 +81,8 @@ class QuizNotifier extends StateNotifier<QuizState> {
   final List<String> _recentArticles = [];
   bool _isFetchingMore = false;
   final _random = Random();
+  bool _isFavoritesMode = false;
+  List<WordModel> _favoritesPool = [];
 
   /// Curated fallback pool of 60 common, balanced German nouns (20 der, 20 die, 20 das)
   /// used when offline or network requests fail.
@@ -157,9 +163,16 @@ class QuizNotifier extends StateNotifier<QuizState> {
     // Prune any words that have already been seen in this session
     queue.removeWhere((w) => _seenWords.contains(w.word.toLowerCase()));
 
-    if (queue.isEmpty) {
-      queue = await _fetchBatch();
-      if (!mounted) return;
+    if (_isFavoritesMode) {
+      if (queue.isEmpty && _favoritesPool.isNotEmpty) {
+        _seenWords.clear();
+        queue = List<WordModel>.from(_favoritesPool)..shuffle(_random);
+      }
+    } else {
+      if (queue.isEmpty) {
+        queue = await _fetchBatch();
+        if (!mounted) return;
+      }
     }
 
     if (queue.isNotEmpty) {
@@ -191,10 +204,21 @@ class QuizNotifier extends StateNotifier<QuizState> {
         clearAnswer: true,
       );
 
-      // Background pre-fetch when queue runs low
-      if (queue.length <= 4 && !_isFetchingMore) {
+      // Background pre-fetch when queue runs low (only in standard mode)
+      if (!_isFavoritesMode && queue.length <= 4 && !_isFetchingMore) {
         _prefetchMore();
       }
+    } else if (_isFavoritesMode && _favoritesPool.isNotEmpty) {
+      _seenWords.clear();
+      final word = _favoritesPool[_random.nextInt(_favoritesPool.length)];
+      _seenWords.add(word.word.toLowerCase());
+      _recentArticles.add(word.article);
+      if (!mounted) return;
+      state = state.copyWith(
+        currentWord: word,
+        loading: false,
+        clearAnswer: true,
+      );
     } else {
       // Direct fallback
       try {
@@ -230,6 +254,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
   }
 
   Future<void> _prefetchMore() async {
+    if (_isFavoritesMode) return;
     _isFetchingMore = true;
     try {
       final newWords = await _fetchBatch();
@@ -347,16 +372,63 @@ class QuizNotifier extends StateNotifier<QuizState> {
     _ref.invalidate(historyProvider);
   }
 
-  /// Resets the quiz score, total, and answer state, and loads a fresh question.
-  void reset() {
+  /// Start focused review quiz on a list of favorite words.
+  void startFavoritesReview(List<WordModel> favorites) {
+    if (favorites.isEmpty) return;
+    _isFavoritesMode = true;
+    _favoritesPool = List<WordModel>.from(favorites);
+    _seenWords.clear();
+    _recentArticles.clear();
+
+    final queue = List<WordModel>.from(_favoritesPool)..shuffle(_random);
+    state = state.copyWith(
+      score: 0,
+      total: 0,
+      isFavoritesMode: true,
+      wordQueue: queue,
+      clearAnswer: true,
+      clearWord: true,
+    );
+    loadNext();
+  }
+
+  /// Exit focused review quiz and return to general noun practice.
+  void exitFavoritesReview() {
+    _isFavoritesMode = false;
+    _favoritesPool.clear();
     _seenWords.clear();
     _recentArticles.clear();
     state = state.copyWith(
       score: 0,
       total: 0,
-      clearAnswer: true,
+      isFavoritesMode: false,
       wordQueue: const [],
+      clearAnswer: true,
+      clearWord: true,
     );
+    loadNext();
+  }
+
+  /// Resets the quiz score, total, and answer state, and loads a fresh question.
+  void reset() {
+    _seenWords.clear();
+    _recentArticles.clear();
+    if (_isFavoritesMode && _favoritesPool.isNotEmpty) {
+      final queue = List<WordModel>.from(_favoritesPool)..shuffle(_random);
+      state = state.copyWith(
+        score: 0,
+        total: 0,
+        clearAnswer: true,
+        wordQueue: queue,
+      );
+    } else {
+      state = state.copyWith(
+        score: 0,
+        total: 0,
+        clearAnswer: true,
+        wordQueue: const [],
+      );
+    }
     loadNext();
   }
 }

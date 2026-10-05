@@ -23,6 +23,7 @@
 | 🔍 Instant article lookup (90,000+ nouns) | ✅ Live |
 | 🎯 Quiz mode with correct/incorrect tracking | ✅ Live |
 | 📜 Full lookup history with filters | ✅ Live |
+| ⭐ Favorites & focused review mode | ✅ Live |
 | 🔥 Daily streak tracking | ✅ Live |
 | 👤 User profile & article mastery breakdown | ✅ Live |
 | 🌙 Dark / Light mode | ✅ Live |
@@ -236,7 +237,7 @@ cd backend
 pip install -r requirements-dev.txt
 pytest tests/ -v
 
-# Flutter unit, widget & sync tests (39 tests)
+# Flutter unit, widget & sync tests (50 tests)
 cd flutter_app
 flutter test
 
@@ -255,7 +256,7 @@ flutter analyze
 - [x] User profile screen (avatar, name edit, streak & article mastery)
 
 ### Phase 3 — Learning Features
-- [ ] ⭐ Favorites — save words for focused review
+- [x] ⭐ Favorites — save words for focused review
 - [ ] 🃏 Spaced repetition (SRS) — smart quiz scheduling based on past performance
 - [x] 📊 Article mastery stats — accuracy per article (der/die/das), weakest article recommendation
 - [ ] 📈 Advanced stats — weekly activity heatmap, progress over time
@@ -298,6 +299,7 @@ Kapiert/
 │   │   ├── domain/           # Domain models & interfaces
 │   │   ├── features/         # Clean feature slices
 │   │   │   ├── auth/         # Sign-in, sign-up, OTP verification, logout
+│   │   │   ├── favorites/    # Word bookmarking & focused review quiz
 │   │   │   ├── history/      # Lookup and quiz history with filter tabs
 │   │   │   ├── lookup/       # Word lookup & search
 │   │   │   ├── profile/      # User profile, mastery stats, name editor

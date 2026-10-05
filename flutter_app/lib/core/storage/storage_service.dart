@@ -1,9 +1,10 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/lookup_history.dart';
+import '../../domain/models/word_model.dart';
 import '../utils/uuid.dart';
 
-/// Manages local storage: SQLite for history, SharedPreferences for settings.
+/// Manages local storage: SQLite for history and favorites, SharedPreferences for settings.
 class StorageService {
   static Database? _database;
   static SharedPreferences? _prefs;
@@ -24,7 +25,7 @@ class StorageService {
 
     return openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE history (
@@ -36,6 +37,17 @@ class StorageService {
             correct INTEGER NOT NULL DEFAULT 1,
             mode TEXT NOT NULL DEFAULT 'lookup',
             synced INTEGER NOT NULL DEFAULT 0
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE favorites (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            word TEXT NOT NULL UNIQUE,
+            article TEXT NOT NULL,
+            gender TEXT NOT NULL,
+            plural TEXT,
+            translation TEXT,
+            timestamp TEXT NOT NULL
           )
         ''');
         await _createSyncIndexes(db);
@@ -57,8 +69,21 @@ class StorageService {
             );
           }
           await batch.commit(noResult: true);
-          await _createSyncIndexes(db);
         }
+        if (oldVersion < 3) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS favorites (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              word TEXT NOT NULL UNIQUE,
+              article TEXT NOT NULL,
+              gender TEXT NOT NULL,
+              plural TEXT,
+              translation TEXT,
+              timestamp TEXT NOT NULL
+            )
+          ''');
+        }
+        await _createSyncIndexes(db);
       },
     );
   }
@@ -69,6 +94,9 @@ class StorageService {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS history_synced_idx ON history (synced)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS favorites_word_idx ON favorites (LOWER(word))',
     );
   }
 
@@ -178,6 +206,67 @@ class StorageService {
   /// Clear all history.
   static Future<void> clearHistory() async {
     await _db.delete('history');
+  }
+
+  // ---------------------------------------------------------------------------
+  // Favorites (SQLite)
+  // ---------------------------------------------------------------------------
+
+  /// Add or update a word in favorites.
+  static Future<void> addFavorite(WordModel word) async {
+    await _db.insert(
+      'favorites',
+      {
+        'word': word.word,
+        'article': word.article,
+        'gender': word.gender,
+        'plural': word.plural,
+        'translation': word.translation,
+        'timestamp': DateTime.now().toUtc().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Remove a word from favorites.
+  static Future<void> removeFavorite(String word) async {
+    await _db.delete(
+      'favorites',
+      where: 'LOWER(word) = ?',
+      whereArgs: [word.toLowerCase()],
+    );
+  }
+
+  /// Check whether a word is in favorites.
+  static Future<bool> isFavorite(String word) async {
+    final count = Sqflite.firstIntValue(
+      await _db.rawQuery(
+        'SELECT COUNT(*) FROM favorites WHERE LOWER(word) = ?',
+        [word.toLowerCase()],
+      ),
+    ) ?? 0;
+    return count > 0;
+  }
+
+  /// Get all favorites, sorted by most recently added.
+  static Future<List<WordModel>> getFavorites() async {
+    final rows = await _db.query(
+      'favorites',
+      orderBy: 'timestamp DESC',
+    );
+    return rows.map((r) => WordModel(
+      word: r['word'] as String,
+      article: r['article'] as String,
+      gender: (r['gender'] as String?) ?? 'm',
+      plural: r['plural'] as String?,
+      translation: r['translation'] as String?,
+      source: 'favorites',
+    )).toList();
+  }
+
+  /// Clear all favorites.
+  static Future<void> clearFavorites() async {
+    await _db.delete('favorites');
   }
 
   // ---------------------------------------------------------------------------

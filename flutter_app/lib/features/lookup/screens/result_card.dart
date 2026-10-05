@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
-import '../../../shared/theme/app_theme.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../shared/theme/app_colors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/models/word_model.dart';
+import '../../../shared/theme/app_colors.dart';
+import '../../../shared/theme/app_theme.dart';
+import '../../favorites/providers/favorites_provider.dart';
 
-/// Displays the result of an article lookup with rich formatting.
-class ResultCard extends StatelessWidget {
+/// Displays the result of an article lookup with rich formatting and favorites toggle.
+class ResultCard extends ConsumerWidget {
   final WordModel word;
 
   const ResultCard({super.key, required this.word});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = AppTheme.colorForArticle(word.article);
+    final isFavorite = ref.watch(favoritesProvider).isFavorite(word.word);
 
     return Container(
       width: double.infinity,
@@ -33,22 +36,25 @@ class ResultCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
         children: [
-          // Top accent bar
-          Container(
-            height: 4,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-            ),
-          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Top accent bar
+              Container(
+                height: 4,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(18)),
+                ),
+              ),
 
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-            child: Column(
-              children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                child: Column(
+                  children: [
                 // Article (large)
                 Text(
                   word.article,
@@ -158,12 +164,82 @@ class ResultCard extends StatelessWidget {
           ),
         ],
       ),
-    ).animate().fadeIn(duration: 400.ms).slideY(
-          begin: 0.05,
-          end: 0,
-          duration: 400.ms,
-          curve: Curves.easeOut,
-        );
+
+      // Star in the upper right corner
+      Positioned(
+        top: 10,
+        right: 12,
+        child: Material(
+          color: Colors.transparent,
+          child: IconButton(
+            iconSize: 26,
+            splashRadius: 22,
+            tooltip: isFavorite
+                ? 'Remove from Favorites'
+                : 'Save to Favorites for focused review',
+            onPressed: () async {
+              final added = await ref
+                  .read(favoritesProvider.notifier)
+                  .toggleFavorite(word);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(
+                          added
+                              ? Icons.star_rounded
+                              : Icons.star_border_rounded,
+                          color: const Color(0xFFFFB800),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            added
+                                ? '${word.fullForm} saved to Favorites'
+                                : '${word.fullForm} removed from Favorites',
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 2),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                );
+              }
+            },
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              transitionBuilder: (child, anim) =>
+                  ScaleTransition(scale: anim, child: child),
+              child: Icon(
+                isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
+                key: ValueKey<bool>(isFavorite),
+                color: isFavorite
+                    ? const Color(0xFFFFB800)
+                    : (isDark
+                        ? AppColors.textSecondaryDark.withValues(alpha: 0.6)
+                        : AppColors.textSecondaryLight.withValues(alpha: 0.6)),
+                size: 28,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ],
+  ),
+).animate().fadeIn(duration: 400.ms).slideY(
+      begin: 0.05,
+      end: 0,
+      duration: 400.ms,
+      curve: Curves.easeOut,
+    );
   }
 }
 

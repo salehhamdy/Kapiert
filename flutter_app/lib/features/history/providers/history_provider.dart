@@ -53,6 +53,12 @@ class HistoryNotifier extends StateNotifier<HistoryState> {
   Future<void> load() async {
     if (!mounted) return;
     state = state.copyWith(loading: true);
+    if (state.filter == 'favorites') {
+      final stats = await _repo.getStats();
+      if (!mounted) return;
+      state = state.copyWith(entries: const [], stats: stats, loading: false);
+      return;
+    }
     final filterArg = state.filter == 'all' ? null : state.filter;
     final entries = await _repo.getHistory(filter: filterArg);
     final stats = await _repo.getStats();

@@ -8,11 +8,13 @@ import '../../data/datasources/auth_remote_ds.dart';
 import '../../data/datasources/sync_remote_ds.dart';
 import '../../data/repositories/article_repository_impl.dart';
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../data/repositories/favorites_repository_impl.dart';
 import '../../data/repositories/history_repository_impl.dart';
 import '../../data/repositories/settings_repository_impl.dart';
 import '../../data/repositories/sync_repository_impl.dart';
 import '../../domain/repositories/i_article_repository.dart';
 import '../../domain/repositories/i_auth_repository.dart';
+import '../../domain/repositories/i_favorites_repository.dart';
 import '../../domain/repositories/i_history_repository.dart';
 import '../../domain/repositories/i_settings_repository.dart';
 import '../../domain/repositories/i_sync_repository.dart';
@@ -57,6 +59,10 @@ final authRepositoryProvider = Provider<IAuthRepository>(
 
 final historyRepositoryProvider = Provider<IHistoryRepository>(
   (ref) => HistoryRepositoryImpl(ref.watch(syncRepositoryProvider)),
+);
+
+final favoritesRepositoryProvider = Provider<IFavoritesRepository>(
+  (_) => FavoritesRepositoryImpl(),
 );
 
 final settingsRepositoryProvider = Provider<ISettingsRepository>(

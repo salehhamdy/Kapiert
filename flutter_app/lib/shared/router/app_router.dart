@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/screens/sign_in_screen.dart';
 import '../../features/auth/screens/sign_up_screen.dart';
@@ -31,18 +32,17 @@ class AppRouter {
 }
 
 // ---------------------------------------------------------------------------
+// Main tab provider
+// ---------------------------------------------------------------------------
+
+final mainTabProvider = StateProvider<int>((ref) => 0);
+
+// ---------------------------------------------------------------------------
 // Main scaffold with bottom navigation bar
 // ---------------------------------------------------------------------------
 
-class MainScaffold extends StatefulWidget {
+class MainScaffold extends ConsumerWidget {
   const MainScaffold({super.key});
-
-  @override
-  State<MainScaffold> createState() => _MainScaffoldState();
-}
-
-class _MainScaffoldState extends State<MainScaffold> {
-  int _selectedIndex = 0;
 
   static const _screens = [
     LookupScreen(),
@@ -52,7 +52,8 @@ class _MainScaffoldState extends State<MainScaffold> {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedIndex = ref.watch(mainTabProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dividerColor = isDark
         ? const Color(0xFF2D3140)
@@ -61,7 +62,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     return Scaffold(
       body: SafeArea(
         child: IndexedStack(
-          index: _selectedIndex,
+          index: selectedIndex,
           children: _screens,
         ),
       ),
@@ -72,8 +73,9 @@ class _MainScaffoldState extends State<MainScaffold> {
           ),
         ),
         child: NavigationBar(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+          selectedIndex: selectedIndex,
+          onDestinationSelected: (i) =>
+              ref.read(mainTabProvider.notifier).state = i,
           destinations: const [
             NavigationDestination(
               icon: Icon(Icons.search_rounded),

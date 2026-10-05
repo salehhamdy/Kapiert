@@ -1,18 +1,35 @@
 import 'package:flutter/material.dart';
-import '../../../shared/theme/app_colors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/models/lookup_history.dart';
+import '../../../domain/models/word_model.dart';
+import '../../../shared/theme/app_colors.dart';
+import '../../favorites/providers/favorites_provider.dart';
 
-/// A single row in the history list.
-class HistoryTile extends StatelessWidget {
+/// A single row in the history list with favorite toggle support.
+class HistoryTile extends ConsumerWidget {
   final LookupHistory entry;
 
   const HistoryTile({super.key, required this.entry});
 
+  static String _genderForArticle(String article) {
+    switch (article.toLowerCase()) {
+      case 'der':
+        return 'm';
+      case 'die':
+        return 'f';
+      case 'das':
+        return 'n';
+      default:
+        return 'm';
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final articleColor = AppColors.colorForArticle(entry.article);
     final isQuiz = entry.mode == 'quiz';
+    final isFavorite = ref.watch(favoritesProvider).isFavorite(entry.word);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -66,23 +83,51 @@ class HistoryTile extends StatelessWidget {
                 : AppColors.textSecondaryLight,
           ),
         ),
-        trailing: isQuiz
-            ? Icon(
-                entry.correct
-                    ? Icons.check_circle_rounded
-                    : Icons.cancel_rounded,
-                color: entry.correct
-                    ? AppColors.correctGreen
-                    : AppColors.incorrectRed,
-                size: 24,
-              )
-            : Icon(
-                Icons.search_rounded,
-                color: isDark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondaryLight,
-                size: 20,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              iconSize: 22,
+              splashRadius: 20,
+              tooltip: isFavorite ? 'Favorited' : 'Save to Favorites',
+              onPressed: () {
+                final model = WordModel(
+                  word: entry.word,
+                  article: entry.article,
+                  gender: _genderForArticle(entry.article),
+                  source: 'history',
+                );
+                ref.read(favoritesProvider.notifier).toggleFavorite(model);
+              },
+              icon: Icon(
+                isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
+                color: isFavorite
+                    ? const Color(0xFFFFB800)
+                    : (isDark
+                        ? AppColors.textSecondaryDark.withValues(alpha: 0.4)
+                        : AppColors.textSecondaryLight.withValues(alpha: 0.4)),
               ),
+            ),
+            const SizedBox(width: 4),
+            isQuiz
+                ? Icon(
+                    entry.correct
+                        ? Icons.check_circle_rounded
+                        : Icons.cancel_rounded,
+                    color: entry.correct
+                        ? AppColors.correctGreen
+                        : AppColors.incorrectRed,
+                    size: 22,
+                  )
+                : Icon(
+                    Icons.search_rounded,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
+                    size: 18,
+                  ),
+          ],
+        ),
       ),
     );
   }

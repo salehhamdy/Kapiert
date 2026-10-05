@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/theme/app_colors.dart';
+import '../../favorites/providers/favorites_provider.dart';
 import '../providers/quiz_provider.dart';
 
 class QuizScreen extends ConsumerWidget {
@@ -11,13 +12,14 @@ class QuizScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final state = ref.watch(quizProvider);
+    final favState = ref.watch(favoritesProvider);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
       child: Column(
         children: [
           // ── Header + Score ──
-          _buildHeader(isDark, state),
+          _buildHeader(isDark, state, ref, favState),
           const SizedBox(height: 12),
 
           // ── Progress bar ──
@@ -37,67 +39,149 @@ class QuizScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(bool isDark, QuizState state) {
-    return Row(
+  Widget _buildHeader(bool isDark, QuizState state, WidgetRef ref,
+      FavoritesState favState) {
+    final isFavMode = state.isFavoritesMode;
+
+    return Column(
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Quiz Mode',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                color: isDark
-                    ? AppColors.textPrimaryDark
-                    : AppColors.textPrimaryLight,
-                letterSpacing: -0.5,
+        if (isFavMode) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFB800)
+                  .withValues(alpha: isDark ? 0.20 : 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFFFB800).withValues(alpha: 0.35),
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              'Tap the correct article',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: isDark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondaryLight,
-              ),
-            ),
-          ],
-        ),
-        const Spacer(),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.06)
-                : Colors.black.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            children: [
-              Text(
-                '${state.score}',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.correctGreen,
+            child: Row(
+              children: [
+                const Icon(Icons.star_rounded,
+                    color: Color(0xFFFFB800), size: 18),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Focused Review Mode',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFFFB800),
+                    ),
+                  ),
                 ),
-              ),
-              Text(
-                ' / ${state.total}',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: isDark
-                      ? AppColors.textSecondaryDark
-                      : AppColors.textSecondaryLight,
+                GestureDetector(
+                  onTap: () =>
+                      ref.read(quizProvider.notifier).exitFavoritesReview(),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white12 : Colors.black12,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Exit',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        Row(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isFavMode ? 'Focused Quiz' : 'Quiz Mode',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  isFavMode
+                      ? 'Reviewing saved favorites'
+                      : 'Tap the correct article',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            if (!isFavMode && favState.favorites.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ActionChip(
+                  avatar: const Icon(
+                    Icons.star_rounded,
+                    color: Color(0xFFFFB800),
+                    size: 16,
+                  ),
+                  label: Text('Review (${favState.favorites.length})'),
+                  backgroundColor: const Color(0xFFFFB800)
+                      .withValues(alpha: isDark ? 0.15 : 0.10),
+                  side: BorderSide(
+                    color: const Color(0xFFFFB800).withValues(alpha: 0.3),
+                  ),
+                  onPressed: () {
+                    ref
+                        .read(quizProvider.notifier)
+                        .startFavoritesReview(favState.favorites);
+                  },
                 ),
               ),
             ],
-          ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    '${state.score}',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.correctGreen,
+                    ),
+                  ),
+                  Text(
+                    ' / ${state.total}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -143,21 +227,47 @@ class QuizScreen extends ConsumerWidget {
 
   Widget _buildQuizContent(bool isDark, QuizState state, WidgetRef ref) {
     final word = state.currentWord!;
+    final isFav = ref.watch(favoritesProvider).isFavorite(word.word);
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Spacer(flex: 1),
 
-        Text(
-          word.word,
-          style: TextStyle(
-            fontSize: 38,
-            fontWeight: FontWeight.w700,
-            color:
-                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-            letterSpacing: -0.5,
-          ),
-          textAlign: TextAlign.center,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              word.word,
+              style: TextStyle(
+                fontSize: 38,
+                fontWeight: FontWeight.w700,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
+                letterSpacing: -0.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              iconSize: 26,
+              splashRadius: 20,
+              tooltip: isFav ? 'Favorited' : 'Save for focused review',
+              onPressed: () {
+                ref.read(favoritesProvider.notifier).toggleFavorite(word);
+              },
+              icon: Icon(
+                isFav ? Icons.star_rounded : Icons.star_outline_rounded,
+                color: isFav
+                    ? const Color(0xFFFFB800)
+                    : (isDark
+                        ? AppColors.textSecondaryDark.withValues(alpha: 0.4)
+                        : AppColors.textSecondaryLight.withValues(alpha: 0.4)),
+              ),
+            ),
+          ],
         ).animate(key: ValueKey(word.word))
             .fadeIn(duration: 400.ms)
             .slideY(begin: 0.1, end: 0, duration: 400.ms),
