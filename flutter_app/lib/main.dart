@@ -7,6 +7,8 @@ import 'config/app_config.dart';
 import 'core/storage/storage_service.dart';
 import 'data/datasources/auth_remote_ds.dart';
 import 'features/auth/screens/sign_in_screen.dart';
+import 'features/legal/providers/terms_consent_provider.dart';
+import 'features/legal/screens/first_use_consent_screen.dart';
 import 'features/settings/providers/settings_provider.dart';
 import 'features/sync/providers/sync_provider.dart';
 import 'shared/router/app_router.dart';
@@ -41,15 +43,22 @@ class KapiertApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDarkMode = ref.watch(themeProvider);
+    final hasAcceptedTerms = ref.watch(termsConsentProvider);
 
     // Keep cloud sync alive for the app's lifetime (reacts to auth events).
     ref.listen<SyncState>(syncProvider, (_, _) {});
 
-    // Show sign-in when Supabase is configured and user is not signed in.
-    // Falls back to MainScaffold in guest/offline mode.
-    final Widget home = (AuthRemoteDS.isEnabled && !AuthRemoteDS.isSignedIn)
-        ? const SignInScreen()
-        : const MainScaffold();
+    // First use: user must agree to Terms of Use & Privacy Policy before anything else.
+    // If accepted, show sign-in when Supabase is configured and user is not signed in,
+    // or fall back to MainScaffold in guest/offline mode.
+    final Widget home;
+    if (!hasAcceptedTerms) {
+      home = const FirstUseConsentScreen();
+    } else if (AuthRemoteDS.isEnabled && !AuthRemoteDS.isSignedIn) {
+      home = const SignInScreen();
+    } else {
+      home = const MainScaffold();
+    }
 
     return MaterialApp(
       title: 'Kapiert',

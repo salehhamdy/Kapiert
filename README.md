@@ -31,6 +31,7 @@
 | 📱 Android, Windows, Web | ✅ Live |
 | ☁️ Cloud sync via Supabase (history, streak, settings) | ✅ Live |
 | 🔐 User accounts (email OTP, Google Sign-In) | ✅ Live |
+| 🛡️ First-use Terms & Privacy Policy consent gate | ✅ Live |
 
 ---
 
@@ -237,7 +238,7 @@ cd backend
 pip install -r requirements-dev.txt
 pytest tests/ -v
 
-# Flutter unit, widget & sync tests (53 tests)
+# Flutter unit, widget & sync tests (58 tests)
 cd flutter_app
 flutter test
 

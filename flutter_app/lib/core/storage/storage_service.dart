@@ -385,6 +385,34 @@ class StorageService {
   static const _keyShowHints = 'show_hints';
   static const _keyDarkMode = 'dark_mode';
   static const _keySettingsUpdatedAt = 'settings_updated_at';
+  static const _keyHasAcceptedTerms = 'has_accepted_terms_and_policy';
+  static const _keyTermsAcceptedAt = 'terms_accepted_at';
+
+  /// Whether the user has explicitly accepted the Terms of Use and Privacy Policy.
+  static bool hasAcceptedTerms() {
+    if (_prefs == null) return false;
+    return _p.getBool(_keyHasAcceptedTerms) ?? false;
+  }
+
+  /// Record user consent for Terms of Use and Privacy Policy.
+  static Future<void> setAcceptedTerms(bool value) async {
+    if (_prefs == null) return;
+    await _p.setBool(_keyHasAcceptedTerms, value);
+    if (value) {
+      await _p.setString(
+        _keyTermsAcceptedAt,
+        DateTime.now().toUtc().toIso8601String(),
+      );
+    } else {
+      await _p.remove(_keyTermsAcceptedAt);
+    }
+  }
+
+  /// ISO-8601 UTC timestamp of when terms were accepted, or null if never accepted.
+  static String? getTermsAcceptedAt() {
+    if (_prefs == null) return null;
+    return _p.getString(_keyTermsAcceptedAt);
+  }
 
   static bool getShowHints() => _p.getBool(_keyShowHints) ?? true;
   static Future<void> setShowHints(bool value) async {

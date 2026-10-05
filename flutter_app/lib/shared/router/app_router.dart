@@ -8,6 +8,8 @@ import '../../features/quiz/screens/quiz_screen.dart';
 import '../../features/history/screens/history_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../features/legal/screens/legal_document_screen.dart';
+import '../../features/legal/screens/first_use_consent_screen.dart';
 
 /// Named route constants.
 class AppRoutes {
@@ -17,6 +19,8 @@ class AppRoutes {
   static const signIn = '/signin';
   static const signUp = '/signup';
   static const profile = '/profile';
+  static const legal = '/legal';
+  static const consent = '/consent';
 }
 
 /// Route map for [MaterialApp.routes].
@@ -28,6 +32,8 @@ class AppRouter {
         AppRoutes.signIn: (_) => const SignInScreen(),
         AppRoutes.signUp: (_) => const SignUpScreen(),
         AppRoutes.profile: (_) => const ProfileScreen(),
+        AppRoutes.legal: (_) => const LegalDocumentScreen(),
+        AppRoutes.consent: (_) => const FirstUseConsentScreen(),
       };
 }
 

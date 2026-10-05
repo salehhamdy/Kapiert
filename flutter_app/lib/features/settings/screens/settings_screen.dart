@@ -14,6 +14,7 @@ import '../../../data/datasources/auth_remote_ds.dart';
 import '../../auth/logout_flow.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../legal/screens/legal_document_screen.dart';
+import '../../legal/providers/terms_consent_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -36,6 +37,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final showHints = ref.watch(showHintsProvider);
     final serverHealth = ref.watch(serverHealthProvider);
     final authState = ref.watch(authProvider);
+    final hasAcceptedTerms = ref.watch(termsConsentProvider);
     final user = authState.user;
 
     final serverSubtitle = switch (serverHealth) {
@@ -208,6 +210,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     MaterialPageRoute(
                       builder: (_) => const LegalDocumentScreen(
                         initialType: LegalDocType.privacy,
+                      ),
+                    ),
+                  ),
+                ),
+
+                _SettingsTile(
+                  key: const Key('settings_consent_status_tile'),
+                  icon: hasAcceptedTerms
+                      ? Icons.check_circle_outline_rounded
+                      : Icons.pending_outlined,
+                  title: 'Consent status',
+                  subtitle: hasAcceptedTerms
+                      ? 'Terms of Use & Privacy Policy accepted'
+                      : 'Pending agreement',
+                  isDark: isDark,
+                  trailing: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: (hasAcceptedTerms
+                              ? AppColors.correctGreen
+                              : AppColors.streakOrange)
+                          .withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      hasAcceptedTerms ? 'Accepted' : 'Pending',
+                      style: GoogleFonts.nunito(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: hasAcceptedTerms
+                            ? AppColors.correctGreen
+                            : AppColors.streakOrange,
                       ),
                     ),
                   ),
