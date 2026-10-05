@@ -14,6 +14,7 @@ Kapiert is a Flutter mobile and desktop application (Android, iOS, Windows, Web)
 | 🧠 **Quiz Mode** | Rapid-fire der / die / das quiz with streak tracking and performance history |
 | 📜 **History** | Review every word you've looked up, filterable by article and outcome |
 | 🔥 **Streak Tracking** | Daily activity tracker and streak counter |
+| 👤 **User Profile** | Avatar with fallback, display name editor, 2×2 stats grid & article mastery breakdown |
 | ☁️ **Cloud Sync** | Local-first architecture synced via Supabase backend when signed in |
 | 🔐 **Authentication** | Email OTP verification **and** native Google Sign-In |
 | ⚙️ **In-App Config** | Connect Supabase URL & Anon Key directly via an in-app setup sheet without rebuilds |
@@ -53,8 +54,10 @@ lib/
 │   ├── auth/                    # Sign In, Sign Up, Verify Email (OTP), Configure Supabase
 │   ├── history/                 # Search & quiz history with filter tabs
 │   ├── lookup/                  # Word lookup and dictionary details
+│   ├── profile/                 # User profile, display name editor, mastery cards
 │   ├── quiz/                    # der/die/das training and answer evaluation
-│   └── settings/                # Themes, account info, cloud sync status
+│   ├── settings/                # Themes, account info, cloud sync status
+│   └── sync/                    # Two-way Supabase background synchronization
 ├── shared/                      # Reusable UI components & auth widgets
 └── main.dart                    # Application entry point & theme initialization
 ```
@@ -146,7 +149,7 @@ Run all unit and widget tests:
 flutter test
 ```
 
-All 31 tests cover data source serialization, word models, sync mapping, and auth screens (including OTP verification focus navigation).
+All 39 tests cover data source serialization, word models, sync mapping, auth screens (including OTP verification focus navigation), profile formatting and avatar widgets, and user profile state management.
 
 ---
 

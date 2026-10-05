@@ -24,6 +24,7 @@
 | 🎯 Quiz mode with correct/incorrect tracking | ✅ Live |
 | 📜 Full lookup history with filters | ✅ Live |
 | 🔥 Daily streak tracking | ✅ Live |
+| 👤 User profile & article mastery breakdown | ✅ Live |
 | 🌙 Dark / Light mode | ✅ Live |
 | 🌐 Wiktionary fallback for unknown words | ✅ Live |
 | 📱 Android, Windows, Web | ✅ Live |
@@ -58,17 +59,17 @@
        │  │  Wiktionary REST API │ │
        │  └──────────────────────┘ │
        └───────────────────────────┘
-                     │ (future)
+                     │ Supabase Auth & REST
        ┌─────────────▼─────────────┐
        │        Supabase            │
        │  auth · history · streaks  │
-       │  favorites · settings      │
+       │  profiles · user settings  │
        └───────────────────────────┘
 ```
 
 **Guest mode** (default): All data stored locally — SQLite for history, SharedPreferences for settings. Zero sign-in required.
 
-**Signed-in mode** (future): History, streaks, and favorites sync to Supabase Postgres across all devices.
+**Signed-in mode**: History, streaks, and user profiles sync to Supabase Postgres across all devices. Local-first reads with background two-way sync.
 
 ---
 
@@ -235,7 +236,7 @@ cd backend
 pip install -r requirements-dev.txt
 pytest tests/ -v
 
-# Flutter unit, widget & sync tests (31 tests)
+# Flutter unit, widget & sync tests (39 tests)
 cd flutter_app
 flutter test
 
@@ -251,12 +252,13 @@ flutter analyze
 - [x] Sign-up / sign-in UI (email + OAuth)
 - [x] Merge local history to cloud on first login
 - [x] Cross-device history & streak sync via Supabase
-- [ ] User profile screen
+- [x] User profile screen (avatar, name edit, streak & article mastery)
 
 ### Phase 3 — Learning Features
 - [ ] ⭐ Favorites — save words for focused review
 - [ ] 🃏 Spaced repetition (SRS) — smart quiz scheduling based on past performance
-- [ ] 📊 Advanced stats — weekly heatmap, accuracy over time, weakest articles
+- [x] 📊 Article mastery stats — accuracy per article (der/die/das), weakest article recommendation
+- [ ] 📈 Advanced stats — weekly activity heatmap, progress over time
 - [ ] 🏆 Achievements & milestones (7-day streak, 100 words, etc.)
 
 ### Phase 4 — Content & Polish
@@ -291,11 +293,18 @@ Kapiert/
 │   ├── lib/
 │   │   ├── config/           # AppConfig (URL resolution)
 │   │   ├── constants/        # Colors, themes
-│   │   ├── models/           # WordModel, LookupHistory
-│   │   ├── screens/          # Lookup, Quiz, History, Settings
-│   │   ├── services/         # ArticleService, StorageService,
-│   │   │                     # SupabaseService, SyncService
-│   │   └── widgets/          # Shared UI components
+│   │   ├── core/             # Storage, DI, networking, error handling
+│   │   ├── data/             # Repositories & data sources
+│   │   ├── domain/           # Domain models & interfaces
+│   │   ├── features/         # Clean feature slices
+│   │   │   ├── auth/         # Sign-in, sign-up, OTP verification, logout
+│   │   │   ├── history/      # Lookup and quiz history with filter tabs
+│   │   │   ├── lookup/       # Word lookup & search
+│   │   │   ├── profile/      # User profile, mastery stats, name editor
+│   │   │   ├── quiz/         # Article quiz trainer
+│   │   │   ├── settings/     # App settings & account links
+│   │   │   └── sync/         # Two-way Supabase sync
+│   │   └── shared/           # Reusable widgets, router & validators
 │   └── pubspec.yaml
 ├── supabase/
 │   └── migrations/           # Initial DB schema (RLS enabled)
