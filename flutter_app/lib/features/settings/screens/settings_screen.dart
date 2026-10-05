@@ -13,6 +13,7 @@ import '../providers/settings_provider.dart';
 import '../../../data/datasources/auth_remote_ds.dart';
 import '../../auth/logout_flow.dart';
 import '../../profile/screens/profile_screen.dart';
+import '../../legal/screens/legal_document_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -175,6 +176,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     isDark: isDark,
                     onTap: () => confirmAndLogout(context, ref),
                   ),
+
+                const SizedBox(height: 28),
+
+                // ── Legal Section ─────────────────────────────────────────
+                _SectionTitle(title: 'Legal', isDark: isDark),
+                const SizedBox(height: 12),
+
+                _SettingsTile(
+                  key: const Key('settings_terms_tile'),
+                  icon: Icons.description_outlined,
+                  title: 'Terms of Use',
+                  subtitle: 'Usage rules, license and disclaimer',
+                  isDark: isDark,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const LegalDocumentScreen(
+                        initialType: LegalDocType.terms,
+                      ),
+                    ),
+                  ),
+                ),
+
+                _SettingsTile(
+                  key: const Key('settings_privacy_tile'),
+                  icon: Icons.shield_outlined,
+                  title: 'Privacy Policy',
+                  subtitle: 'Local-first storage, cloud sync & user rights',
+                  isDark: isDark,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const LegalDocumentScreen(
+                        initialType: LegalDocType.privacy,
+                      ),
+                    ),
+                  ),
+                ),
 
                 const SizedBox(height: 28),
 

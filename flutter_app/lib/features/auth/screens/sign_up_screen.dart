@@ -9,6 +9,7 @@ import '../../../shared/widgets/auth_logo_header.dart';
 import '../../../shared/widgets/auth_widgets.dart';
 import '../widgets/configure_supabase_sheet.dart';
 import 'verify_email_screen.dart';
+import '../../legal/screens/legal_document_screen.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -466,7 +467,13 @@ class _TermsRow extends StatelessWidget {
               children: [
                 WidgetSpan(
                   child: GestureDetector(
-                    onTap: () {},
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const LegalDocumentScreen(
+                          initialType: LegalDocType.terms,
+                        ),
+                      ),
+                    ),
                     child: Text(
                       'Terms',
                       style: GoogleFonts.nunito(
@@ -484,7 +491,13 @@ class _TermsRow extends StatelessWidget {
                 ),
                 WidgetSpan(
                   child: GestureDetector(
-                    onTap: () {},
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const LegalDocumentScreen(
+                          initialType: LegalDocType.privacy,
+                        ),
+                      ),
+                    ),
                     child: Text(
                       'Privacy Policy',
                       style: GoogleFonts.nunito(

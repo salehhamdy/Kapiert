@@ -237,7 +237,7 @@ cd backend
 pip install -r requirements-dev.txt
 pytest tests/ -v
 
-# Flutter unit, widget & sync tests (50 tests)
+# Flutter unit, widget & sync tests (53 tests)
 cd flutter_app
 flutter test
 
@@ -301,6 +301,7 @@ Kapiert/
 │   │   │   ├── auth/         # Sign-in, sign-up, OTP verification, logout
 │   │   │   ├── favorites/    # Word bookmarking & focused review quiz
 │   │   │   ├── history/      # Lookup and quiz history with filter tabs
+│   │   │   ├── legal/        # In-app Terms of Use & Privacy Policy
 │   │   │   ├── lookup/       # Word lookup & search
 │   │   │   ├── profile/      # User profile, mastery stats, name editor
 │   │   │   ├── quiz/         # Article quiz trainer
@@ -328,6 +329,8 @@ Pull requests are welcome! For major changes, open an issue first to discuss wha
 
 ---
 
-## 📄 License
+## 📄 License & Legal
 
-MIT — see [LICENSE](LICENSE) for details.
+- **License:** CC BY-NC 4.0 — see [LICENSE](LICENSE) for details.
+- **Terms of Use:** [TERMS_OF_USE.md](TERMS_OF_USE.md)
+- **Privacy Policy:** [PRIVACY_POLICY.md](PRIVACY_POLICY.md)
