@@ -1,4 +1,4 @@
-﻿/// Validation helpers for form fields.
+/// Validation helpers for form fields.
 class Validators {
   Validators._();
 
@@ -17,6 +17,17 @@ class Validators {
 
   static String? required(String? value, {String label = 'Field'}) {
     if (value == null || value.trim().isEmpty) return '$label is required';
+    return null;
+  }
+
+  static const displayNameMaxLength = 40;
+
+  static String? displayName(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return 'Name is required';
+    if (v.length > displayNameMaxLength) {
+      return 'Keep it under $displayNameMaxLength characters';
+    }
     return null;
   }
 }

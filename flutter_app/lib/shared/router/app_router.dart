@@ -1,10 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../features/auth/screens/sign_in_screen.dart';
 import '../../features/auth/screens/sign_up_screen.dart';
 import '../../features/lookup/screens/lookup_screen.dart';
 import '../../features/quiz/screens/quiz_screen.dart';
 import '../../features/history/screens/history_screen.dart';
+import '../../features/profile/screens/profile_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 
 /// Named route constants.
@@ -14,6 +15,7 @@ class AppRoutes {
   static const home = '/home';
   static const signIn = '/signin';
   static const signUp = '/signup';
+  static const profile = '/profile';
 }
 
 /// Route map for [MaterialApp.routes].
@@ -24,6 +26,7 @@ class AppRouter {
         AppRoutes.home: (_) => const MainScaffold(),
         AppRoutes.signIn: (_) => const SignInScreen(),
         AppRoutes.signUp: (_) => const SignUpScreen(),
+        AppRoutes.profile: (_) => const ProfileScreen(),
       };
 }
 

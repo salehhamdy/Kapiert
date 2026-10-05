@@ -1,4 +1,4 @@
-﻿import '../models/auth_user.dart';
+import '../models/auth_user.dart';
 
 /// Abstract contract for authentication operations.
 abstract interface class IAuthRepository {
@@ -12,4 +12,5 @@ abstract interface class IAuthRepository {
   Future<void> resetPassword({required String email});
   Future<void> verifyOTP({required String email, required String token});
   Future<void> resendOTP({required String email});
+  Future<void> updateDisplayName(String name);
 }

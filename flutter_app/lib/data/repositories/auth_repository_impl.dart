@@ -44,4 +44,8 @@ class AuthRepositoryImpl implements IAuthRepository {
   @override
   Future<void> resendOTP({required String email}) =>
       AuthRemoteDS.resendOTP(email: email);
+
+  @override
+  Future<void> updateDisplayName(String name) =>
+      AuthRemoteDS.updateDisplayName(name);
 }

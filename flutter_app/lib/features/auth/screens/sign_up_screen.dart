@@ -224,7 +224,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 const SizedBox(height: 6),
                 AuthTextField(
                   controller: _nameController,
-                  hint: 'Saleh',
+                  hint: 'Alex',
                   surface: surface,
                   divider: divider,
                   textPrimary: textPrimary,
@@ -247,7 +247,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   },
                   child: AuthTextField(
                     controller: _emailController,
-                    hint: 'saleh@example.com',
+                    hint: 'you@example.com',
                     keyboardType: TextInputType.emailAddress,
                     surface: surface,
                     divider: divider,

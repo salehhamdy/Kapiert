@@ -199,7 +199,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 const SizedBox(height: 6),
                 AuthTextField(
                   controller: _emailController,
-                  hint: 'saleh@example.com',
+                  hint: 'you@example.com',
                   keyboardType: TextInputType.emailAddress,
                   surface: surface,
                   divider: divider,

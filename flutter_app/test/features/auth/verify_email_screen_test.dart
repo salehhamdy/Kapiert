@@ -31,7 +31,7 @@ void main() {
 
   group('VerifyEmailScreen Widget Tests', () {
     testWidgets('renders VerifyEmailScreen without focus assertion errors', (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest(email: 'salehhamdy599@gmail.com'));
+      await tester.pumpWidget(createWidgetUnderTest(email: 'user@example.com'));
       await tester.pumpAndSettle();
 
       // Heading and email address displayed
@@ -39,7 +39,7 @@ void main() {
       expect(
         find.byWidgetPredicate((widget) =>
             widget is RichText &&
-            widget.text.toPlainText().contains('salehhamdy599@gmail.com')),
+            widget.text.toPlainText().contains('user@example.com')),
         findsOneWidget,
       );
 

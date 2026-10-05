@@ -134,6 +134,30 @@ class AuthRemoteDS {
     await _client!.auth.resetPasswordForEmail(email);
   }
 
+  /// Update the user's display name.
+  ///
+  /// Auth user metadata is the source of truth (it's what [currentUser]
+  /// reads); the `profiles` row is mirrored best-effort so server-side
+  /// queries see the same name.
+  static Future<void> updateDisplayName(String name) async {
+    _requireClient();
+    final trimmed = name.trim();
+    final res = await _client!.auth.updateUser(
+      UserAttributes(data: {'display_name': trimmed}),
+    );
+    final uid = res.user?.id ?? _client!.auth.currentUser?.id;
+    if (uid == null) return;
+    try {
+      await _client!.from('profiles').upsert({
+        'id': uid,
+        'display_name': trimmed,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('[auth] profiles mirror failed: $e');
+    }
+  }
+
   static Future<void> signInWithGoogle() async {
     _requireClient();
 

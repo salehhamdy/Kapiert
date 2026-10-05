@@ -126,6 +126,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Rename the signed-in user. Callers manage their own busy state, so
+  /// the global [AuthState.loading] flag is left untouched.
+  Future<void> updateDisplayName(String name) async {
+    await _repo.updateDisplayName(name);
+    state = state.copyWith(user: _repo.currentUser, clearError: true);
+  }
+
   void clearError() => state = state.copyWith(clearError: true);
 }
 

@@ -3,14 +3,15 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../config/app_config.dart';
+import '../../../domain/models/auth_user.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../history/providers/history_provider.dart';
 import '../../lookup/providers/lookup_provider.dart';
 import '../providers/settings_provider.dart';
 import '../../../data/datasources/auth_remote_ds.dart';
-import '../../auth/screens/logout_dialog.dart';
-import '../../auth/screens/signed_out_screen.dart';
+import '../../auth/logout_flow.dart';
+import '../../profile/screens/profile_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -20,37 +21,10 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-
-  Future<void> _showLogoutConfirmation() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.55),
-      barrierDismissible: true,
-      builder: (ctx) => const LogoutConfirmationDialog(),
-    );
-    if (confirmed == true && mounted) {
-      await _performLogout();
-    }
-  }
-
-  Future<void> _performLogout() async {
-    final user = ref.read(authProvider).user;
-    final displayName = user?.displayName ?? user?.email.split('@').first ?? 'there';
-    final streak = ref.read(historyProvider).stats['streak'] as int? ?? 0;
-
-    await ref.read(authProvider.notifier).signOut();
-
-    if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => SignedOutScreen(
-            displayName: displayName,
-            streak: streak,
-          ),
-        ),
-        (_) => false,
-      );
-    }
+  void _openProfile() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
   }
 
   @override
@@ -74,7 +48,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Dark header with user card ────────────────────────────────────
-          _UserHeader(user: user, isDark: isDark),
+          _UserHeader(user: user, isDark: isDark, onTap: _openProfile),
 
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
@@ -84,6 +58,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 // ── Account Section ────────────────────────────────────────
                 _SectionTitle(title: 'Account', isDark: isDark),
                 const SizedBox(height: 12),
+
+                _SettingsTile(
+                  key: const Key('settings_profile_tile'),
+                  icon: Icons.person_outline_rounded,
+                  title: 'Profile',
+                  subtitle: 'Your name, progress and account details',
+                  isDark: isDark,
+                  onTap: _openProfile,
+                ),
 
                 _SettingsTile(
                   icon: Icons.notifications_outlined,
@@ -182,13 +165,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   title: 'Change password',
                   subtitle: 'Update your account password',
                   isDark: isDark,
-                  onTap: AuthRemoteDS.isEnabled
-                      ? () {}
-                      : null,
+                  onTap: AuthRemoteDS.isEnabled ? () {} : null,
                 ),
 
                 // Log out — destructive, uses die-red
-                _LogOutTile(isDark: isDark, onTap: _showLogoutConfirmation),
+                if (user != null)
+                  _LogOutTile(
+                    isDark: isDark,
+                    onTap: () => confirmAndLogout(context, ref),
+                  ),
 
                 const SizedBox(height: 28),
 
@@ -217,10 +202,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     'Kapiert v1.0.0',
                     style: GoogleFonts.nunito(
                       fontSize: 13,
-                      color: (isDark
-                              ? AppColors.textSecondaryDark
-                              : AppColors.textSecondaryLight)
-                          .withValues(alpha: 0.5),
+                      color:
+                          (isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight)
+                              .withValues(alpha: 0.5),
                     ),
                   ),
                 ),
@@ -232,13 +218,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-
   void _confirmClearHistory(BuildContext context, bool isDark) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor:
-            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor: isDark
+            ? AppColors.surfaceDark
+            : AppColors.surfaceLight,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Clear History?',
@@ -286,8 +272,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor:
-            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor: isDark
+            ? AppColors.surfaceDark
+            : AppColors.surfaceLight,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Reset Streak?',
@@ -317,9 +304,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ref.read(lookupProvider.notifier).refreshStreak();
               if (context.mounted) {
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Streak reset')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Streak reset')));
               }
             },
             child: Text(
@@ -336,26 +323,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 // ── User header (dark band) ──────────────────────────────────────────────────
 
 class _UserHeader extends StatelessWidget {
-  final dynamic user; // AppUser?
+  final AppUser? user;
   final bool isDark;
+  final VoidCallback onTap;
 
-  const _UserHeader({required this.user, required this.isDark});
+  const _UserHeader({
+    required this.user,
+    required this.isDark,
+    required this.onTap,
+  });
 
-  String get _displayName {
-    if (user == null) return 'Guest';
-    return user.displayName ?? user.email?.split('@').first ?? 'User';
-  }
+  String get _displayName => user?.shownName ?? 'Guest';
 
   String get _email => user?.email ?? '';
 
-  String get _initials {
-    final name = _displayName;
-    final parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-      return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
-    }
-    return name.isNotEmpty ? name[0].toUpperCase() : 'G';
-  }
+  String get _initials => user?.initials ?? 'G';
 
   @override
   Widget build(BuildContext context) {
@@ -412,61 +394,75 @@ class _UserHeader extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // User card
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.07),
+          // User card — opens the profile screen
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              key: const Key('settings_user_card'),
+              onTap: onTap,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.1),
-              ),
-            ),
-            child: Row(
-              children: [
-                // Avatar circle
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: AppColors.dasGreen.withValues(alpha: 0.85),
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    _initials,
-                    style: GoogleFonts.nunito(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
+              child: Ink(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _displayName,
+                child: Row(
+                  children: [
+                    // Avatar circle
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: AppColors.dasGreen.withValues(alpha: 0.85),
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        _initials,
                         style: GoogleFonts.nunito(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
                           color: Colors.white,
                         ),
                       ),
-                      if (_email.isNotEmpty)
-                        Text(
-                          _email,
-                          style: GoogleFonts.nunito(
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.55),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _displayName,
+                            style: GoogleFonts.nunito(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
-                    ],
-                  ),
+                          Text(
+                            _email.isNotEmpty ? _email : 'View profile',
+                            style: GoogleFonts.nunito(
+                              fontSize: 12,
+                              color: Colors.white.withValues(alpha: 0.55),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: Colors.white.withValues(alpha: 0.6),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.05, end: 0),
         ],
@@ -534,8 +530,6 @@ class _LogOutTile extends StatelessWidget {
 // ── Article pill ─────────────────────────────────────────────────────────────
 // (Moved to signed_out_screen.dart)
 
-
-
 class _SectionTitle extends StatelessWidget {
   final String title;
   final bool isDark;
@@ -569,6 +563,7 @@ class _SettingsTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   const _SettingsTile({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -597,8 +592,7 @@ class _SettingsTile extends StatelessWidget {
       ),
       child: ListTile(
         onTap: onTap,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
           width: 40,
           height: 40,
@@ -614,8 +608,9 @@ class _SettingsTile extends StatelessWidget {
           style: GoogleFonts.nunito(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color:
-                isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
           ),
         ),
         subtitle: Text(
@@ -627,7 +622,8 @@ class _SettingsTile extends StatelessWidget {
                 : AppColors.textSecondaryLight,
           ),
         ),
-        trailing: trailing ??
+        trailing:
+            trailing ??
             (onTap != null
                 ? Icon(
                     Icons.chevron_right_rounded,
@@ -640,5 +636,3 @@ class _SettingsTile extends StatelessWidget {
     );
   }
 }
-
-

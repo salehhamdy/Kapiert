@@ -135,11 +135,43 @@ class StorageService {
 
     final accuracy = totalQuiz > 0 ? (correct / totalQuiz * 100) : 0.0;
 
+    final uniqueWords = Sqflite.firstIntValue(
+      await _db.rawQuery('SELECT COUNT(DISTINCT LOWER(word)) FROM history'),
+    ) ?? 0;
+
+    // Per-article totals and quiz performance: {der: {total, quiz, correct}}
+    final articleRows = await _db.rawQuery('''
+      SELECT LOWER(article) AS article,
+             COUNT(*) AS total,
+             SUM(CASE WHEN mode = 'quiz' THEN 1 ELSE 0 END) AS quiz,
+             SUM(CASE WHEN mode = 'quiz' AND correct = 1 THEN 1 ELSE 0 END) AS correct
+      FROM history
+      GROUP BY LOWER(article)
+    ''');
+    final byArticle = <String, Map<String, int>>{
+      for (final row in articleRows)
+        row['article'] as String: {
+          'total': (row['total'] as int?) ?? 0,
+          'quiz': (row['quiz'] as int?) ?? 0,
+          'correct': (row['correct'] as int?) ?? 0,
+        },
+    };
+
+    final firstRow = await _db.rawQuery('SELECT MIN(timestamp) AS first FROM history');
+    final firstActivity = firstRow.isEmpty
+        ? null
+        : DateTime.tryParse((firstRow.first['first'] as String?) ?? '');
+
     return {
       'total': total,
       'totalQuiz': totalQuiz,
+      'totalLookups': total - totalQuiz,
       'correct': correct,
       'accuracy': accuracy,
+      'uniqueWords': uniqueWords,
+      'byArticle': byArticle,
+      'firstActivity': firstActivity,
+      'streak': getStreak(),
     };
   }
 
