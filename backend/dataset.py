@@ -12,10 +12,15 @@ GENDER_TO_ARTICLE = {"m": "der", "f": "die", "n": "das"}
 
 _noun_dict: dict[str, dict] = {}
 _plural_dict: dict[str, str] = {}
+_quiz_pools: dict[str, list[dict]] = {"der": [], "die": [], "das": []}
 
 
 def get_noun_dict() -> dict[str, dict]:
     return _noun_dict
+
+
+def get_quiz_pools() -> dict[str, list[dict]]:
+    return _quiz_pools
 
 
 def nouns_loaded() -> int:
@@ -149,9 +154,10 @@ def lookup_compound_fallback(word: str) -> dict | None:
 
 def load_dataset() -> None:
     """Load nouns.csv into an in-memory lookup dictionary and plural index."""
-    global _noun_dict, _plural_dict
+    global _noun_dict, _plural_dict, _quiz_pools
     _noun_dict = {}
     _plural_dict = {}
+    _quiz_pools = {"der": [], "die": [], "das": []}
 
     settings = get_settings()
     candidates: list[Path] = []
@@ -195,7 +201,7 @@ def load_dataset() -> None:
 
         article = GENDER_TO_ARTICLE[genus]
         lemma_lower = lemma.lower()
-        _noun_dict[lemma_lower] = {
+        entry = {
             "word": lemma,
             "article": article,
             "gender": genus,
@@ -203,6 +209,11 @@ def load_dataset() -> None:
             "translation": None,
             "source": "dataset",
         }
+        _noun_dict[lemma_lower] = entry
+
+        # Valid quiz word: standard German noun (not affix or suffix, >= 3 chars, starts with capital)
+        if not lemma.startswith("-") and len(lemma) >= 3 and lemma[0].isupper() and lemma.isalpha():
+            _quiz_pools[article].append(entry)
 
         # Index plural forms for reverse lookup
         if plural and plural not in ("-", "—", "kein Plural", "k. Pl."):
@@ -213,5 +224,7 @@ def load_dataset() -> None:
                     _plural_dict[p_clean] = lemma_lower
 
     print(
-        f"Loaded {len(_noun_dict):,} nouns and {len(_plural_dict):,} plural forms from {csv_path}"
+        f"Loaded {len(_noun_dict):,} nouns (quiz pools: {len(_quiz_pools['der']):,} der, "
+        f"{len(_quiz_pools['die']):,} die, {len(_quiz_pools['das']):,} das) "
+        f"and {len(_plural_dict):,} plural forms from {csv_path}"
     )

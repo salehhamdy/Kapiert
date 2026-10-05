@@ -8,6 +8,7 @@ import '../../../shared/theme/app_colors.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../history/providers/history_provider.dart';
 import '../../lookup/providers/lookup_provider.dart';
+import '../../quiz/providers/quiz_provider.dart';
 import '../providers/settings_provider.dart';
 import '../../../data/datasources/auth_remote_ds.dart';
 import '../../auth/logout_flow.dart';
@@ -251,6 +252,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           TextButton(
             onPressed: () async {
               await ref.read(historyProvider.notifier).clearAll();
+              ref.read(quizProvider.notifier).reset();
               if (context.mounted) {
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(

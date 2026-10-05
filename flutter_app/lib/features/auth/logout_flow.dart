@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../quiz/providers/quiz_provider.dart';
 import 'providers/auth_provider.dart';
 import 'screens/logout_dialog.dart';
 import 'screens/signed_out_screen.dart';
@@ -25,6 +26,7 @@ Future<void> confirmAndLogout(BuildContext context, WidgetRef ref) async {
   final streak = ref.read(historyRepositoryProvider).getStreak();
 
   await ref.read(authProvider.notifier).signOut();
+  ref.read(quizProvider.notifier).reset();
 
   if (!context.mounted) return;
   Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(

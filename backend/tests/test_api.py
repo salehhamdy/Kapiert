@@ -119,3 +119,31 @@ def test_random_batch_bounds(client):
     response_large = client.get("/random/batch/100")
     assert response_large.status_code == 200
     assert len(response_large.json()) <= 50
+
+
+def test_random_batch_balanced_and_anti_clump(client):
+    response = client.get("/random/batch/15")
+    assert response.status_code == 200
+    items = response.json()
+    assert len(items) == 15
+
+    articles = [item["article"] for item in items]
+    der_count = articles.count("der")
+    die_count = articles.count("die")
+    das_count = articles.count("das")
+
+    # In a batch of 15, each should have exactly 5
+    assert der_count == 5
+    assert die_count == 5
+    assert das_count == 5
+
+    # Check words are clean (no affixes starting with '-')
+    for item in items:
+        assert not item["word"].startswith("-")
+        assert len(item["word"]) >= 3
+
+    # Check anti-clumping: no 3 consecutive items have the same article
+    for i in range(2, len(articles)):
+        assert not (articles[i] == articles[i - 1] == articles[i - 2]), (
+            f"Clumping detected at index {i}: {articles[i-2:i+1]}"
+        )
