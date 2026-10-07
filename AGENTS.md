@@ -12,3 +12,6 @@
 ## 2. Git Commit & Push Policy
 - **Immediate Push After Verification**: Only after completing and strictly verifying the feature with all passing tests and zero static analysis issues, immediately stage (`git add`), commit with a concise conventional commit message, and push directly to GitHub (`origin main`).
 - **No Unpushed Work**: Do not leave completed features uncommitted or unpushed in the local working tree.
+
+## 3. Continuous Learning & Task Observation
+- **Active Task Observer**: Maintain active observation of user feedback, corrections, and tool roadblocks via `task-observer`. Record observations so that repository workflows, skills, and quality standards continuously adapt and improve.
