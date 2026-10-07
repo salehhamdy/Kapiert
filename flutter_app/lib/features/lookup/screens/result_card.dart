@@ -102,7 +102,7 @@ class ResultCard extends ConsumerWidget {
                   children: [
                     _InfoChip(
                       icon: Icons.person_outline_rounded,
-                      label: word.genderLabel,
+                      label: l10n.genderLabel(word.gender),
                       color: color,
                       isDark: isDark,
                     ),
@@ -168,7 +168,7 @@ class ResultCard extends ConsumerWidget {
 
                 // Source badge
                 _SourceBadge(
-                  label: word.sourceLabel,
+                  label: l10n.sourceLabel(word.source),
                   isDark: isDark,
                 ).animate().fadeIn(delay: 400.ms, duration: 300.ms),
               ],
@@ -188,8 +188,8 @@ class ResultCard extends ConsumerWidget {
             iconSize: 26,
             splashRadius: 22,
             tooltip: isFavorite
-                ? 'Remove from Favorites'
-                : 'Save to Favorites for focused review',
+                ? l10n.removeFromFavorites
+                : l10n.saveToFavorites,
             onPressed: () async {
               final added = await ref
                   .read(favoritesProvider.notifier)
@@ -211,8 +211,8 @@ class ResultCard extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             added
-                                ? '${word.fullForm} saved to Favorites'
-                                : '${word.fullForm} removed from Favorites',
+                                ? '${word.fullForm} ${l10n.savedToFavorites}'
+                                : '${word.fullForm} ${l10n.removedFromFavorites}',
                             style:
                                 const TextStyle(fontWeight: FontWeight.w600),
                           ),

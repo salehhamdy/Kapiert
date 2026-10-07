@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../shared/theme/app_colors.dart';
 
 /// Blurred logout confirmation dialog.
@@ -20,6 +21,7 @@ class LogoutConfirmationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
       child: Dialog(
@@ -65,7 +67,7 @@ class LogoutConfirmationDialog extends StatelessWidget {
 
               // ── Title ───────────────────────────────────────────────────
               Text(
-                'Log out?',
+                l10n.logOutDialogTitle,
                 style: GoogleFonts.nunito(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
@@ -76,7 +78,7 @@ class LogoutConfirmationDialog extends StatelessWidget {
 
               // ── Body ────────────────────────────────────────────────────
               Text(
-                'Your streak and history will be saved.\nYou can sign back in anytime.',
+                l10n.logOutDialogContent,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.nunito(
                   fontSize: 14,
@@ -102,7 +104,7 @@ class LogoutConfirmationDialog extends StatelessWidget {
                         backgroundColor: AppColors.backgroundLight,
                       ),
                       child: Text(
-                        'Cancel',
+                        l10n.cancel,
                         style: GoogleFonts.nunito(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -126,7 +128,7 @@ class LogoutConfirmationDialog extends StatelessWidget {
                         elevation: 0,
                       ),
                       child: Text(
-                        'Log out',
+                        l10n.logOut,
                         style: GoogleFonts.nunito(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,

@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../domain/models/achievement.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../providers/achievements_provider.dart';
@@ -16,6 +17,7 @@ class AchievementsCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final state = ref.watch(achievementsProvider);
     final totalCount = state.totalCount;
     final unlockedCount = state.unlockedCount;
@@ -71,7 +73,7 @@ class AchievementsCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Milestones & Badges',
+                      l10n.milestonesAndBadges,
                       style: GoogleFonts.nunito(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -81,7 +83,7 @@ class AchievementsCard extends ConsumerWidget {
                       ),
                     ),
                     Text(
-                      '$unlockedCount of $totalCount badges earned (${(state.unlockedRate * 100).toStringAsFixed(0)}%)',
+                      l10n.badgesEarned(unlockedCount, totalCount, (state.unlockedRate * 100).toInt()),
                       style: GoogleFonts.nunito(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -97,7 +99,7 @@ class AchievementsCard extends ConsumerWidget {
                 key: const Key('profile_view_all_achievements'),
                 onPressed: () => showMilestoneDetailSheet(context),
                 child: Text(
-                  'View all',
+                  l10n.viewAll,
                   style: GoogleFonts.nunito(
                     fontWeight: FontWeight.w800,
                     color: goldColor,
@@ -126,7 +128,7 @@ class AchievementsCard extends ConsumerWidget {
             child: Row(
               children: [
                 _MiniFilterChip(
-                  label: 'All ($totalCount)',
+                  label: '${l10n.filterAll} ($totalCount)',
                   selected: state.filter == 'all',
                   isDark: isDark,
                   onTap: () => ref
@@ -136,7 +138,7 @@ class AchievementsCard extends ConsumerWidget {
                 const SizedBox(width: 6),
                 for (final cat in AchievementCategory.values) ...[
                   _MiniFilterChip(
-                    label: cat.label,
+                    label: l10n.categoryLabel(cat.name),
                     icon: cat.icon,
                     selected: state.filter == cat.name,
                     isDark: isDark,
@@ -170,7 +172,7 @@ class AchievementsCard extends ConsumerWidget {
                 ),
               ),
               child: Text(
-                'Explore all ${filtered.length} milestones',
+                l10n.exploreAllMilestones(filtered.length),
                 style: GoogleFonts.nunito(
                   fontWeight: FontWeight.w700,
                   fontSize: 13,

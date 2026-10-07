@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../domain/models/achievement.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../providers/achievements_provider.dart';
@@ -21,6 +22,7 @@ class _MilestoneDetailSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final state = ref.watch(achievementsProvider);
     final items = state.filteredAchievements;
@@ -77,7 +79,7 @@ class _MilestoneDetailSheet extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Achievements & Milestones',
+                        l10n.achievementsAndMilestones,
                         style: GoogleFonts.nunito(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
@@ -87,7 +89,7 @@ class _MilestoneDetailSheet extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        '${state.unlockedCount} of ${state.totalCount} unlocked',
+                        l10n.unlockedCountOfTotal(state.unlockedCount, state.totalCount),
                         style: GoogleFonts.nunito(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -100,7 +102,7 @@ class _MilestoneDetailSheet extends ConsumerWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Close',
+                  tooltip: l10n.close,
                   icon: const Icon(Icons.close_rounded),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
@@ -130,7 +132,7 @@ class _MilestoneDetailSheet extends ConsumerWidget {
             child: Row(
               children: [
                 _FilterChip(
-                  label: 'All (${state.totalCount})',
+                  label: '${l10n.filterAll} (${state.totalCount})',
                   selected: state.filter == 'all',
                   isDark: isDark,
                   onTap: () => ref
@@ -140,7 +142,7 @@ class _MilestoneDetailSheet extends ConsumerWidget {
                 const SizedBox(width: 8),
                 for (final cat in AchievementCategory.values) ...[
                   _FilterChip(
-                    label: cat.label,
+                    label: l10n.categoryLabel(cat.name),
                     icon: cat.icon,
                     selected: state.filter == cat.name,
                     isDark: isDark,

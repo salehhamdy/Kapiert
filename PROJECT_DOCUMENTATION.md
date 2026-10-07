@@ -242,10 +242,17 @@ Implemented across [`ExampleSentence`](file:///c:/Users/ASUS/Downloads/German_Ar
 #### 8. Multilingual Localization & RTL System
 Implemented in [`AppLocalizations`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/core/localization/app_localizations.dart) and [`SettingsNotifier`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/settings/providers/settings_provider.dart):
 - **Supported Locales**:
-  - 🇬🇧 English (`en`) — Default international locale.
+  - 🇬🇧 English (`en`) — International baseline locale.
   - 🇸🇦 Arabic (`ar`) — Complete Right-to-Left (RTL) layout switching, directional navigation, and Arabic typography.
   - 🇹🇷 Turkish (`tr`) — Full Turkish locale coverage.
   - 🇩🇪 German (`de`) — Native German interface strings.
+- **End-to-End Screen Coverage**: Zero hardcoded English strings remaining across the app:
+  - **Lookup & Result Cards**: "Check Article" action, loading indicators, localized gender badges (*maskulin*, *feminin*, *neutral*), word source badges, and sentence copy tooltips.
+  - **Quiz Mode**: Quiz headers, instructions, answer feedback banners, next word actions, SRS scheduled review badges, milestone unlock alerts, session completion, and error states.
+  - **History Screen**: History titles, aggregate count labels, accuracy metric labels, filter chips (*All*, *Correct*, *Incorrect*, *Favorites*), focused review prompts, empty state explanations, and word action chips.
+  - **Settings**: Section group headers, preferences, dark mode, server status, clear history dialog, streak reset, password change, legal document links, consent status, and data source citations.
+  - **Auth & Session**: Modal logout confirmation dialog with localized titles, blur backdrop, cancel, and confirmed log out buttons.
+  - **Profile & Progress**: User header badges, guest state indicators, cloud sync status, progress section headings, article mastery analytics, weakest-article advice, spaced repetition retention metrics, milestone preview cards, gallery sheets, and weekly activity heatmap controls.
 - **Synchronous First-Frame Delegate**: `AppLocalizationsDelegate` resolves strings synchronously using `SynchronousFuture` to eliminate async microtask delay during widget bootstrapping and golden frame rendering.
 - **Scrollable Modal Bottom Sheet**: Language selection sheet in Settings uses bounded scroll physics and high-contrast active checkmarks, eliminating any RenderFlex bottom overflow on compact devices.
 - **Global Reactive Propagation**: Riverpod `localeProvider` drives instant UI layout and string re-rendering across navigation bars, headers, cards, dialogs, and snackbars without restarting the application.
@@ -464,7 +471,7 @@ Both the backend and Flutter applications maintain comprehensive automated test 
 cd backend
 python -m pytest tests/ -v
 
-# 2. Flutter Unit, Widget & Integration Tests (110 tests)
+# 2. Flutter Unit, Widget & Integration Tests (111 tests)
 cd flutter_app
 flutter test
 
@@ -477,7 +484,7 @@ flutter analyze
 | Test Suite | File | Tests | Validates |
 |---|---|---|---|
 | **API Contract & Sentences** | [`backend/tests/test_api.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/tests/test_api.py) | 13 | Query normalization, exact lookup, plural lookup, umlaut variants, Wiktionary fallback, random batch balance, anti-clumping, and multilingual example sentences (`de`, `en`, `ar`, `tr`). |
-| **Localization Engine** | [`flutter_app/test/core/localization/app_localizations_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/core/localization/app_localizations_test.dart) | 5 | All 4 locales (`en`, `ar`, `tr`, `de`), RTL directionality detection, translation fallbacks, and delegate resolution. |
+| **Localization Engine** | [`flutter_app/test/core/localization/app_localizations_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/core/localization/app_localizations_test.dart) | 6 | All 4 locales (`en`, `ar`, `tr`, `de`), RTL directionality detection, translation fallbacks, delegate resolution, and dynamic parameterized helper methods. |
 | **Sentence Domain Models** | [`flutter_app/test/domain/models/example_sentence_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/example_sentence_test.dart) | 5 | Translation retrieval by language code, fallback order, JSON serialization/deserialization, and offline sentence provider. |
 | **Network Client** | [`flutter_app/test/core/network/api_client_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/core/network/api_client_test.dart) | 4 | HTTP GET parsing, timeout handling, error mapping. |
 | **Word Models** | [`flutter_app/test/domain/models/word_model_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/word_model_test.dart) | 7 | Equality, JSON conversion, gender labels, backward-compatible sentence serialization. |

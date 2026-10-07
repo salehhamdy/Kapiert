@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../domain/models/lookup_history.dart';
 import '../../../domain/models/word_model.dart';
 import '../../../shared/theme/app_colors.dart';
@@ -30,6 +31,7 @@ class HistoryTile extends ConsumerWidget {
     final articleColor = AppColors.colorForArticle(entry.article);
     final isQuiz = entry.mode == 'quiz';
     final isFavorite = ref.watch(favoritesProvider).isFavorite(entry.word);
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -75,7 +77,7 @@ class HistoryTile extends ConsumerWidget {
           ),
         ),
         subtitle: Text(
-          isQuiz ? 'Quiz' : 'Lookup',
+          isQuiz ? l10n.tabQuiz : l10n.tabLookup,
           style: TextStyle(
             fontSize: 12,
             color: isDark
@@ -89,7 +91,7 @@ class HistoryTile extends ConsumerWidget {
             IconButton(
               iconSize: 22,
               splashRadius: 20,
-              tooltip: isFavorite ? 'Favorited' : 'Save to Favorites',
+              tooltip: isFavorite ? l10n.favorited : l10n.saveToFavorites,
               onPressed: () {
                 final model = WordModel(
                   word: entry.word,

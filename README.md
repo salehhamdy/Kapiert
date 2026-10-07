@@ -243,7 +243,7 @@ cd backend
 pip install -r requirements-dev.txt
 pytest tests/ -v
 
-# Flutter unit, widget & sync tests (110 tests)
+# Flutter unit, widget & sync tests (111 tests)
 cd flutter_app
 flutter test
 

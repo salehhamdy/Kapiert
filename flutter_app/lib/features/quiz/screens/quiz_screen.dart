@@ -26,22 +26,22 @@ class QuizScreen extends ConsumerWidget {
       child: Column(
         children: [
           // ── Header + Score ──
-          _buildHeader(isDark, state, ref, favState, srsState),
+          _buildHeader(isDark, state, ref, favState, srsState, l10n),
           const SizedBox(height: 12),
 
           // ── Progress bar ──
           if (state.total > 0 && !state.isSessionComplete)
-            _buildProgressBar(isDark, state),
+            _buildProgressBar(isDark, state, l10n),
           const SizedBox(height: 32),
 
           // ── Word Display ──
           Expanded(
             child: state.loading
-                ? _buildLoading(isDark)
+                ? _buildLoading(isDark, l10n)
                 : state.isSessionComplete
-                    ? _buildSessionComplete(isDark, ref)
+                    ? _buildSessionComplete(isDark, ref, l10n)
                     : state.currentWord == null
-                        ? _buildError(isDark, ref)
+                        ? _buildError(isDark, ref, l10n)
                         : _buildQuizContent(isDark, state, ref, l10n),
           ),
         ],
@@ -55,6 +55,7 @@ class QuizScreen extends ConsumerWidget {
     WidgetRef ref,
     FavoritesState favState,
     SrsState srsState,
+    AppLocalizations l10n,
   ) {
     final isFavMode = state.isFavoritesMode;
     final isSrsMode = state.isSrsMode;
@@ -81,10 +82,10 @@ class QuizScreen extends ConsumerWidget {
                   size: 18,
                 ),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Spaced Repetition Review',
-                    style: TextStyle(
+                    l10n.spacedRepetitionReview,
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: AppColors.derBlue,
@@ -102,9 +103,9 @@ class QuizScreen extends ConsumerWidget {
                       color: isDark ? Colors.white12 : Colors.black12,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Text(
-                      'Exit',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.exit,
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -131,10 +132,10 @@ class QuizScreen extends ConsumerWidget {
                 const Icon(Icons.star_rounded,
                     color: Color(0xFFFFB800), size: 18),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Focused Review Mode',
-                    style: TextStyle(
+                    l10n.focusedReviewMode,
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFFFFB800),
@@ -151,9 +152,9 @@ class QuizScreen extends ConsumerWidget {
                       color: isDark ? Colors.white12 : Colors.black12,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Text(
-                      'Exit',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.exit,
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -171,10 +172,10 @@ class QuizScreen extends ConsumerWidget {
               children: [
                 Text(
                   isSrsMode
-                      ? 'SRS Review'
+                      ? l10n.srsReview
                       : isFavMode
-                          ? 'Focused Quiz'
-                          : 'Quiz Mode',
+                          ? l10n.focusedQuiz
+                          : l10n.quizMode,
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
@@ -187,10 +188,10 @@ class QuizScreen extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Text(
                   isSrsMode
-                      ? 'Practicing scheduled due words'
+                      ? l10n.practicingDueWords
                       : isFavMode
-                          ? 'Reviewing saved favorites'
-                          : 'Tap the correct article',
+                          ? l10n.reviewingFavorites
+                          : l10n.tapCorrectArticle,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -212,7 +213,7 @@ class QuizScreen extends ConsumerWidget {
                     color: AppColors.derBlue,
                     size: 16,
                   ),
-                  label: Text('Due (${srsState.dueCount})'),
+                  label: Text('${l10n.due} (${srsState.dueCount})'),
                   backgroundColor: AppColors.derBlue
                       .withValues(alpha: isDark ? 0.15 : 0.10),
                   side: BorderSide(
@@ -235,7 +236,7 @@ class QuizScreen extends ConsumerWidget {
                     color: Color(0xFFFFB800),
                     size: 16,
                   ),
-                  label: Text('Review (${favState.favorites.length})'),
+                  label: Text('${l10n.review} (${favState.favorites.length})'),
                   backgroundColor: const Color(0xFFFFB800)
                       .withValues(alpha: isDark ? 0.15 : 0.10),
                   side: BorderSide(
@@ -286,7 +287,7 @@ class QuizScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProgressBar(bool isDark, QuizState state) {
+  Widget _buildProgressBar(bool isDark, QuizState state, AppLocalizations l10n) {
     final accuracy = state.accuracy;
     return Column(
       children: [
@@ -310,7 +311,7 @@ class QuizScreen extends ConsumerWidget {
         Align(
           alignment: Alignment.centerRight,
           child: Text(
-            '${(accuracy * 100).toInt()}% accuracy',
+            '${(accuracy * 100).toInt()}% ${l10n.accuracy}',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -371,7 +372,7 @@ class QuizScreen extends ConsumerWidget {
                           ),
                           const SizedBox(width: 5),
                           Text(
-                            'Stage ${srs.stage} • ${srs.stageName}',
+                            '${l10n.stage} ${srs.stage} • ${l10n.srsStageName(srs.stage)}',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -405,7 +406,7 @@ class QuizScreen extends ConsumerWidget {
                       IconButton(
                         iconSize: 26,
                         splashRadius: 20,
-                        tooltip: isFav ? 'Favorited' : 'Save for focused review',
+                        tooltip: isFav ? l10n.favorited : l10n.saveForReview,
                         onPressed: () {
                           ref.read(favoritesProvider.notifier).toggleFavorite(word);
                         },
@@ -570,7 +571,7 @@ class QuizScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${word.fullForm} — ${word.genderLabel}',
+            '${word.fullForm} — ${l10n.genderLabel(word.gender)}',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -638,11 +639,11 @@ class QuizScreen extends ConsumerWidget {
           ],
           if (srs != null) ...[
             const SizedBox(height: 10),
-            _buildSrsFeedbackBadge(isDark, srs, state.isCorrect!),
+            _buildSrsFeedbackBadge(isDark, srs, state.isCorrect!, l10n),
           ],
           if (state.unlockedMilestone != null) ...[
             const SizedBox(height: 10),
-            _buildMilestoneFeedbackBadge(isDark, state.unlockedMilestone!),
+            _buildMilestoneFeedbackBadge(isDark, state.unlockedMilestone!, l10n),
           ],
         ],
       ),
@@ -654,7 +655,8 @@ class QuizScreen extends ConsumerWidget {
         );
   }
 
-  Widget _buildMilestoneFeedbackBadge(bool isDark, Achievement milestone) {
+  Widget _buildMilestoneFeedbackBadge(
+      bool isDark, Achievement milestone, AppLocalizations l10n) {
     const goldColor = Color(0xFFFFB800);
     return Container(
       width: double.infinity,
@@ -676,7 +678,7 @@ class QuizScreen extends ConsumerWidget {
           const SizedBox(width: 8),
           Flexible(
             child: Text(
-              '🏆 Milestone Unlocked: ${milestone.title}!',
+              l10n.milestoneUnlocked(milestone.title),
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
@@ -693,27 +695,9 @@ class QuizScreen extends ConsumerWidget {
         );
   }
 
-  Widget _buildSrsFeedbackBadge(bool isDark, SrsItem item, bool isCorrect) {
-    String intervalText;
-    switch (item.stage) {
-      case 1:
-        intervalText = isCorrect ? '4 hours' : '4 hours (review soon)';
-        break;
-      case 2:
-        intervalText = '1 day';
-        break;
-      case 3:
-        intervalText = '3 days';
-        break;
-      case 4:
-        intervalText = '7 days';
-        break;
-      case 5:
-      default:
-        intervalText = '14 days';
-        break;
-    }
-
+  Widget _buildSrsFeedbackBadge(
+      bool isDark, SrsItem item, bool isCorrect, AppLocalizations l10n) {
+    final intervalText = l10n.srsIntervalText(item.stage, isCorrect: isCorrect);
     final badgeColor = isCorrect
         ? (item.isMastered ? const Color(0xFFFFB800) : AppColors.derBlue)
         : AppColors.incorrectRed;
@@ -741,8 +725,8 @@ class QuizScreen extends ConsumerWidget {
           const SizedBox(width: 6),
           Text(
             item.isMastered
-                ? 'Mastered! • Review in $intervalText'
-                : 'Stage ${item.stage} (${item.stageName}) • Next review: $intervalText',
+                ? '${l10n.masteredExclamation} • ${l10n.reviewIn(intervalText)}'
+                : '${l10n.stage} ${item.stage} (${l10n.srsStageName(item.stage)}) • ${l10n.nextReviewIn(intervalText)}',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -779,7 +763,8 @@ class QuizScreen extends ConsumerWidget {
     ).animate().fadeIn(duration: 250.ms);
   }
 
-  Widget _buildSessionComplete(bool isDark, WidgetRef ref) {
+  Widget _buildSessionComplete(
+      bool isDark, WidgetRef ref, AppLocalizations l10n) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -801,7 +786,7 @@ class QuizScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'All Due Reviews Caught Up!',
+              l10n.allCaughtUpTitle,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 24,
@@ -813,7 +798,7 @@ class QuizScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'You have reviewed all scheduled nouns for now. Keep practicing in general quiz mode to discover and track new words!',
+              l10n.allCaughtUpSubtitle,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -829,7 +814,7 @@ class QuizScreen extends ConsumerWidget {
               onPressed: () =>
                   ref.read(quizProvider.notifier).exitSrsReview(),
               icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('Back to General Quiz'),
+              label: Text(l10n.backToQuiz),
               style: ElevatedButton.styleFrom(
                 backgroundColor:
                     isDark ? const Color(0xFF3B82F6) : AppColors.derBlue,
@@ -847,7 +832,7 @@ class QuizScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLoading(bool isDark) {
+  Widget _buildLoading(bool isDark, AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -862,7 +847,7 @@ class QuizScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Loading word…',
+            l10n.loadingWord,
             style: TextStyle(
               fontSize: 14,
               color: isDark
@@ -875,7 +860,7 @@ class QuizScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildError(bool isDark, WidgetRef ref) {
+  Widget _buildError(bool isDark, WidgetRef ref, AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -889,7 +874,7 @@ class QuizScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Could not load a word.\nIs the backend running?',
+            l10n.couldNotLoadWord,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 15,
@@ -901,7 +886,7 @@ class QuizScreen extends ConsumerWidget {
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () => ref.read(quizProvider.notifier).loadNext(),
-            child: const Text('Retry'),
+            child: Text(l10n.retry),
           ),
         ],
       ),

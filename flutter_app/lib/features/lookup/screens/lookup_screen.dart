@@ -59,11 +59,11 @@ class _LookupScreenState extends ConsumerState<LookupScreen> {
             const SizedBox(height: 16),
 
             // ── Check Button ──
-            _buildCheckButton(isDark, state.loading),
+            _buildCheckButton(isDark, state.loading, l10n),
             const SizedBox(height: 28),
 
             // ── Result / Error / Loading ──
-            if (state.loading) _buildLoading(),
+            if (state.loading) _buildLoading(l10n),
             if (state.hasError && !state.loading)
               _buildError(isDark, state.errorMessage ?? ''),
             if (state.result != null && !state.loading)
@@ -192,7 +192,7 @@ class _LookupScreenState extends ConsumerState<LookupScreen> {
     );
   }
 
-  Widget _buildCheckButton(bool isDark, bool loading) {
+  Widget _buildCheckButton(bool isDark, bool loading, AppLocalizations l10n) {
     return SizedBox(
       width: double.infinity,
       height: 56,
@@ -210,26 +210,26 @@ class _LookupScreenState extends ConsumerState<LookupScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Check Article',
-              style: TextStyle(
+              l10n.checkArticle,
+              style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.3,
               ),
             ),
-            SizedBox(width: 8),
-            Icon(Icons.arrow_forward_rounded, size: 20),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward_rounded, size: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLoading() {
+  Widget _buildLoading(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 40),
       child: Column(
@@ -246,7 +246,7 @@ class _LookupScreenState extends ConsumerState<LookupScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Looking up…',
+            l10n.lookingUp,
             style: TextStyle(
               fontSize: 14,
               color: Theme.of(context).brightness == Brightness.dark

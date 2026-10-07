@@ -76,5 +76,55 @@ void main() {
       expect(delegate.isSupported(const Locale('de')), isTrue);
       expect(delegate.isSupported(const Locale('fr')), isFalse);
     });
+
+    test('dynamic helpers and parameterized strings return correct translations for all locales', () {
+      for (final code in ['en', 'ar', 'tr', 'de']) {
+        final l = AppLocalizations(Locale(code));
+        expect(l.srsStageName(1), isNotEmpty);
+        expect(l.srsStageName(2), isNotEmpty);
+        expect(l.srsStageName(4), isNotEmpty);
+        expect(l.srsIntervalText(1), isNotEmpty);
+        expect(l.genderLabel('m'), isNotEmpty);
+        expect(l.genderLabel('f'), isNotEmpty);
+        expect(l.genderLabel('n'), isNotEmpty);
+        expect(l.sourceLabel('dataset'), isNotEmpty);
+        expect(l.sourceLabel('wiktionary'), isNotEmpty);
+        expect(l.wordsCount(5), isNotEmpty);
+        expect(l.percentCorrect(85), isNotEmpty);
+        expect(l.percentOfTrackedWords(70), isNotEmpty);
+        expect(l.badgesEarned(3, 10, 30), isNotEmpty);
+        expect(l.unlockedCountOfTotal(3, 10), isNotEmpty);
+        expect(l.exploreAllMilestones(12), isNotEmpty);
+        expect(l.activeDaysThisWeek(5), isNotEmpty);
+        expect(l.focusOnLowestAccuracy('der'), isNotEmpty);
+        expect(l.dayActivitySummary(10, 8, 90, 6), isNotEmpty);
+        expect(l.categoryLabel('streak'), isNotEmpty);
+        expect(l.categoryLabel('vocabulary'), isNotEmpty);
+        expect(l.milestoneUnlocked('First Step'), isNotEmpty);
+        expect(l.nextReviewIn('1 day'), isNotEmpty);
+        expect(l.reviewIn('4 hours'), isNotEmpty);
+      }
+
+      final en = AppLocalizations(const Locale('en'));
+      expect(en.genderLabel('m'), 'masculine');
+      expect(en.srsIntervalText(2), '1 day');
+      expect(en.wordsCount(1), '1 word');
+      expect(en.wordsCount(2), '2 words');
+
+      final de = AppLocalizations(const Locale('de'));
+      expect(de.genderLabel('m'), 'maskulin');
+      expect(de.srsIntervalText(2), '1 Tag');
+      expect(de.wordsCount(1), '1 Wort');
+      expect(de.wordsCount(2), '2 Wörter');
+
+      final ar = AppLocalizations(const Locale('ar'));
+      expect(ar.genderLabel('f'), 'مؤنث');
+      expect(ar.srsIntervalText(2), 'يوم واحد');
+
+      final tr = AppLocalizations(const Locale('tr'));
+      expect(tr.genderLabel('n'), 'nötr');
+      expect(tr.srsIntervalText(2), '1 gün');
+    });
   });
 }
+

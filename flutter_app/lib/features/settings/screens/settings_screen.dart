@@ -154,9 +154,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     final serverSubtitle = switch (serverHealth) {
       AsyncData(:final value) =>
-        '${AppConfig.apiBaseUrl} • ${value ? 'online' : 'offline'}',
-      AsyncLoading() => '${AppConfig.apiBaseUrl} • checking…',
-      _ => '${AppConfig.apiBaseUrl} • unknown',
+        '${AppConfig.apiBaseUrl} • ${value ? l10n.online : l10n.offline}',
+      AsyncLoading() => '${AppConfig.apiBaseUrl} • ${l10n.checking}',
+      _ => '${AppConfig.apiBaseUrl} • ${l10n.unknown}',
     };
 
     return SingleChildScrollView(
@@ -179,15 +179,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   key: const Key('settings_profile_tile'),
                   icon: Icons.person_outline_rounded,
                   title: l10n.profileTitle,
-                  subtitle: 'Your name, progress and account details',
+                  subtitle: l10n.profileSubtitle,
                   isDark: isDark,
                   onTap: _openProfile,
                 ),
 
                 _SettingsTile(
                   icon: Icons.notifications_outlined,
-                  title: 'Notifications',
-                  subtitle: 'Daily reminders and streak alerts',
+                  title: l10n.notifications,
+                  subtitle: l10n.notificationsSubtitle,
                   isDark: isDark,
                   onTap: () {},
                 ),
@@ -197,7 +197,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ? Icons.dark_mode_rounded
                       : Icons.light_mode_rounded,
                   title: l10n.darkMode,
-                  subtitle: 'Switch app appearance',
+                  subtitle: l10n.darkModeSubtitle,
                   isDark: isDark,
                   trailing: Switch.adaptive(
                     value: isDarkMode,
@@ -229,7 +229,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _SettingsTile(
                   icon: Icons.lightbulb_outline_rounded,
                   title: l10n.showHints,
-                  subtitle: 'Display extra info on result cards',
+                  subtitle: l10n.showHintsSubtitle,
                   isDark: isDark,
                   trailing: Switch.adaptive(
                     value: showHints,
@@ -242,12 +242,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(height: 28),
 
                 // ── Server Section ────────────────────────────────────────
-                _SectionTitle(title: 'Server', isDark: isDark),
+                _SectionTitle(title: l10n.sectionServer, isDark: isDark),
                 const SizedBox(height: 12),
 
                 _SettingsTile(
                   icon: Icons.cloud_outlined,
-                  title: 'Backend API',
+                  title: l10n.backendApi,
                   subtitle: serverSubtitle,
                   isDark: isDark,
                   onTap: () => ref.invalidate(serverHealthProvider),
@@ -256,21 +256,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(height: 28),
 
                 // ── Data Section ──────────────────────────────────────────
-                _SectionTitle(title: 'Data', isDark: isDark),
+                _SectionTitle(title: l10n.sectionData, isDark: isDark),
                 const SizedBox(height: 12),
 
                 _SettingsTile(
                   icon: Icons.delete_outline_rounded,
-                  title: 'Clear history',
-                  subtitle: 'Remove all lookup and quiz history',
+                  title: l10n.clearHistory,
+                  subtitle: l10n.clearHistorySubtitle,
                   isDark: isDark,
                   onTap: () => _confirmClearHistory(context, isDark),
                 ),
 
                 _SettingsTile(
                   icon: Icons.restart_alt_rounded,
-                  title: 'Reset streak',
-                  subtitle: 'Set your streak back to 0',
+                  title: l10n.resetStreak,
+                  subtitle: l10n.resetStreakSubtitle,
                   isDark: isDark,
                   onTap: () => _confirmResetStreak(context, isDark),
                 ),
@@ -278,13 +278,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(height: 28),
 
                 // ── Session Section ───────────────────────────────────────
-                _SectionTitle(title: 'Session', isDark: isDark),
+                _SectionTitle(title: l10n.sectionSession, isDark: isDark),
                 const SizedBox(height: 12),
 
                 _SettingsTile(
                   icon: Icons.lock_outline_rounded,
-                  title: 'Change password',
-                  subtitle: 'Update your account password',
+                  title: l10n.changePassword,
+                  subtitle: l10n.changePasswordSubtitle,
                   isDark: isDark,
                   onTap: AuthRemoteDS.isEnabled ? () {} : null,
                 ),
@@ -299,14 +299,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(height: 28),
 
                 // ── Legal Section ─────────────────────────────────────────
-                _SectionTitle(title: 'Legal', isDark: isDark),
+                _SectionTitle(title: l10n.sectionLegal, isDark: isDark),
                 const SizedBox(height: 12),
 
                 _SettingsTile(
                   key: const Key('settings_terms_tile'),
                   icon: Icons.description_outlined,
-                  title: 'Terms of Use',
-                  subtitle: 'Usage rules, license and disclaimer',
+                  title: l10n.termsOfUse,
+                  subtitle: l10n.termsSubtitle,
                   isDark: isDark,
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
@@ -320,8 +320,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _SettingsTile(
                   key: const Key('settings_privacy_tile'),
                   icon: Icons.shield_outlined,
-                  title: 'Privacy Policy',
-                  subtitle: 'Local-first storage, cloud sync & user rights',
+                  title: l10n.privacyPolicy,
+                  subtitle: l10n.privacySubtitle,
                   isDark: isDark,
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
@@ -337,10 +337,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: hasAcceptedTerms
                       ? Icons.check_circle_outline_rounded
                       : Icons.pending_outlined,
-                  title: 'Consent status',
+                  title: l10n.consentStatus,
                   subtitle: hasAcceptedTerms
-                      ? 'Terms of Use & Privacy Policy accepted'
-                      : 'Pending agreement',
+                      ? l10n.consentAcceptedSubtitle
+                      : l10n.consentPendingSubtitle,
                   isDark: isDark,
                   trailing: Container(
                     padding:
@@ -353,7 +353,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      hasAcceptedTerms ? 'Accepted' : 'Pending',
+                      hasAcceptedTerms ? l10n.accepted : l10n.pending,
                       style: GoogleFonts.nunito(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -368,20 +368,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(height: 28),
 
                 // ── About Section ─────────────────────────────────────────
-                _SectionTitle(title: 'About', isDark: isDark),
+                _SectionTitle(title: l10n.sectionAbout, isDark: isDark),
                 const SizedBox(height: 12),
 
                 _SettingsTile(
                   icon: Icons.info_outline_rounded,
                   title: 'Kapiert',
-                  subtitle: 'Version 1.0.0 • German Article Trainer',
+                  subtitle: l10n.aboutSubtitle,
                   isDark: isDark,
                 ),
 
                 _SettingsTile(
                   icon: Icons.dataset_outlined,
-                  title: 'Data sources',
-                  subtitle: 'german-nouns dataset (~100k) + Wiktionary API',
+                  title: l10n.dataSources,
+                  subtitle: l10n.dataSourcesSubtitle,
                   isDark: isDark,
                 ),
 
@@ -409,6 +409,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _confirmClearHistory(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -417,7 +418,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             : AppColors.surfaceLight,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Clear History?',
+          l10n.clearHistoryDialogTitle,
           style: GoogleFonts.nunito(
             fontWeight: FontWeight.w700,
             color: isDark
@@ -426,7 +427,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
         content: Text(
-          'This will remove all your lookup and quiz history. This cannot be undone.',
+          l10n.clearHistoryDialogContent,
           style: GoogleFonts.nunito(
             color: isDark
                 ? AppColors.textSecondaryDark
@@ -436,7 +437,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -445,12 +446,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               if (context.mounted) {
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('History cleared')),
+                  SnackBar(content: Text(l10n.historyCleared)),
                 );
               }
             },
             child: Text(
-              'Clear',
+              l10n.clear,
               style: GoogleFonts.nunito(color: AppColors.dieRed),
             ),
           ),
@@ -460,6 +461,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _confirmResetStreak(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -468,7 +470,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             : AppColors.surfaceLight,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Reset Streak?',
+          l10n.resetStreakDialogTitle,
           style: GoogleFonts.nunito(
             fontWeight: FontWeight.w700,
             color: isDark
@@ -477,7 +479,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
         content: Text(
-          'Your streak will be reset to 0. This cannot be undone.',
+          l10n.resetStreakDialogContent,
           style: GoogleFonts.nunito(
             color: isDark
                 ? AppColors.textSecondaryDark
@@ -487,7 +489,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -497,11 +499,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(const SnackBar(content: Text('Streak reset')));
+                ).showSnackBar(SnackBar(content: Text(l10n.streakReset)));
               }
             },
             child: Text(
-              'Reset',
+              l10n.reset,
               style: GoogleFonts.nunito(color: AppColors.dieRed),
             ),
           ),
@@ -524,7 +526,7 @@ class _UserHeader extends StatelessWidget {
     required this.onTap,
   });
 
-  String get _displayName => user?.shownName ?? 'Guest';
+  String _displayName(AppLocalizations l10n) => user?.shownName ?? l10n.guest;
 
   String get _email => user?.email ?? '';
 
@@ -532,6 +534,8 @@ class _UserHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(gradient: AppColors.headerGradient),
@@ -573,7 +577,7 @@ class _UserHeader extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Settings',
+                    l10n.tabSettings,
                     style: GoogleFonts.nunito(
                       fontSize: 12,
                       color: Colors.white.withValues(alpha: 0.55),
@@ -630,7 +634,7 @@ class _UserHeader extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _displayName,
+                            _displayName(l10n),
                             style: GoogleFonts.nunito(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
@@ -638,7 +642,7 @@ class _UserHeader extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            _email.isNotEmpty ? _email : 'View profile',
+                            _email.isNotEmpty ? _email : l10n.viewProfile,
                             style: GoogleFonts.nunito(
                               fontSize: 12,
                               color: Colors.white.withValues(alpha: 0.55),
@@ -672,6 +676,8 @@ class _LogOutTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
@@ -699,7 +705,7 @@ class _LogOutTile extends StatelessWidget {
           ),
         ),
         title: Text(
-          'Log out',
+          l10n.logOut,
           style: GoogleFonts.nunito(
             fontSize: 15,
             fontWeight: FontWeight.w600,
@@ -707,7 +713,7 @@ class _LogOutTile extends StatelessWidget {
           ),
         ),
         subtitle: Text(
-          'Sign out of your account',
+          l10n.logOutSubtitle,
           style: GoogleFonts.nunito(
             fontSize: 12,
             color: AppColors.dieRed.withValues(alpha: 0.65),

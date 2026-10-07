@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/utils/validators.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -60,16 +61,17 @@ class _EditNameSheetState extends ConsumerState<EditNameSheet> {
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
       setState(() {
         _saving = false;
-        _error =
-            'Couldn\'t save your name. Check your connection and try again.';
+        _error = l10n.couldNotSaveName;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark
         ? AppColors.textPrimaryDark
@@ -92,7 +94,7 @@ class _EditNameSheetState extends ConsumerState<EditNameSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Display name',
+              l10n.editDisplayNameTitle,
               style: GoogleFonts.nunito(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -101,7 +103,7 @@ class _EditNameSheetState extends ConsumerState<EditNameSheet> {
             ),
             const SizedBox(height: 4),
             Text(
-              'This is how you\'ll appear across Kapiert.',
+              l10n.editDisplayNameSubtitle,
               style: GoogleFonts.nunito(fontSize: 14, color: secondary),
             ),
             const SizedBox(height: 20),
@@ -116,7 +118,7 @@ class _EditNameSheetState extends ConsumerState<EditNameSheet> {
               validator: Validators.displayName,
               onFieldSubmitted: (_) => _save(),
               decoration: InputDecoration(
-                labelText: 'Name',
+                labelText: l10n.nameLabel,
                 prefixIcon: const Icon(Icons.person_outline_rounded),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -146,7 +148,7 @@ class _EditNameSheetState extends ConsumerState<EditNameSheet> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    child: const Text('Cancel'),
+                    child: Text(l10n.cancel),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -170,9 +172,9 @@ class _EditNameSheetState extends ConsumerState<EditNameSheet> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text(
-                            'Save',
-                            style: TextStyle(fontWeight: FontWeight.w700),
+                        : Text(
+                            l10n.save,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                   ),
                 ),

@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../domain/models/auth_user.dart';
 import '../../../domain/models/srs_stats.dart';
 import '../../../shared/theme/app_colors.dart';
@@ -56,9 +57,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _editName(AppUser user) async {
     final saved = await showEditNameSheet(context, user.shownName);
     if (saved && mounted) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Name updated')));
+      ).showSnackBar(SnackBar(content: Text(l10n.nameUpdated)));
     }
   }
 
@@ -68,6 +70,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final user = ref.watch(authProvider).user;
     final stats = ref.watch(historyProvider).stats;
     final srs = ref.watch(srsProvider);
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       body: RefreshIndicator(
@@ -93,40 +96,40 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     else
                       _SyncCard(isDark: isDark),
                     const SizedBox(height: 28),
-                    _SectionTitle('Your progress', isDark: isDark),
+                    _SectionTitle(l10n.yourProgress, isDark: isDark),
                     const SizedBox(height: 12),
                     _StatsGrid(stats: stats, isDark: isDark),
                     const SizedBox(height: 28),
-                    _SectionTitle('Activity & trends', isDark: isDark),
+                    _SectionTitle(l10n.activityAndTrends, isDark: isDark),
                     const SizedBox(height: 12),
                     AdvancedStatsCard(isDark: isDark),
                     const SizedBox(height: 28),
-                    _SectionTitle('Achievements', isDark: isDark),
+                    _SectionTitle(l10n.achievements, isDark: isDark),
                     const SizedBox(height: 12),
                     AchievementsCard(isDark: isDark),
                     const SizedBox(height: 28),
-                    _SectionTitle('Article mastery', isDark: isDark),
+                    _SectionTitle(l10n.articleMastery, isDark: isDark),
                     const SizedBox(height: 12),
                     _ArticleMasteryCard(stats: stats, isDark: isDark),
                     const SizedBox(height: 28),
-                    _SectionTitle('Spaced repetition', isDark: isDark),
+                    _SectionTitle(l10n.spacedRepetition, isDark: isDark),
                     const SizedBox(height: 12),
                     _SrsMasteryCard(stats: srs.stats, isDark: isDark),
                     if (user != null) ...[
                       const SizedBox(height: 28),
-                      _SectionTitle('Account', isDark: isDark),
+                      _SectionTitle(l10n.sectionAccount, isDark: isDark),
                       const SizedBox(height: 12),
                       _ProfileTile(
                         key: const Key('profile_edit_name_tile'),
                         icon: Icons.badge_outlined,
-                        title: 'Display name',
+                        title: l10n.displayName,
                         subtitle: user.shownName,
                         isDark: isDark,
                         onTap: () => _editName(user),
                       ),
                       _ProfileTile(
                         icon: Icons.alternate_email_rounded,
-                        title: 'Email',
+                        title: l10n.email,
                         subtitle: user.email.isEmpty ? '—' : user.email,
                         isDark: isDark,
                       ),
@@ -134,9 +137,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         icon: user.provider == 'google'
                             ? Icons.g_mobiledata_rounded
                             : Icons.key_rounded,
-                        title: 'Sign-in method',
+                        title: l10n.signInMethod,
                         subtitle: user.provider == 'email'
-                            ? 'Email & password'
+                            ? l10n.emailAndPassword
                             : providerLabel(user.provider),
                         isDark: isDark,
                       ),
@@ -171,7 +174,8 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = user?.shownName ?? 'Guest';
+    final l10n = AppLocalizations.of(context);
+    final name = user?.shownName ?? l10n.guest;
     final initials = user?.initials ?? 'G';
     final since = user?.createdAt ?? firstActivity;
     final canPop = Navigator.of(context).canPop();
@@ -199,7 +203,7 @@ class _ProfileHeader extends StatelessWidget {
                 children: [
                   if (canPop)
                     IconButton(
-                      tooltip: 'Back',
+                      tooltip: l10n.back,
                       onPressed: () => Navigator.of(context).maybePop(),
                       icon: const Icon(
                         Icons.arrow_back_ios_new_rounded,
@@ -211,7 +215,7 @@ class _ProfileHeader extends StatelessWidget {
                     const SizedBox(width: 48),
                   Expanded(
                     child: Text(
-                      'Profile',
+                      l10n.profileTitle,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.nunito(
                         fontSize: 17,
@@ -256,7 +260,7 @@ class _ProfileHeader extends StatelessWidget {
                       const SizedBox(width: 6),
                       _HeaderIconButton(
                         icon: Icons.edit_rounded,
-                        tooltip: 'Edit name',
+                        tooltip: l10n.editName,
                         onTap: onEdit!,
                       ),
                     ],
@@ -280,9 +284,9 @@ class _ProfileHeader extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   if (user == null)
-                    const _HeaderChip(
+                    _HeaderChip(
                       icon: Icons.phone_android_rounded,
-                      label: 'Guest · on this device',
+                      label: l10n.guestOnDevice,
                     )
                   else
                     _HeaderChip(
@@ -295,8 +299,8 @@ class _ProfileHeader extends StatelessWidget {
                     _HeaderChip(
                       icon: Icons.calendar_today_rounded,
                       label: user != null
-                          ? 'Member since ${formatMonthYear(since)}'
-                          : 'Learning since ${formatMonthYear(since)}',
+                          ? l10n.memberSince(formatMonthYear(since))
+                          : l10n.learningSince(formatMonthYear(since)),
                     ),
                 ],
               ).animate().fadeIn(delay: 150.ms, duration: 350.ms),
@@ -405,6 +409,7 @@ class _SyncCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sync = ref.watch(syncProvider);
+    final l10n = AppLocalizations.of(context);
 
     final (
       IconData icon,
@@ -415,21 +420,21 @@ class _SyncCard extends ConsumerWidget {
       SyncStatus.syncing => (
         Icons.sync_rounded,
         AppColors.derBlue,
-        'Syncing…',
-        'Updating history, streak and settings',
+        l10n.syncing,
+        l10n.syncingSubtitle,
       ),
       SyncStatus.error => (
         Icons.cloud_off_rounded,
         AppColors.dieRed,
-        'Sync paused',
-        'We\'ll retry automatically — or tap Sync now',
+        l10n.syncPaused,
+        l10n.syncPausedSubtitle,
       ),
       SyncStatus.idle => (
         Icons.cloud_done_rounded,
         AppColors.dasGreen,
-        'Cloud sync on',
+        l10n.cloudSyncOn,
         sync.lastSyncedAt == null
-            ? 'Your progress is backed up to your account'
+            ? l10n.cloudSyncBackedUp
             : 'Last synced ${formatRelative(sync.lastSyncedAt!)}',
       ),
     };
@@ -457,7 +462,7 @@ class _SyncCard extends ConsumerWidget {
                 ? null
                 : () => ref.read(syncProvider.notifier).sync(),
             child: Text(
-              'Sync now',
+              l10n.syncNow,
               style: GoogleFonts.nunito(fontWeight: FontWeight.w800),
             ),
           ),
@@ -474,6 +479,8 @@ class _GuestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       padding: const EdgeInsets.all(1.5),
       decoration: BoxDecoration(
@@ -503,13 +510,12 @@ class _GuestCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Keep your progress safe',
+                        l10n.keepProgressSafe,
                         style: _titleStyle(isDark),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Create a free account to sync your history and '
-                        'streak across all your devices.',
+                        l10n.keepProgressSafeSubtitle,
                         style: _subtitleStyle(isDark),
                       ),
                     ],
@@ -532,7 +538,7 @@ class _GuestCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Sign in'),
+                    child: Text(l10n.signIn),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -549,9 +555,9 @@ class _GuestCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Create account',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+                    child: Text(
+                      l10n.createAccount,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
@@ -574,6 +580,7 @@ class _StatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final streak = (stats['streak'] as int?) ?? 0;
     final unique = (stats['uniqueWords'] as int?) ?? 0;
     final quiz = (stats['totalQuiz'] as int?) ?? 0;
@@ -592,28 +599,28 @@ class _StatsGrid extends StatelessWidget {
         icon: Icons.local_fire_department_rounded,
         color: AppColors.streakOrange,
         value: '$streak',
-        label: streak == 1 ? 'Day streak' : 'Days streak',
+        label: streak == 1 ? l10n.dayStreak : l10n.daysStreak,
         isDark: isDark,
       ),
       _StatTile(
         icon: Icons.menu_book_rounded,
         color: AppColors.derBlue,
         value: '$unique',
-        label: 'Words practised',
+        label: l10n.wordsPractised,
         isDark: isDark,
       ),
       _StatTile(
         icon: Icons.quiz_rounded,
         color: AppColors.dasGreen,
         value: '$quiz',
-        label: 'Quiz answers',
+        label: l10n.quizAnswers,
         isDark: isDark,
       ),
       _StatTile(
         icon: Icons.track_changes_rounded,
         color: accuracyColor,
         value: quiz == 0 ? '—' : '${accuracy.toStringAsFixed(0)}%',
-        label: 'Quiz accuracy',
+        label: l10n.quizAccuracy,
         isDark: isDark,
       ),
     ];
@@ -702,6 +709,7 @@ class _ArticleMasteryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final raw = stats['byArticle'];
     final byArticle = raw is Map ? raw : const {};
     Map<String, int> of(String a) =>
@@ -726,8 +734,7 @@ class _ArticleMasteryCard extends StatelessWidget {
             const SizedBox(width: 14),
             Expanded(
               child: Text(
-                'Look up or quiz a few words to see how you do with '
-                'der, die and das.',
+                l10n.articleMasteryEmpty,
                 style: _subtitleStyle(isDark),
               ),
             ),
@@ -785,23 +792,9 @@ class _ArticleMasteryCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text.rich(
-                      TextSpan(
-                        style: _subtitleStyle(isDark),
-                        children: [
-                          const TextSpan(text: 'Focus on '),
-                          TextSpan(
-                            text: weakest,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.colorForArticle(weakest),
-                            ),
-                          ),
-                          const TextSpan(
-                            text: ' — it\'s your lowest quiz accuracy.',
-                          ),
-                        ],
-                      ),
+                    child: Text(
+                      l10n.focusOnLowestAccuracy(weakest),
+                      style: _subtitleStyle(isDark),
                     ),
                   ),
                 ],
@@ -833,6 +826,7 @@ class _ArticleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = AppColors.colorForArticle(article);
     final acc = quiz == 0 ? null : correct / quiz;
 
@@ -863,14 +857,14 @@ class _ArticleRow extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '$total ${total == 1 ? 'word' : 'words'}',
+                    l10n.wordsCount(total),
                     style: _titleStyle(isDark).copyWith(fontSize: 14),
                   ),
                   const Spacer(),
                   Text(
                     acc == null
-                        ? 'no quiz yet'
-                        : '${(acc * 100).toStringAsFixed(0)}% correct',
+                        ? l10n.noQuizYet
+                        : l10n.percentCorrect((acc * 100).toInt()),
                     style: _subtitleStyle(isDark).copyWith(
                       fontWeight: FontWeight.w700,
                       color: acc == null ? null : color,
@@ -911,6 +905,7 @@ class _SrsMasteryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (stats.totalCount == 0) {
       return _Card(
         isDark: isDark,
@@ -923,7 +918,7 @@ class _SrsMasteryCard extends StatelessWidget {
             const SizedBox(width: 14),
             Expanded(
               child: Text(
-                'Quiz nouns to begin spaced repetition tracking and retention intervals.',
+                l10n.srsMasteryEmpty,
                 style: _subtitleStyle(isDark),
               ),
             ),
@@ -942,7 +937,7 @@ class _SrsMasteryCard extends StatelessWidget {
             children: [
               _SrsMetricTile(
                 icon: Icons.access_time_rounded,
-                label: 'Due now',
+                label: l10n.dueNow,
                 value: '${stats.dueCount}',
                 color: stats.dueCount > 0
                     ? AppColors.streakOrange
@@ -952,7 +947,7 @@ class _SrsMasteryCard extends StatelessWidget {
               const SizedBox(width: 8),
               _SrsMetricTile(
                 icon: Icons.school_rounded,
-                label: 'Learning',
+                label: l10n.stageLearning,
                 value: '${stats.learningCount}',
                 color: AppColors.derBlue,
                 isDark: isDark,
@@ -960,7 +955,7 @@ class _SrsMasteryCard extends StatelessWidget {
               const SizedBox(width: 8),
               _SrsMetricTile(
                 icon: Icons.trending_up_rounded,
-                label: 'Reviewing',
+                label: l10n.reviewing,
                 value: '${stats.reviewingCount}',
                 color: AppColors.dasGreen,
                 isDark: isDark,
@@ -968,7 +963,7 @@ class _SrsMasteryCard extends StatelessWidget {
               const SizedBox(width: 8),
               _SrsMetricTile(
                 icon: Icons.workspace_premium_rounded,
-                label: 'Mastered',
+                label: l10n.stageMastered,
                 value: '${stats.masteredCount}',
                 color: const Color(0xFFFFB800),
                 isDark: isDark,
@@ -979,13 +974,13 @@ class _SrsMasteryCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Mastery rate',
+                l10n.masteryRate,
                 style:
                     _subtitleStyle(isDark).copyWith(fontWeight: FontWeight.w700),
               ),
               const Spacer(),
               Text(
-                '${(masteryRate * 100).toStringAsFixed(0)}% of tracked words',
+                l10n.percentOfTrackedWords((masteryRate * 100).toInt()),
                 style: _subtitleStyle(isDark).copyWith(
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFFFFB800),
@@ -1115,12 +1110,13 @@ class _LogOutButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return OutlinedButton.icon(
       key: const Key('profile_logout'),
       onPressed: onTap,
       icon: const Icon(Icons.logout_rounded, size: 18),
       label: Text(
-        'Log out',
+        l10n.logOut,
         style: GoogleFonts.nunito(fontWeight: FontWeight.w800, fontSize: 15),
       ),
       style: OutlinedButton.styleFrom(

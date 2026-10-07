@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../domain/models/daily_activity.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../providers/advanced_stats_provider.dart';
@@ -18,6 +19,7 @@ class AdvancedStatsCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final state = ref.watch(advancedStatsProvider);
     final stats = state.stats;
 
@@ -54,7 +56,7 @@ class AdvancedStatsCard extends ConsumerWidget {
             const SizedBox(width: 14),
             Expanded(
               child: Text(
-                'Complete quizzes or look up words to build your weekly activity heatmap and progress trends.',
+                l10n.advancedStatsEmpty,
                 style: GoogleFonts.nunito(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -99,7 +101,7 @@ class AdvancedStatsCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Activity Heatmap',
+                      l10n.activityHeatmap,
                       style: GoogleFonts.nunito(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
@@ -109,7 +111,7 @@ class AdvancedStatsCard extends ConsumerWidget {
                       ),
                     ),
                     Text(
-                      '${stats.activeDaysCount} of 7 active days this week',
+                      l10n.activeDaysThisWeek(stats.activeDaysCount),
                       style: GoogleFonts.nunito(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -170,7 +172,7 @@ class AdvancedStatsCard extends ConsumerWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                'Daily Practice Volume',
+                l10n.practiceVolume,
                 style: GoogleFonts.nunito(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
@@ -191,25 +193,25 @@ class AdvancedStatsCard extends ConsumerWidget {
           Row(
             children: [
               _MetricTile(
-                label: '7-Day Total',
+                label: l10n.sevenDayTotal,
                 value: '${stats.currentWeekTotal}',
-                unit: 'actions',
+                unit: l10n.actionsUnit,
                 color: AppColors.derBlue,
                 isDark: isDark,
               ),
               const SizedBox(width: 8),
               _MetricTile(
-                label: 'Daily Avg',
+                label: l10n.dailyAvg,
                 value: stats.dailyAverage.toStringAsFixed(1),
-                unit: '/ day',
+                unit: l10n.perDayUnit,
                 color: AppColors.dasGreen,
                 isDark: isDark,
               ),
               const SizedBox(width: 8),
               _MetricTile(
-                label: 'Best Day',
+                label: l10n.bestDay,
                 value: '${stats.bestDayCount}',
-                unit: 'max',
+                unit: l10n.maxUnit,
                 color: AppColors.streakOrange,
                 isDark: isDark,
               ),
@@ -370,11 +372,12 @@ class _HeatmapLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         Text(
-          'Less',
+          l10n.less,
           style: GoogleFonts.nunito(
             fontSize: 10,
             color: isDark
@@ -394,7 +397,7 @@ class _HeatmapLegend extends StatelessWidget {
         _legendBox(4),
         const SizedBox(width: 5),
         Text(
-          'More',
+          l10n.more,
           style: GoogleFonts.nunito(
             fontSize: 10,
             color: isDark
@@ -447,6 +450,7 @@ class _DayDetailPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final d = activity.date;
     final dateStr = '${_monthName(d.month)} ${d.day}';
 
@@ -483,8 +487,13 @@ class _DayDetailPill extends StatelessWidget {
                   ),
                   TextSpan(
                     text: activity.hasActivity
-                        ? '${activity.totalCount} actions (${activity.quizCount} quizzes, ${(activity.accuracy).toStringAsFixed(0)}% accuracy, ${activity.uniqueWords} words)'
-                        : 'No activity recorded on this day.',
+                        ? l10n.dayActivitySummary(
+                            activity.totalCount,
+                            activity.quizCount,
+                            activity.accuracy.toInt(),
+                            activity.uniqueWords,
+                          )
+                        : l10n.noActivityOnDay,
                   ),
                 ],
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../domain/models/lookup_history.dart';
 import '../../../domain/models/word_model.dart';
 import '../../../shared/router/app_router.dart';
@@ -20,6 +21,7 @@ class HistoryScreen extends ConsumerWidget {
     final state = ref.watch(historyProvider);
     final favState = ref.watch(favoritesProvider);
     final isFavoritesTab = state.filter == 'favorites';
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -28,7 +30,7 @@ class HistoryScreen extends ConsumerWidget {
         children: [
           // ── Header ──
           Text(
-            'History',
+            l10n.historyTitle,
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w800,
@@ -41,11 +43,11 @@ class HistoryScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // ── Stats Cards ──
-          _buildStatsRow(isDark, state.stats),
+          _buildStatsRow(isDark, state.stats, l10n),
           const SizedBox(height: 20),
 
           // ── Filter Chips ──
-          _buildFilters(isDark, state.filter, ref),
+          _buildFilters(isDark, state.filter, ref, l10n),
           const SizedBox(height: 16),
 
           // ── List / Favorites Content ──
@@ -54,12 +56,12 @@ class HistoryScreen extends ConsumerWidget {
                 ? (favState.loading
                     ? const Center(child: CircularProgressIndicator())
                     : favState.favorites.isEmpty
-                        ? _buildEmptyFavoritesState(isDark)
-                        : _buildFavoritesList(favState.favorites, isDark, ref))
+                        ? _buildEmptyFavoritesState(isDark, l10n)
+                        : _buildFavoritesList(favState.favorites, isDark, ref, l10n))
                 : (state.loading
                     ? const Center(child: CircularProgressIndicator())
                     : state.entries.isEmpty
-                        ? _buildEmptyState(isDark)
+                        ? _buildEmptyState(isDark, l10n)
                         : _buildList(state.entries, ref)),
           ),
         ],
@@ -67,7 +69,7 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsRow(bool isDark, Map<String, dynamic> stats) {
+  Widget _buildStatsRow(bool isDark, Map<String, dynamic> stats, AppLocalizations l10n) {
     final total = stats['total'] ?? 0;
     final totalQuiz = stats['totalQuiz'] ?? 0;
     final accuracy = (stats['accuracy'] ?? 0.0) as double;
@@ -77,7 +79,7 @@ class HistoryScreen extends ConsumerWidget {
         Expanded(
           child: _StatCard(
             icon: Icons.history_rounded,
-            label: 'Total',
+            label: l10n.statTotal,
             value: '$total',
             color: AppColors.derBlue,
             isDark: isDark,
@@ -87,7 +89,7 @@ class HistoryScreen extends ConsumerWidget {
         Expanded(
           child: _StatCard(
             icon: Icons.quiz_rounded,
-            label: 'Quiz',
+            label: l10n.statQuiz,
             value: '$totalQuiz',
             color: AppColors.dasGreen,
             isDark: isDark,
@@ -97,7 +99,7 @@ class HistoryScreen extends ConsumerWidget {
         Expanded(
           child: _StatCard(
             icon: Icons.percent_rounded,
-            label: 'Accuracy',
+            label: l10n.statAccuracy,
             value: '${accuracy.toStringAsFixed(0)}%',
             color: accuracy >= 70
                 ? AppColors.correctGreen
@@ -111,21 +113,22 @@ class HistoryScreen extends ConsumerWidget {
     ).animate().fadeIn(duration: 400.ms);
   }
 
-  Widget _buildFilters(bool isDark, String activeFilter, WidgetRef ref) {
+  Widget _buildFilters(
+      bool isDark, String activeFilter, WidgetRef ref, AppLocalizations l10n) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
           _FilterChip(
-            label: 'All',
+            label: l10n.filterAll,
             isActive: activeFilter == 'all',
             onTap: () => ref.read(historyProvider.notifier).setFilter('all'),
             isDark: isDark,
           ),
           const SizedBox(width: 8),
           _FilterChip(
-            label: '✓ Correct',
+            label: '✓ ${l10n.filterCorrect}',
             isActive: activeFilter == 'correct',
             onTap: () =>
                 ref.read(historyProvider.notifier).setFilter('correct'),
@@ -134,7 +137,7 @@ class HistoryScreen extends ConsumerWidget {
           ),
           const SizedBox(width: 8),
           _FilterChip(
-            label: '✗ Incorrect',
+            label: '✗ ${l10n.filterIncorrect}',
             isActive: activeFilter == 'incorrect',
             onTap: () =>
                 ref.read(historyProvider.notifier).setFilter('incorrect'),
@@ -143,7 +146,7 @@ class HistoryScreen extends ConsumerWidget {
           ),
           const SizedBox(width: 8),
           _FilterChip(
-            label: '⭐ Favorites',
+            label: '⭐ ${l10n.filterFavorites}',
             isActive: activeFilter == 'favorites',
             onTap: () =>
                 ref.read(historyProvider.notifier).setFilter('favorites'),
@@ -156,13 +159,14 @@ class HistoryScreen extends ConsumerWidget {
   }
 
   Widget _buildFavoritesList(
-      List<WordModel> favorites, bool isDark, WidgetRef ref) {
+      List<WordModel> favorites, bool isDark, WidgetRef ref, AppLocalizations l10n) {
     return ListView.builder(
       itemCount: favorites.length + 1,
       padding: const EdgeInsets.only(bottom: 40),
       itemBuilder: (context, index) {
         if (index == 0) {
-          return _buildFocusedReviewCard(favorites.length, isDark, ref, favorites);
+          return _buildFocusedReviewCard(
+              favorites.length, isDark, ref, favorites, l10n);
         }
         final word = favorites[index - 1];
         final articleColor = AppColors.colorForArticle(word.article);
@@ -215,10 +219,10 @@ class HistoryScreen extends ConsumerWidget {
             ),
             subtitle: Text(
               word.plural != null && word.plural!.isNotEmpty
-                  ? 'pl. ${word.plural}'
+                  ? '${l10n.pluralLabel}: ${word.plural}'
                   : word.translation != null && word.translation!.isNotEmpty
                       ? word.translation!
-                      : word.genderLabel,
+                      : l10n.genderLabel(word.gender),
               style: TextStyle(
                 fontSize: 12,
                 color: isDark
@@ -232,7 +236,7 @@ class HistoryScreen extends ConsumerWidget {
                 color: Color(0xFFFFB800),
                 size: 24,
               ),
-              tooltip: 'Remove from Favorites',
+              tooltip: l10n.removeFromFavorites,
               onPressed: () {
                 ref.read(favoritesProvider.notifier).removeFavorite(word.word);
               },
@@ -246,8 +250,8 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFocusedReviewCard(
-      int count, bool isDark, WidgetRef ref, List<WordModel> favorites) {
+  Widget _buildFocusedReviewCard(int count, bool isDark, WidgetRef ref,
+      List<WordModel> favorites, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -284,9 +288,9 @@ class HistoryScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Focused Review',
-                  style: TextStyle(
+                Text(
+                  l10n.focusedReview,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.2,
@@ -294,7 +298,7 @@ class HistoryScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Practice your $count saved words in Quiz mode',
+                  l10n.practiceSavedWords(count),
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark
@@ -323,9 +327,9 @@ class HistoryScreen extends ConsumerWidget {
               ),
             ),
             icon: const Icon(Icons.play_arrow_rounded, size: 20),
-            label: const Text(
-              'Quiz',
-              style: TextStyle(fontWeight: FontWeight.w700),
+            label: Text(
+              l10n.tabQuiz,
+              style: const TextStyle(fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -333,7 +337,7 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyFavoritesState(bool isDark) {
+  Widget _buildEmptyFavoritesState(bool isDark, AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -345,7 +349,7 @@ class HistoryScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'No favorites yet',
+            l10n.noFavoritesYet,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -356,7 +360,7 @@ class HistoryScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Tap the star ⭐ on any word card in Lookup\nor Quiz to save it for focused review.',
+            l10n.noFavoritesSubtitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -398,7 +402,7 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(bool isDark) {
+  Widget _buildEmptyState(bool isDark, AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -411,7 +415,7 @@ class HistoryScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'No history yet',
+            l10n.emptyHistory,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -422,7 +426,7 @@ class HistoryScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Look up words or take quizzes\nto see your history here.',
+            l10n.emptyHistorySubtitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
