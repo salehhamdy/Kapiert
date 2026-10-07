@@ -15,3 +15,7 @@
 
 ## 3. Continuous Learning & Task Observation
 - **Active Task Observer**: Maintain active observation of user feedback, corrections, and tool roadblocks via `task-observer`. Record observations so that repository workflows, skills, and quality standards continuously adapt and improve.
+
+## 4. Mandatory Documentation Updates After Each Run
+- **Synchronized Documentation**: After each feature, bugfix, refactor, or run, you MUST update `PROJECT_DOCUMENTATION.md` and `README.md` to reflect all architectural additions, schema evolutions, domain models, APIs, and test suite counts.
+- **Zero Stale Documentation**: Never commit or consider a run complete without ensuring the project documentation is fully updated, accurate, and in sync with the latest code state.

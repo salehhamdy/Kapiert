@@ -49,8 +49,13 @@ Check widget test outputs for:
 - `A RenderFlex overflowed by X pixels`
 - Verify that charts, lists, and modal sheets are wrapped in appropriate scrollables (`SingleChildScrollView`) or bounded constraints (`SizedBox`, `Expanded`).
 
-### 6. Stage, Commit & Push Immediately
-Only after steps 1–5 have completed with 0 errors:
+### 6. Update Project Documentation
+Always update project documentation to keep it strictly synchronized with changes:
+- [`PROJECT_DOCUMENTATION.md`](file:///c:/Users/ASUS/Downloads/German_Articles/PROJECT_DOCUMENTATION.md): Document new domain models, database schema changes (e.g. SQLite tables/indexes), backend APIs, and update the test breakdown table.
+- [`README.md`](file:///c:/Users/ASUS/Downloads/German_Articles/README.md): Update Roadmap task checkmarks, Feature status badges, and test suite execution numbers.
+
+### 7. Stage, Commit & Push Immediately
+Only after steps 1–6 have completed with 0 errors:
 ```powershell
 git status
 git add .
