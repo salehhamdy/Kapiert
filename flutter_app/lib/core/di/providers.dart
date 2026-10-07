@@ -6,17 +6,21 @@ import '../../core/network/api_client.dart';
 import '../../data/datasources/article_remote_ds.dart';
 import '../../data/datasources/auth_remote_ds.dart';
 import '../../data/datasources/sync_remote_ds.dart';
+import '../../data/repositories/achievements_repository_impl.dart';
 import '../../data/repositories/article_repository_impl.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../data/repositories/favorites_repository_impl.dart';
 import '../../data/repositories/history_repository_impl.dart';
 import '../../data/repositories/settings_repository_impl.dart';
+import '../../data/repositories/srs_repository_impl.dart';
 import '../../data/repositories/sync_repository_impl.dart';
+import '../../domain/repositories/i_achievements_repository.dart';
 import '../../domain/repositories/i_article_repository.dart';
 import '../../domain/repositories/i_auth_repository.dart';
 import '../../domain/repositories/i_favorites_repository.dart';
 import '../../domain/repositories/i_history_repository.dart';
 import '../../domain/repositories/i_settings_repository.dart';
+import '../../domain/repositories/i_srs_repository.dart';
 import '../../domain/repositories/i_sync_repository.dart';
 
 // ---------------------------------------------------------------------------
@@ -67,4 +71,12 @@ final favoritesRepositoryProvider = Provider<IFavoritesRepository>(
 
 final settingsRepositoryProvider = Provider<ISettingsRepository>(
   (ref) => SettingsRepositoryImpl(ref.watch(syncRepositoryProvider)),
+);
+
+final srsRepositoryProvider = Provider<ISrsRepository>(
+  (_) => SrsRepositoryImpl(),
+);
+
+final achievementsRepositoryProvider = Provider<IAchievementsRepository>(
+  (_) => const AchievementsRepositoryImpl(),
 );

@@ -1,13 +1,22 @@
+import 'package:flutter/material.dart' show Icons, IconData;
 import 'package:sqflite/sqflite.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../domain/models/achievement.dart';
+import '../../domain/models/advanced_stats.dart';
+import '../../domain/models/daily_activity.dart';
 import '../../domain/models/lookup_history.dart';
+import '../../domain/models/srs_item.dart';
+import '../../domain/models/srs_stats.dart';
 import '../../domain/models/word_model.dart';
 import '../utils/uuid.dart';
 
-/// Manages local storage: SQLite for history and favorites, SharedPreferences for settings.
+/// Manages local storage: SQLite for history, favorites, and SRS, SharedPreferences for settings.
 class StorageService {
   static Database? _database;
   static SharedPreferences? _prefs;
+
+  /// Whether the database has been initialized.
+  static bool get isInitialized => _database != null;
 
   // ---------------------------------------------------------------------------
   // Initialization
@@ -25,7 +34,7 @@ class StorageService {
 
     return openDatabase(
       path,
-      version: 3,
+      version: 5,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE history (
@@ -48,6 +57,29 @@ class StorageService {
             plural TEXT,
             translation TEXT,
             timestamp TEXT NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE srs_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            word TEXT NOT NULL UNIQUE,
+            article TEXT NOT NULL,
+            gender TEXT NOT NULL,
+            plural TEXT,
+            translation TEXT,
+            stage INTEGER NOT NULL DEFAULT 1,
+            consecutive_correct INTEGER NOT NULL DEFAULT 0,
+            total_attempts INTEGER NOT NULL DEFAULT 0,
+            total_correct INTEGER NOT NULL DEFAULT 0,
+            last_reviewed TEXT,
+            next_review TEXT NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE achievements (
+            id TEXT PRIMARY KEY,
+            unlocked_at TEXT NOT NULL,
+            notified INTEGER NOT NULL DEFAULT 0
           )
         ''');
         await _createSyncIndexes(db);
@@ -83,6 +115,34 @@ class StorageService {
             )
           ''');
         }
+        if (oldVersion < 4) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS srs_items (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              word TEXT NOT NULL UNIQUE,
+              article TEXT NOT NULL,
+              gender TEXT NOT NULL,
+              plural TEXT,
+              translation TEXT,
+              stage INTEGER NOT NULL DEFAULT 1,
+              consecutive_correct INTEGER NOT NULL DEFAULT 0,
+              total_attempts INTEGER NOT NULL DEFAULT 0,
+              total_correct INTEGER NOT NULL DEFAULT 0,
+              last_reviewed TEXT,
+              next_review TEXT NOT NULL
+            )
+          ''');
+          await _bootstrapSrsFromHistory(db);
+        }
+        if (oldVersion < 5) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS achievements (
+              id TEXT PRIMARY KEY,
+              unlocked_at TEXT NOT NULL,
+              notified INTEGER NOT NULL DEFAULT 0
+            )
+          ''');
+        }
         await _createSyncIndexes(db);
       },
     );
@@ -97,6 +157,15 @@ class StorageService {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS favorites_word_idx ON favorites (LOWER(word))',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS srs_next_review_idx ON srs_items (next_review)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS srs_word_idx ON srs_items (LOWER(word))',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS achievements_notified_idx ON achievements (notified)',
     );
   }
 
@@ -203,9 +272,112 @@ class StorageService {
     };
   }
 
-  /// Clear all history.
+  /// Clear all history, reset SRS records, and reset achievements.
   static Future<void> clearHistory() async {
     await _db.delete('history');
+    await _db.delete('srs_items');
+    await _db.delete('achievements');
+  }
+
+  /// Retrieves multi-day learning activity and progress metrics for the past [days] days.
+  static Future<AdvancedStats> getAdvancedStats({
+    int days = 14,
+    DateTime? now,
+  }) async {
+    final currentNow = now ?? DateTime.now().toUtc();
+    final today =
+        DateTime.utc(currentNow.year, currentNow.month, currentNow.day);
+    final startDate = today.subtract(Duration(days: days - 1));
+    final startIso = startDate.toIso8601String().substring(0, 10);
+
+    final rows = await _db.rawQuery('''
+      SELECT substr(timestamp, 1, 10) AS day_str,
+             COUNT(*) AS total_count,
+             SUM(CASE WHEN mode = 'quiz' THEN 1 ELSE 0 END) AS quiz_count,
+             SUM(CASE WHEN mode = 'quiz' AND correct = 1 THEN 1 ELSE 0 END) AS quiz_correct,
+             SUM(CASE WHEN mode = 'lookup' THEN 1 ELSE 0 END) AS lookup_count,
+             COUNT(DISTINCT LOWER(word)) AS unique_words
+      FROM history
+      WHERE substr(timestamp, 1, 10) >= ?
+      GROUP BY substr(timestamp, 1, 10)
+    ''', [startIso]);
+
+    final rowMap = <String, Map<String, dynamic>>{
+      for (final r in rows) (r['day_str'] as String): r,
+    };
+
+    final dailyList = <DailyActivity>[];
+    int totalActivities = 0;
+    int bestDayCount = 0;
+    DateTime? bestDayDate;
+    int totalQuiz = 0;
+    int totalCorrect = 0;
+
+    for (int i = 0; i < days; i++) {
+      final date = startDate.add(Duration(days: i));
+      final dateKey = date.toIso8601String().substring(0, 10);
+      final r = rowMap[dateKey];
+
+      if (r != null) {
+        final total = (r['total_count'] as int?) ?? 0;
+        final quiz = (r['quiz_count'] as int?) ?? 0;
+        final correct = (r['quiz_correct'] as int?) ?? 0;
+        final lookup = (r['lookup_count'] as int?) ?? 0;
+        final unique = (r['unique_words'] as int?) ?? 0;
+
+        totalActivities += total;
+        totalQuiz += quiz;
+        totalCorrect += correct;
+
+        if (total > bestDayCount) {
+          bestDayCount = total;
+          bestDayDate = date;
+        }
+
+        dailyList.add(DailyActivity(
+          date: date,
+          totalCount: total,
+          quizCount: quiz,
+          quizCorrect: correct,
+          lookupCount: lookup,
+          uniqueWords: unique,
+        ));
+      } else {
+        dailyList.add(DailyActivity.empty(date));
+      }
+    }
+
+    // Last 7 days metrics
+    final last7 = dailyList.length <= 7
+        ? dailyList
+        : dailyList.sublist(dailyList.length - 7);
+    final currentWeekTotal =
+        last7.fold<int>(0, (sum, d) => sum + d.totalCount);
+    final activeDaysCount = last7.where((d) => d.hasActivity).length;
+    final dailyAverage = currentWeekTotal / 7.0;
+
+    // Previous 7 days metrics (days 8-14 from today)
+    int previousWeekTotal = 0;
+    if (dailyList.length >= 14) {
+      final prev7 =
+          dailyList.sublist(dailyList.length - 14, dailyList.length - 7);
+      previousWeekTotal = prev7.fold<int>(0, (sum, d) => sum + d.totalCount);
+    }
+
+    final overallAccuracy =
+        totalQuiz > 0 ? (totalCorrect / totalQuiz * 100) : 0.0;
+
+    return AdvancedStats(
+      dailyActivities: dailyList,
+      totalActivities: totalActivities,
+      currentWeekTotal: currentWeekTotal,
+      previousWeekTotal: previousWeekTotal,
+      bestDayCount: bestDayCount,
+      bestDayDate: bestDayDate,
+      activeDaysCount: activeDaysCount,
+      dailyAverage: dailyAverage,
+      overallAccuracy: overallAccuracy,
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -471,4 +643,508 @@ class StorageService {
       _p.setInt('$_keySyncCursorPrefix$uid', cursor);
   static Future<void> clearHistoryCursor(String uid) =>
       _p.remove('$_keySyncCursorPrefix$uid');
+
+  // ---------------------------------------------------------------------------
+  // Spaced Repetition System (SRS) (SQLite)
+  // ---------------------------------------------------------------------------
+
+  /// Records a quiz review result for a noun and recalculates its SRS stage and next review.
+  static Future<SrsItem> recordSrsReview(
+    WordModel word, {
+    required bool correct,
+    DateTime? now,
+  }) async {
+    final currentNow = now ?? DateTime.now().toUtc();
+    final existing = await getSrsItem(word.word);
+    SrsItem updated;
+
+    if (existing != null) {
+      updated = existing.recordAttempt(correct: correct, now: currentNow);
+      await _db.update(
+        'srs_items',
+        updated.toMap()..remove('id'),
+        where: 'LOWER(word) = ?',
+        whereArgs: [word.word.toLowerCase()],
+      );
+    } else {
+      final interval = correct
+          ? SrsItem.intervalForStage(2)
+          : const Duration(hours: 4);
+      updated = SrsItem(
+        word: word.word,
+        article: word.article,
+        gender: word.gender,
+        plural: word.plural,
+        translation: word.translation,
+        stage: correct ? 2 : 1,
+        consecutiveCorrect: correct ? 1 : 0,
+        totalAttempts: 1,
+        totalCorrect: correct ? 1 : 0,
+        lastReviewed: currentNow,
+        nextReview: currentNow.add(interval),
+      );
+      await _db.insert(
+        'srs_items',
+        updated.toMap()..remove('id'),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    return updated;
+  }
+
+  /// Gets the SRS status of a single word by name.
+  static Future<SrsItem?> getSrsItem(String word) async {
+    final rows = await _db.query(
+      'srs_items',
+      where: 'LOWER(word) = ?',
+      whereArgs: [word.toLowerCase()],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return SrsItem.fromMap(rows.first);
+  }
+
+  /// Gets nouns that are currently due for spaced review, earliest due date first.
+  static Future<List<SrsItem>> getDueSrsItems({int limit = 50}) async {
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final rows = await _db.query(
+      'srs_items',
+      where: 'next_review <= ?',
+      whereArgs: [nowIso],
+      orderBy: 'next_review ASC',
+      limit: limit,
+    );
+    return rows.map((r) => SrsItem.fromMap(r)).toList();
+  }
+
+  /// Gets all tracked SRS nouns, sorted by stage descending and next review ascending.
+  static Future<List<SrsItem>> getAllSrsItems() async {
+    final rows = await _db.query(
+      'srs_items',
+      orderBy: 'stage DESC, next_review ASC',
+    );
+    return rows.map((r) => SrsItem.fromMap(r)).toList();
+  }
+
+  /// Gets summary SRS metrics for the learner.
+  static Future<SrsStats> getSrsStats() async {
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final total = Sqflite.firstIntValue(
+      await _db.rawQuery('SELECT COUNT(*) FROM srs_items'),
+    ) ?? 0;
+
+    final due = Sqflite.firstIntValue(
+      await _db.rawQuery(
+        'SELECT COUNT(*) FROM srs_items WHERE next_review <= ?',
+        [nowIso],
+      ),
+    ) ?? 0;
+
+    final learning = Sqflite.firstIntValue(
+      await _db.rawQuery(
+        'SELECT COUNT(*) FROM srs_items WHERE stage IN (1, 2)',
+      ),
+    ) ?? 0;
+
+    final reviewing = Sqflite.firstIntValue(
+      await _db.rawQuery(
+        'SELECT COUNT(*) FROM srs_items WHERE stage IN (3, 4)',
+      ),
+    ) ?? 0;
+
+    final mastered = Sqflite.firstIntValue(
+      await _db.rawQuery(
+        'SELECT COUNT(*) FROM srs_items WHERE stage >= 5',
+      ),
+    ) ?? 0;
+
+    return SrsStats(
+      totalCount: total,
+      dueCount: due,
+      learningCount: learning,
+      reviewingCount: reviewing,
+      masteredCount: mastered,
+    );
+  }
+
+  /// Deletes all SRS entries.
+  static Future<void> resetSrs() async {
+    await _db.delete('srs_items');
+  }
+
+  /// Seeds initial SRS cards from existing quiz history if srs_items is empty.
+  static Future<void> _bootstrapSrsFromHistory(Database db) async {
+    try {
+      final rows = await db.rawQuery('''
+        SELECT word, article,
+               COUNT(*) as attempts,
+               SUM(CASE WHEN correct = 1 THEN 1 ELSE 0 END) as correct_count,
+               MAX(timestamp) as last_ts
+        FROM history
+        WHERE mode = 'quiz'
+        GROUP BY LOWER(word)
+      ''');
+      if (rows.isEmpty) return;
+      final now = DateTime.now().toUtc();
+      final batch = db.batch();
+      for (final r in rows) {
+        final word = r['word'] as String;
+        final article = r['article'] as String;
+        final attempts = (r['attempts'] as int?) ?? 1;
+        final correctCount = (r['correct_count'] as int?) ?? 0;
+        final gender = article == 'der'
+            ? 'm'
+            : (article == 'die' ? 'f' : 'n');
+        final acc = correctCount / attempts;
+        int stage = 1;
+        if (acc >= 0.9 && attempts >= 3) {
+          stage = 3;
+        } else if (acc >= 0.7 && attempts >= 2) {
+          stage = 2;
+        }
+        final nextReview = acc < 0.6
+            ? now
+            : now.add(SrsItem.intervalForStage(stage));
+
+        batch.insert(
+          'srs_items',
+          {
+            'word': word,
+            'article': article,
+            'gender': gender,
+            'stage': stage,
+            'consecutive_correct': correctCount,
+            'total_attempts': attempts,
+            'total_correct': correctCount,
+            'last_reviewed': r['last_ts'],
+            'next_review': nextReview.toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+      }
+      await batch.commit(noResult: true);
+    } catch (_) {}
+  }
+
+  // ---------------------------------------------------------------------------
+  // Achievements & Milestones (SQLite & Evaluation)
+  // ---------------------------------------------------------------------------
+
+  /// Evaluates and returns all milestones with live user progress.
+  static Future<List<Achievement>> getAchievements({DateTime? now}) async {
+    final currentNow = now ?? DateTime.now().toUtc();
+
+    // 1. Gather current user stats
+    final streak = getStreak();
+    final uniqueWords = Sqflite.firstIntValue(
+          await _db.rawQuery('SELECT COUNT(DISTINCT LOWER(word)) FROM history'),
+        ) ?? 0;
+    final totalQuiz = Sqflite.firstIntValue(
+          await _db.rawQuery(
+            'SELECT COUNT(*) FROM history WHERE mode = ?',
+            ['quiz'],
+          ),
+        ) ?? 0;
+    final derCorrect = Sqflite.firstIntValue(
+          await _db.rawQuery(
+            'SELECT COUNT(*) FROM history WHERE mode = ? AND correct = 1 AND LOWER(article) = ?',
+            ['quiz', 'der'],
+          ),
+        ) ?? 0;
+    final dieCorrect = Sqflite.firstIntValue(
+          await _db.rawQuery(
+            'SELECT COUNT(*) FROM history WHERE mode = ? AND correct = 1 AND LOWER(article) = ?',
+            ['quiz', 'die'],
+          ),
+        ) ?? 0;
+    final dasCorrect = Sqflite.firstIntValue(
+          await _db.rawQuery(
+            'SELECT COUNT(*) FROM history WHERE mode = ? AND correct = 1 AND LOWER(article) = ?',
+            ['quiz', 'das'],
+          ),
+        ) ?? 0;
+
+    final totalSrs = Sqflite.firstIntValue(
+          await _db.rawQuery('SELECT COUNT(*) FROM srs_items'),
+        ) ?? 0;
+    final srsStage3Plus = Sqflite.firstIntValue(
+          await _db.rawQuery('SELECT COUNT(*) FROM srs_items WHERE stage >= 3'),
+        ) ?? 0;
+    final srsMastered = Sqflite.firstIntValue(
+          await _db.rawQuery('SELECT COUNT(*) FROM srs_items WHERE stage >= 5'),
+        ) ?? 0;
+
+    final favCount = Sqflite.firstIntValue(
+          await _db.rawQuery('SELECT COUNT(*) FROM favorites'),
+        ) ?? 0;
+
+    // 2. Query already-unlocked achievements
+    final unlockedRows = await _db.query('achievements');
+    final unlockedMap = <String, DateTime>{
+      for (final r in unlockedRows)
+        (r['id'] as String): DateTime.parse(r['unlocked_at'] as String),
+    };
+
+    // 3. Define all standard milestones
+    final definitions = <({
+      String id,
+      String title,
+      String description,
+      AchievementCategory category,
+      IconData icon,
+      int target,
+      int current,
+    })>[
+      // Streaks
+      (
+        id: 'streak_3',
+        title: 'Streak Starter',
+        description: 'Maintain a 3-day learning streak',
+        category: AchievementCategory.streak,
+        icon: Icons.local_fire_department_rounded,
+        target: 3,
+        current: streak,
+      ),
+      (
+        id: 'streak_7',
+        title: 'Flame Keeper',
+        description: 'Maintain a 7-day learning streak',
+        category: AchievementCategory.streak,
+        icon: Icons.whatshot_rounded,
+        target: 7,
+        current: streak,
+      ),
+      (
+        id: 'streak_14',
+        title: 'Iron Discipline',
+        description: 'Reach a 14-day learning streak',
+        category: AchievementCategory.streak,
+        icon: Icons.bolt_rounded,
+        target: 14,
+        current: streak,
+      ),
+      (
+        id: 'streak_30',
+        title: 'Monthly Titan',
+        description: 'Achieve an epic 30-day streak',
+        category: AchievementCategory.streak,
+        icon: Icons.workspace_premium_rounded,
+        target: 30,
+        current: streak,
+      ),
+
+      // Vocabulary
+      (
+        id: 'first_word',
+        title: 'First Step',
+        description: 'Practice or look up your first German noun',
+        category: AchievementCategory.vocabulary,
+        icon: Icons.flag_rounded,
+        target: 1,
+        current: uniqueWords,
+      ),
+      (
+        id: 'words_10',
+        title: 'Curious Learner',
+        description: 'Practice 10 unique German nouns',
+        category: AchievementCategory.vocabulary,
+        icon: Icons.menu_book_rounded,
+        target: 10,
+        current: uniqueWords,
+      ),
+      (
+        id: 'words_50',
+        title: 'Vocabulary Builder',
+        description: 'Practice 50 unique German nouns',
+        category: AchievementCategory.vocabulary,
+        icon: Icons.auto_stories_rounded,
+        target: 50,
+        current: uniqueWords,
+      ),
+      (
+        id: 'words_100',
+        title: 'Century Club',
+        description: 'Practice 100 unique German nouns',
+        category: AchievementCategory.vocabulary,
+        icon: Icons.military_tech_rounded,
+        target: 100,
+        current: uniqueWords,
+      ),
+      (
+        id: 'words_250',
+        title: 'Word Master',
+        description: 'Practice 250 unique German nouns',
+        category: AchievementCategory.vocabulary,
+        icon: Icons.school_rounded,
+        target: 250,
+        current: uniqueWords,
+      ),
+
+      // Mastery
+      (
+        id: 'quiz_10',
+        title: 'Quiz Novice',
+        description: 'Answer 10 quiz questions',
+        category: AchievementCategory.mastery,
+        icon: Icons.quiz_rounded,
+        target: 10,
+        current: totalQuiz,
+      ),
+      (
+        id: 'quiz_50',
+        title: 'Quiz Enthusiast',
+        description: 'Answer 50 quiz questions',
+        category: AchievementCategory.mastery,
+        icon: Icons.sports_score_rounded,
+        target: 50,
+        current: totalQuiz,
+      ),
+      (
+        id: 'quiz_200',
+        title: 'Quiz Veteran',
+        description: 'Answer 200 quiz questions',
+        category: AchievementCategory.mastery,
+        icon: Icons.emoji_events_rounded,
+        target: 200,
+        current: totalQuiz,
+      ),
+      (
+        id: 'der_master',
+        title: 'Herr der Wörter',
+        description: 'Answer 20 "der" questions correctly',
+        category: AchievementCategory.mastery,
+        icon: Icons.male_rounded,
+        target: 20,
+        current: derCorrect,
+      ),
+      (
+        id: 'die_master',
+        title: 'Königin der Grammatik',
+        description: 'Answer 20 "die" questions correctly',
+        category: AchievementCategory.mastery,
+        icon: Icons.female_rounded,
+        target: 20,
+        current: dieCorrect,
+      ),
+      (
+        id: 'das_master',
+        title: 'Meister des Neutrums',
+        description: 'Answer 20 "das" questions correctly',
+        category: AchievementCategory.mastery,
+        icon: Icons.diamond_rounded,
+        target: 20,
+        current: dasCorrect,
+      ),
+
+      // Spaced Repetition
+      (
+        id: 'srs_first',
+        title: 'Memory Seed',
+        description: 'Add your first noun to Spaced Repetition',
+        category: AchievementCategory.srs,
+        icon: Icons.psychology_rounded,
+        target: 1,
+        current: totalSrs,
+      ),
+      (
+        id: 'srs_stage3',
+        title: 'Solid Ground',
+        description: 'Advance 5 nouns to SRS Stage 3 or higher',
+        category: AchievementCategory.srs,
+        icon: Icons.trending_up_rounded,
+        target: 5,
+        current: srsStage3Plus,
+      ),
+      (
+        id: 'srs_mastered',
+        title: 'Gold Standard',
+        description: 'Reach Stage 5 (Mastered ⭐) with 5 nouns',
+        category: AchievementCategory.srs,
+        icon: Icons.star_rounded,
+        target: 5,
+        current: srsMastered,
+      ),
+
+      // Favorites
+      (
+        id: 'fav_5',
+        title: 'Word Collector',
+        description: 'Save 5 nouns to your Favorites',
+        category: AchievementCategory.favorites,
+        icon: Icons.bookmark_added_rounded,
+        target: 5,
+        current: favCount,
+      ),
+    ];
+
+    final result = <Achievement>[];
+    final batch = _db.batch();
+    bool hasNewUnlocks = false;
+
+    for (final def in definitions) {
+      final isNowEligible = def.current >= def.target;
+      DateTime? unlockDate = unlockedMap[def.id];
+
+      if (isNowEligible && unlockDate == null) {
+        // Newly unlocked!
+        unlockDate = currentNow;
+        batch.insert(
+          'achievements',
+          {
+            'id': def.id,
+            'unlocked_at': currentNow.toIso8601String(),
+            'notified': 0,
+          },
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+        hasNewUnlocks = true;
+      }
+
+      result.add(Achievement(
+        id: def.id,
+        title: def.title,
+        description: def.description,
+        category: def.category,
+        icon: def.icon,
+        targetValue: def.target,
+        currentValue: def.current,
+        isUnlocked: unlockDate != null,
+        unlockedAt: unlockDate,
+      ));
+    }
+
+    if (hasNewUnlocks) {
+      await batch.commit(noResult: true);
+    }
+
+    return result;
+  }
+
+  /// Returns any milestones that were recently unlocked and marks them notified.
+  static Future<List<Achievement>> checkNewUnlocks() async {
+    final unnotifiedRows = await _db.query(
+      'achievements',
+      where: 'notified = 0',
+    );
+    if (unnotifiedRows.isEmpty) return const [];
+
+    final unnotifiedIds = unnotifiedRows.map((r) => r['id'] as String).toSet();
+    final all = await getAchievements();
+    final newlyUnlocked =
+        all.where((a) => unnotifiedIds.contains(a.id)).toList();
+
+    await _db.update(
+      'achievements',
+      {'notified': 1},
+      where: 'notified = 0',
+    );
+
+    return newlyUnlocked;
+  }
+
+  /// Clears stored achievements.
+  static Future<void> resetAchievements() async {
+    await _db.delete('achievements');
+  }
 }
+

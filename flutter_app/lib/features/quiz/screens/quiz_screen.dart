@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../domain/models/achievement.dart';
+import '../../../domain/models/srs_item.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../favorites/providers/favorites_provider.dart';
+import '../../srs/providers/srs_provider.dart';
 import '../providers/quiz_provider.dart';
 
 class QuizScreen extends ConsumerWidget {
@@ -13,39 +17,102 @@ class QuizScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final state = ref.watch(quizProvider);
     final favState = ref.watch(favoritesProvider);
+    final srsState = ref.watch(srsProvider);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
       child: Column(
         children: [
           // ── Header + Score ──
-          _buildHeader(isDark, state, ref, favState),
+          _buildHeader(isDark, state, ref, favState, srsState),
           const SizedBox(height: 12),
 
           // ── Progress bar ──
-          if (state.total > 0) _buildProgressBar(isDark, state),
+          if (state.total > 0 && !state.isSessionComplete)
+            _buildProgressBar(isDark, state),
           const SizedBox(height: 32),
 
           // ── Word Display ──
           Expanded(
             child: state.loading
                 ? _buildLoading(isDark)
-                : state.currentWord == null
-                    ? _buildError(isDark, ref)
-                    : _buildQuizContent(isDark, state, ref),
+                : state.isSessionComplete
+                    ? _buildSessionComplete(isDark, ref)
+                    : state.currentWord == null
+                        ? _buildError(isDark, ref)
+                        : _buildQuizContent(isDark, state, ref),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(bool isDark, QuizState state, WidgetRef ref,
-      FavoritesState favState) {
+  Widget _buildHeader(
+    bool isDark,
+    QuizState state,
+    WidgetRef ref,
+    FavoritesState favState,
+    SrsState srsState,
+  ) {
     final isFavMode = state.isFavoritesMode;
+    final isSrsMode = state.isSrsMode;
 
     return Column(
       children: [
-        if (isFavMode) ...[
+        if (isSrsMode) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.derBlue
+                  .withValues(alpha: isDark ? 0.20 : 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.derBlue.withValues(alpha: 0.35),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.psychology_rounded,
+                  color: AppColors.derBlue,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Spaced Repetition Review',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.derBlue,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  key: const Key('quiz_exit_srs'),
+                  onTap: () =>
+                      ref.read(quizProvider.notifier).exitSrsReview(),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white12 : Colors.black12,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Exit',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ] else if (isFavMode) ...[
           Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -101,7 +168,11 @@ class QuizScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isFavMode ? 'Focused Quiz' : 'Quiz Mode',
+                  isSrsMode
+                      ? 'SRS Review'
+                      : isFavMode
+                          ? 'Focused Quiz'
+                          : 'Quiz Mode',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
@@ -113,9 +184,11 @@ class QuizScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  isFavMode
-                      ? 'Reviewing saved favorites'
-                      : 'Tap the correct article',
+                  isSrsMode
+                      ? 'Practicing scheduled due words'
+                      : isFavMode
+                          ? 'Reviewing saved favorites'
+                          : 'Tap the correct article',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -127,7 +200,31 @@ class QuizScreen extends ConsumerWidget {
               ],
             ),
             const Spacer(),
-            if (!isFavMode && favState.favorites.isNotEmpty) ...[
+            if (!isFavMode && !isSrsMode && srsState.dueCount > 0) ...[
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ActionChip(
+                  key: const Key('quiz_srs_due_chip'),
+                  avatar: const Icon(
+                    Icons.psychology_rounded,
+                    color: AppColors.derBlue,
+                    size: 16,
+                  ),
+                  label: Text('Due (${srsState.dueCount})'),
+                  backgroundColor: AppColors.derBlue
+                      .withValues(alpha: isDark ? 0.15 : 0.10),
+                  side: BorderSide(
+                    color: AppColors.derBlue.withValues(alpha: 0.3),
+                  ),
+                  onPressed: () {
+                    ref
+                        .read(quizProvider.notifier)
+                        .startSrsReview(srsState.dueItems);
+                  },
+                ),
+              ),
+            ],
+            if (!isFavMode && !isSrsMode && favState.favorites.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: ActionChip(
@@ -228,70 +325,125 @@ class QuizScreen extends ConsumerWidget {
   Widget _buildQuizContent(bool isDark, QuizState state, WidgetRef ref) {
     final word = state.currentWord!;
     final isFav = ref.watch(favoritesProvider).isFavorite(word.word);
+    final srs = state.currentSrsItem;
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Spacer(flex: 1),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Spacer(flex: 1),
 
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              word.word,
-              style: TextStyle(
-                fontSize: 38,
-                fontWeight: FontWeight.w700,
-                color: isDark
-                    ? AppColors.textPrimaryDark
-                    : AppColors.textPrimaryLight,
-                letterSpacing: -0.5,
+                  if (srs != null) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: (srs.isMastered
+                                ? const Color(0xFFFFB800)
+                                : AppColors.derBlue)
+                            .withValues(alpha: isDark ? 0.14 : 0.08),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            srs.isMastered
+                                ? Icons.workspace_premium_rounded
+                                : Icons.psychology_rounded,
+                            size: 14,
+                            color: srs.isMastered
+                                ? const Color(0xFFFFB800)
+                                : AppColors.derBlue,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Stage ${srs.stage} • ${srs.stageName}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: srs.isMastered
+                                  ? const Color(0xFFFFB800)
+                                  : AppColors.derBlue,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        word.word,
+                        style: TextStyle(
+                          fontSize: 38,
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimaryLight,
+                          letterSpacing: -0.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        iconSize: 26,
+                        splashRadius: 20,
+                        tooltip: isFav ? 'Favorited' : 'Save for focused review',
+                        onPressed: () {
+                          ref.read(favoritesProvider.notifier).toggleFavorite(word);
+                        },
+                        icon: Icon(
+                          isFav ? Icons.star_rounded : Icons.star_outline_rounded,
+                          color: isFav
+                              ? const Color(0xFFFFB800)
+                              : (isDark
+                                  ? AppColors.textSecondaryDark.withValues(alpha: 0.4)
+                                  : AppColors.textSecondaryLight.withValues(alpha: 0.4)),
+                        ),
+                      ),
+                    ],
+                  ).animate(key: ValueKey(word.word))
+                      .fadeIn(duration: 300.ms)
+                      .slideY(begin: 0.1, end: 0, duration: 300.ms),
+
+                  const SizedBox(height: 32),
+
+                  Row(
+                    children: [
+                      _buildArticleButton('der', isDark, state, ref),
+                      const SizedBox(width: 12),
+                      _buildArticleButton('die', isDark, state, ref),
+                      const SizedBox(width: 12),
+                      _buildArticleButton('das', isDark, state, ref),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  if (state.hasAnswered) _buildFeedback(isDark, state),
+
+                  const Spacer(flex: 2),
+
+                  if (state.hasAnswered) ...[
+                    const SizedBox(height: 16),
+                    _buildNextButton(isDark, ref),
+                  ],
+                ],
               ),
-              textAlign: TextAlign.center,
             ),
-            const SizedBox(width: 8),
-            IconButton(
-              iconSize: 26,
-              splashRadius: 20,
-              tooltip: isFav ? 'Favorited' : 'Save for focused review',
-              onPressed: () {
-                ref.read(favoritesProvider.notifier).toggleFavorite(word);
-              },
-              icon: Icon(
-                isFav ? Icons.star_rounded : Icons.star_outline_rounded,
-                color: isFav
-                    ? const Color(0xFFFFB800)
-                    : (isDark
-                        ? AppColors.textSecondaryDark.withValues(alpha: 0.4)
-                        : AppColors.textSecondaryLight.withValues(alpha: 0.4)),
-              ),
-            ),
-          ],
-        ).animate(key: ValueKey(word.word))
-            .fadeIn(duration: 400.ms)
-            .slideY(begin: 0.1, end: 0, duration: 400.ms),
-
-        const SizedBox(height: 40),
-
-        Row(
-          children: [
-            _buildArticleButton('der', isDark, state, ref),
-            const SizedBox(width: 12),
-            _buildArticleButton('die', isDark, state, ref),
-            const SizedBox(width: 12),
-            _buildArticleButton('das', isDark, state, ref),
-          ],
-        ),
-
-        const SizedBox(height: 28),
-
-        if (state.hasAnswered) _buildFeedback(isDark, state),
-
-        const Spacer(flex: 2),
-
-        if (state.hasAnswered) _buildNextButton(isDark, ref),
-      ],
+          ),
+        );
+      },
     );
   }
 
@@ -327,6 +479,7 @@ class QuizScreen extends ConsumerWidget {
 
     return Expanded(
       child: GestureDetector(
+        key: Key('quiz_button_$article'),
         onTap: () => ref.read(quizProvider.notifier).answer(article),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
@@ -374,6 +527,7 @@ class QuizScreen extends ConsumerWidget {
     final word = state.currentWord!;
     final feedbackColor =
         state.isCorrect! ? AppColors.correctGreen : AppColors.incorrectRed;
+    final srs = state.currentSrsItem;
 
     return Container(
       width: double.infinity,
@@ -430,6 +584,14 @@ class QuizScreen extends ConsumerWidget {
               ),
             ),
           ],
+          if (srs != null) ...[
+            const SizedBox(height: 10),
+            _buildSrsFeedbackBadge(isDark, srs, state.isCorrect!),
+          ],
+          if (state.unlockedMilestone != null) ...[
+            const SizedBox(height: 10),
+            _buildMilestoneFeedbackBadge(isDark, state.unlockedMilestone!),
+          ],
         ],
       ),
     ).animate().fadeIn(duration: 300.ms).slideY(
@@ -440,11 +602,112 @@ class QuizScreen extends ConsumerWidget {
         );
   }
 
+  Widget _buildMilestoneFeedbackBadge(bool isDark, Achievement milestone) {
+    const goldColor = Color(0xFFFFB800);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: goldColor.withValues(alpha: isDark ? 0.18 : 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: goldColor.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.emoji_events_rounded,
+            color: goldColor,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              '🏆 Milestone Unlocked: ${milestone.title}!',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: goldColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ).animate().scale(
+          begin: const Offset(0.9, 0.9),
+          end: const Offset(1, 1),
+          duration: 250.ms,
+        );
+  }
+
+  Widget _buildSrsFeedbackBadge(bool isDark, SrsItem item, bool isCorrect) {
+    String intervalText;
+    switch (item.stage) {
+      case 1:
+        intervalText = isCorrect ? '4 hours' : '4 hours (review soon)';
+        break;
+      case 2:
+        intervalText = '1 day';
+        break;
+      case 3:
+        intervalText = '3 days';
+        break;
+      case 4:
+        intervalText = '7 days';
+        break;
+      case 5:
+      default:
+        intervalText = '14 days';
+        break;
+    }
+
+    final badgeColor = isCorrect
+        ? (item.isMastered ? const Color(0xFFFFB800) : AppColors.derBlue)
+        : AppColors.incorrectRed;
+
+    return Container(
+      key: const Key('quiz_srs_feedback_badge'),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: isDark ? 0.16 : 0.09),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: badgeColor.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            item.isMastered
+                ? Icons.workspace_premium_rounded
+                : Icons.psychology_rounded,
+            size: 15,
+            color: badgeColor,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            item.isMastered
+                ? 'Mastered! • Review in $intervalText'
+                : 'Stage ${item.stage} (${item.stageName}) • Next review: $intervalText',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: badgeColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildNextButton(bool isDark, WidgetRef ref) {
     return SizedBox(
       width: double.infinity,
       height: 54,
       child: ElevatedButton.icon(
+        key: const Key('quiz_next_button'),
         onPressed: () => ref.read(quizProvider.notifier).loadNext(),
         icon: const Icon(Icons.arrow_forward_rounded, size: 20),
         label: const Text(
@@ -461,7 +724,75 @@ class QuizScreen extends ConsumerWidget {
           ),
         ),
       ),
-    ).animate().fadeIn(delay: 200.ms, duration: 300.ms);
+    ).animate().fadeIn(duration: 250.ms);
+  }
+
+  Widget _buildSessionComplete(bool isDark, WidgetRef ref) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.correctGreen
+                    .withValues(alpha: isDark ? 0.18 : 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.celebration_rounded,
+                size: 52,
+                color: AppColors.correctGreen,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'All Due Reviews Caught Up!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'You have reviewed all scheduled nouns for now. Keep practicing in general quiz mode to discover and track new words!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 28),
+            ElevatedButton.icon(
+              key: const Key('quiz_complete_continue'),
+              onPressed: () =>
+                  ref.read(quizProvider.notifier).exitSrsReview(),
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: const Text('Back to General Quiz'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    isDark ? const Color(0xFF3B82F6) : AppColors.derBlue,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildLoading(bool isDark) {
@@ -511,8 +842,8 @@ class QuizScreen extends ConsumerWidget {
             style: TextStyle(
               fontSize: 15,
               color: isDark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.textSecondaryLight,
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
             ),
           ),
           const SizedBox(height: 20),
@@ -525,4 +856,3 @@ class QuizScreen extends ConsumerWidget {
     );
   }
 }
-

@@ -3,11 +3,17 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
+import '../../../domain/models/achievement.dart';
 import '../../../domain/models/lookup_history.dart';
+import '../../../domain/models/srs_item.dart';
 import '../../../domain/models/word_model.dart';
+import '../../../domain/repositories/i_achievements_repository.dart';
 import '../../../domain/repositories/i_article_repository.dart';
 import '../../../domain/repositories/i_history_repository.dart';
+import '../../../domain/repositories/i_srs_repository.dart';
 import '../../history/providers/history_provider.dart';
+import '../../profile/providers/achievements_provider.dart';
+import '../../srs/providers/srs_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Quiz state
@@ -23,6 +29,10 @@ class QuizState {
     this.isCorrect,
     this.loading = true,
     this.isFavoritesMode = false,
+    this.isSrsMode = false,
+    this.currentSrsItem,
+    this.isSessionComplete = false,
+    this.unlockedMilestone,
   });
 
   final WordModel? currentWord;
@@ -33,6 +43,10 @@ class QuizState {
   final bool? isCorrect;
   final bool loading;
   final bool isFavoritesMode;
+  final bool isSrsMode;
+  final SrsItem? currentSrsItem;
+  final bool isSessionComplete;
+  final Achievement? unlockedMilestone;
 
   bool get hasAnswered => selectedArticle != null;
   double get accuracy => total > 0 ? score / total : 0;
@@ -46,8 +60,13 @@ class QuizState {
     bool? isCorrect,
     bool? loading,
     bool? isFavoritesMode,
+    bool? isSrsMode,
+    SrsItem? currentSrsItem,
+    bool? isSessionComplete,
+    Achievement? unlockedMilestone,
     bool clearAnswer = false,
     bool clearWord = false,
+    bool clearSrsItem = false,
   }) {
     return QuizState(
       currentWord: clearWord ? null : currentWord ?? this.currentWord,
@@ -59,6 +78,13 @@ class QuizState {
       isCorrect: clearAnswer ? null : isCorrect ?? this.isCorrect,
       loading: loading ?? this.loading,
       isFavoritesMode: isFavoritesMode ?? this.isFavoritesMode,
+      isSrsMode: isSrsMode ?? this.isSrsMode,
+      currentSrsItem:
+          clearSrsItem ? null : currentSrsItem ?? this.currentSrsItem,
+      isSessionComplete: isSessionComplete ?? this.isSessionComplete,
+      unlockedMilestone: clearAnswer
+          ? null
+          : (unlockedMilestone ?? this.unlockedMilestone),
     );
   }
 }
@@ -68,13 +94,23 @@ class QuizState {
 // ---------------------------------------------------------------------------
 
 class QuizNotifier extends StateNotifier<QuizState> {
-  QuizNotifier(this._articleRepo, this._historyRepo, this._ref)
-      : super(const QuizState()) {
+  QuizNotifier(
+    this._articleRepo,
+    this._historyRepo,
+    this._ref, {
+    ISrsRepository? srsRepo,
+    IAchievementsRepository? achievementsRepo,
+  })  : _srsRepo = srsRepo ?? _ref.read(srsRepositoryProvider),
+        _achievementsRepo = achievementsRepo ??
+            _ref.read(achievementsRepositoryProvider),
+        super(const QuizState()) {
     loadNext();
   }
 
   final IArticleRepository _articleRepo;
   final IHistoryRepository _historyRepo;
+  final ISrsRepository _srsRepo;
+  final IAchievementsRepository _achievementsRepo;
   final Ref _ref;
 
   final Set<String> _seenWords = {};
@@ -82,7 +118,9 @@ class QuizNotifier extends StateNotifier<QuizState> {
   bool _isFetchingMore = false;
   final _random = Random();
   bool _isFavoritesMode = false;
+  bool _isSrsMode = false;
   List<WordModel> _favoritesPool = [];
+  List<WordModel> _srsPool = [];
 
   /// Curated fallback pool of 60 common, balanced German nouns (20 der, 20 die, 20 das)
   /// used when offline or network requests fail.
@@ -163,14 +201,54 @@ class QuizNotifier extends StateNotifier<QuizState> {
     // Prune any words that have already been seen in this session
     queue.removeWhere((w) => _seenWords.contains(w.word.toLowerCase()));
 
-    if (_isFavoritesMode) {
+    if (_isSrsMode) {
+      if (queue.isEmpty) {
+        if (_srsPool.isNotEmpty) {
+          final remaining = _srsPool
+              .where((w) => !_seenWords.contains(w.word.toLowerCase()))
+              .toList();
+          if (remaining.isNotEmpty) {
+            queue = remaining..shuffle(_random);
+          } else {
+            // User finished all due words in this session!
+            if (!mounted) return;
+            state = state.copyWith(
+              loading: false,
+              clearAnswer: true,
+              clearWord: true,
+              isSessionComplete: true,
+            );
+            return;
+          }
+        } else {
+          final freshDue = await _srsRepo.getDueItems(limit: 30);
+          final freshWords = freshDue
+              .map((i) => i.toWordModel())
+              .where((w) => !_seenWords.contains(w.word.toLowerCase()))
+              .toList();
+          if (freshWords.isNotEmpty) {
+            _srsPool = freshWords;
+            queue = List<WordModel>.from(_srsPool)..shuffle(_random);
+          } else {
+            if (!mounted) return;
+            state = state.copyWith(
+              loading: false,
+              clearAnswer: true,
+              clearWord: true,
+              isSessionComplete: true,
+            );
+            return;
+          }
+        }
+      }
+    } else if (_isFavoritesMode) {
       if (queue.isEmpty && _favoritesPool.isNotEmpty) {
         _seenWords.clear();
         queue = List<WordModel>.from(_favoritesPool)..shuffle(_random);
       }
     } else {
       if (queue.isEmpty) {
-        queue = await _fetchBatch();
+        queue = await _fetchSmartBatch();
         if (!mounted) return;
       }
     }
@@ -196,16 +274,25 @@ class QuizNotifier extends StateNotifier<QuizState> {
         _recentArticles.removeAt(0);
       }
 
+      // Check current SRS item status for this word
+      SrsItem? srsItem;
+      try {
+        srsItem = await _srsRepo.getItem(next.word);
+      } catch (_) {}
+
       if (!mounted) return;
       state = state.copyWith(
         currentWord: next,
+        currentSrsItem: srsItem,
         wordQueue: queue,
         loading: false,
         clearAnswer: true,
+        clearSrsItem: srsItem == null,
+        isSessionComplete: false,
       );
 
       // Background pre-fetch when queue runs low (only in standard mode)
-      if (!_isFavoritesMode && queue.length <= 4 && !_isFetchingMore) {
+      if (!_isFavoritesMode && !_isSrsMode && queue.length <= 4 && !_isFetchingMore) {
         _prefetchMore();
       }
     } else if (_isFavoritesMode && _favoritesPool.isNotEmpty) {
@@ -226,8 +313,15 @@ class QuizNotifier extends StateNotifier<QuizState> {
         if (!mounted) return;
         _seenWords.add(word.word.toLowerCase());
         _recentArticles.add(word.article);
+
+        SrsItem? srsItem;
+        try {
+          srsItem = await _srsRepo.getItem(word.word);
+        } catch (_) {}
+
         state = state.copyWith(
           currentWord: word,
+          currentSrsItem: srsItem,
           loading: false,
           clearAnswer: true,
         );
@@ -254,10 +348,10 @@ class QuizNotifier extends StateNotifier<QuizState> {
   }
 
   Future<void> _prefetchMore() async {
-    if (_isFavoritesMode) return;
+    if (_isFavoritesMode || _isSrsMode) return;
     _isFetchingMore = true;
     try {
-      final newWords = await _fetchBatch();
+      final newWords = await _fetchSmartBatch();
       if (!mounted) return;
       if (newWords.isNotEmpty) {
         final currentQueue = List<WordModel>.from(state.wordQueue);
@@ -279,40 +373,50 @@ class QuizNotifier extends StateNotifier<QuizState> {
     }
   }
 
-  Future<List<WordModel>> _fetchBatch() async {
+  /// Smart scheduling batch: prioritizes due spaced repetition words,
+  /// then supplements with fresh/balanced random words from the repository.
+  Future<List<WordModel>> _fetchSmartBatch() async {
+    final batch = <WordModel>[];
+    final existing = <String>{
+      ..._seenWords,
+      ...state.wordQueue.map((w) => w.word.toLowerCase()),
+      if (state.currentWord != null) state.currentWord!.word.toLowerCase(),
+    };
+
+    // 1. Spaced Repetition Due Words (highest scheduling priority)
     try {
-      final batch = await _articleRepo.randomBatch(count: 15);
-      if (!mounted) return [];
-      // Filter out words seen in this session or already queued, and deduplicate within batch
-      final existing = <String>{
-        ..._seenWords,
-        ...state.wordQueue.map((w) => w.word.toLowerCase()),
-        if (state.currentWord != null) state.currentWord!.word.toLowerCase(),
-      };
-      final fresh = <WordModel>[];
-      for (final w in batch) {
+      final dueItems = await _srsRepo.getDueItems(limit: 6);
+      for (final item in dueItems) {
+        final key = item.word.toLowerCase();
+        if (existing.add(key)) {
+          batch.add(item.toWordModel());
+        }
+      }
+    } catch (_) {}
+
+    // 2. Fresh random words from backend/dataset
+    try {
+      final freshCount = max(5, 15 - batch.length);
+      final randomWords = await _articleRepo.randomBatch(count: freshCount);
+      for (final w in randomWords) {
         final key = w.word.toLowerCase();
         if (existing.add(key)) {
-          fresh.add(w);
+          batch.add(w);
         }
       }
-      fresh.shuffle(_random);
-      if (fresh.isNotEmpty) return fresh;
-
-      // If all words were already seen/queued, deduplicate raw batch
-      final uniqueBatch = <WordModel>[];
-      final seenInBatch = <String>{};
-      for (final w in batch) {
-        final key = w.word.toLowerCase();
-        if (seenInBatch.add(key)) {
-          uniqueBatch.add(w);
-        }
-      }
-      return uniqueBatch..shuffle(_random);
     } catch (_) {
-      if (!mounted) return [];
-      return _getOfflineFallbackBatch(count: 15);
+      // Fallback pool if offline
+      final offlineWords = _getOfflineFallbackBatch(count: 15);
+      for (final w in offlineWords) {
+        final key = w.word.toLowerCase();
+        if (existing.add(key)) {
+          batch.add(w);
+        }
+      }
     }
+
+    batch.shuffle(_random);
+    return batch;
   }
 
   List<WordModel> _getOfflineFallbackBatch({int count = 15}) {
@@ -369,6 +473,23 @@ class QuizNotifier extends StateNotifier<QuizState> {
       mode: 'quiz',
     ));
     _historyRepo.updateStreak();
+
+    // Spaced repetition record update
+    _srsRepo.recordReview(word, correct: correct).then((updatedItem) {
+      if (mounted) {
+        state = state.copyWith(currentSrsItem: updatedItem);
+        _ref.invalidate(srsProvider);
+      }
+    }).catchError((_) {});
+
+    // Milestones and achievements update
+    _achievementsRepo.checkNewUnlocks().then((unlocked) {
+      if (mounted && unlocked.isNotEmpty) {
+        state = state.copyWith(unlockedMilestone: unlocked.first);
+        _ref.invalidate(achievementsProvider);
+      }
+    }).catchError((_) {});
+
     _ref.invalidate(historyProvider);
   }
 
@@ -376,6 +497,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
   void startFavoritesReview(List<WordModel> favorites) {
     if (favorites.isEmpty) return;
     _isFavoritesMode = true;
+    _isSrsMode = false;
     _favoritesPool = List<WordModel>.from(favorites);
     _seenWords.clear();
     _recentArticles.clear();
@@ -385,6 +507,8 @@ class QuizNotifier extends StateNotifier<QuizState> {
       score: 0,
       total: 0,
       isFavoritesMode: true,
+      isSrsMode: false,
+      isSessionComplete: false,
       wordQueue: queue,
       clearAnswer: true,
       clearWord: true,
@@ -402,6 +526,70 @@ class QuizNotifier extends StateNotifier<QuizState> {
       score: 0,
       total: 0,
       isFavoritesMode: false,
+      isSessionComplete: false,
+      wordQueue: const [],
+      clearAnswer: true,
+      clearWord: true,
+    );
+    loadNext();
+  }
+
+  /// Start a Spaced Repetition (SRS) review session on due cards.
+  Future<void> startSrsReview([List<SrsItem>? dueItems]) async {
+    _isSrsMode = true;
+    _isFavoritesMode = false;
+    _favoritesPool.clear();
+    _seenWords.clear();
+    _recentArticles.clear();
+
+    List<SrsItem> items = dueItems ?? [];
+    if (items.isEmpty) {
+      try {
+        items = await _srsRepo.getDueItems(limit: 50);
+      } catch (_) {}
+    }
+
+    _srsPool = items.map((i) => i.toWordModel()).toList();
+
+    if (_srsPool.isEmpty) {
+      state = state.copyWith(
+        score: 0,
+        total: 0,
+        isSrsMode: true,
+        isFavoritesMode: false,
+        isSessionComplete: true,
+        loading: false,
+        clearAnswer: true,
+        clearWord: true,
+      );
+      return;
+    }
+
+    final queue = List<WordModel>.from(_srsPool)..shuffle(_random);
+    state = state.copyWith(
+      score: 0,
+      total: 0,
+      isSrsMode: true,
+      isFavoritesMode: false,
+      isSessionComplete: false,
+      wordQueue: queue,
+      clearAnswer: true,
+      clearWord: true,
+    );
+    loadNext();
+  }
+
+  /// Exit SRS review session and return to general noun practice.
+  void exitSrsReview() {
+    _isSrsMode = false;
+    _srsPool.clear();
+    _seenWords.clear();
+    _recentArticles.clear();
+    state = state.copyWith(
+      score: 0,
+      total: 0,
+      isSrsMode: false,
+      isSessionComplete: false,
       wordQueue: const [],
       clearAnswer: true,
       clearWord: true,
@@ -413,7 +601,16 @@ class QuizNotifier extends StateNotifier<QuizState> {
   void reset() {
     _seenWords.clear();
     _recentArticles.clear();
-    if (_isFavoritesMode && _favoritesPool.isNotEmpty) {
+    if (_isSrsMode && _srsPool.isNotEmpty) {
+      final queue = List<WordModel>.from(_srsPool)..shuffle(_random);
+      state = state.copyWith(
+        score: 0,
+        total: 0,
+        clearAnswer: true,
+        isSessionComplete: false,
+        wordQueue: queue,
+      );
+    } else if (_isFavoritesMode && _favoritesPool.isNotEmpty) {
       final queue = List<WordModel>.from(_favoritesPool)..shuffle(_random);
       state = state.copyWith(
         score: 0,
@@ -443,5 +640,6 @@ final quizProvider =
     ref.watch(articleRepositoryProvider),
     ref.watch(historyRepositoryProvider),
     ref,
+    srsRepo: ref.watch(srsRepositoryProvider),
   );
 });

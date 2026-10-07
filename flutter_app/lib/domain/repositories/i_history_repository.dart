@@ -1,9 +1,11 @@
-﻿import '../models/lookup_history.dart';
+import '../models/advanced_stats.dart';
+import '../models/lookup_history.dart';
 
 /// Abstract contract for history and streak operations.
 abstract interface class IHistoryRepository {
   Future<List<LookupHistory>> getHistory({String? filter});
   Future<Map<String, dynamic>> getStats();
+  Future<AdvancedStats> getAdvancedStats({int days = 14});
   Future<void> addEntry(LookupHistory entry);
   Future<void> clearHistory();
   int getStreak();

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../../core/storage/storage_service.dart';
+import '../../domain/models/advanced_stats.dart';
 import '../../domain/models/lookup_history.dart';
 import '../../domain/repositories/i_history_repository.dart';
 import '../../domain/repositories/i_sync_repository.dart';
@@ -20,6 +21,10 @@ class HistoryRepositoryImpl implements IHistoryRepository {
 
   @override
   Future<Map<String, dynamic>> getStats() => StorageService.getStats();
+
+  @override
+  Future<AdvancedStats> getAdvancedStats({int days = 14}) =>
+      StorageService.getAdvancedStats(days: days);
 
   @override
   Future<void> addEntry(LookupHistory entry) async {

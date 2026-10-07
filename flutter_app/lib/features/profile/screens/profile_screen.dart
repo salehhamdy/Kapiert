@@ -4,14 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../domain/models/auth_user.dart';
+import '../../../domain/models/srs_stats.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../auth/logout_flow.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/screens/sign_in_screen.dart';
 import '../../auth/screens/sign_up_screen.dart';
 import '../../history/providers/history_provider.dart';
+import '../../srs/providers/srs_provider.dart';
 import '../../sync/providers/sync_provider.dart';
 import '../profile_format.dart';
+import '../providers/achievements_provider.dart';
+import '../providers/advanced_stats_provider.dart';
+import '../widgets/achievements_card.dart';
+import '../widgets/advanced_stats_card.dart';
 import '../widgets/edit_name_sheet.dart';
 import '../widgets/profile_avatar.dart';
 
@@ -30,13 +36,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     super.initState();
     // Stats (esp. streak) may be stale if the user has been practising.
     Future.microtask(() {
-      if (mounted) ref.read(historyProvider.notifier).refresh();
+      if (mounted) {
+        ref.read(historyProvider.notifier).refresh();
+        ref.read(srsProvider.notifier).refresh();
+        ref.read(advancedStatsProvider.notifier).refresh();
+        ref.read(achievementsProvider.notifier).refresh();
+      }
     });
   }
 
   Future<void> _onRefresh() async {
     await ref.read(syncProvider.notifier).sync();
     await ref.read(historyProvider.notifier).refresh();
+    await ref.read(srsProvider.notifier).refresh();
+    await ref.read(advancedStatsProvider.notifier).refresh();
+    await ref.read(achievementsProvider.notifier).refresh();
   }
 
   Future<void> _editName(AppUser user) async {
@@ -53,6 +67,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final user = ref.watch(authProvider).user;
     final stats = ref.watch(historyProvider).stats;
+    final srs = ref.watch(srsProvider);
 
     return Scaffold(
       body: RefreshIndicator(
@@ -82,9 +97,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 12),
                     _StatsGrid(stats: stats, isDark: isDark),
                     const SizedBox(height: 28),
+                    _SectionTitle('Activity & trends', isDark: isDark),
+                    const SizedBox(height: 12),
+                    AdvancedStatsCard(isDark: isDark),
+                    const SizedBox(height: 28),
+                    _SectionTitle('Achievements', isDark: isDark),
+                    const SizedBox(height: 12),
+                    AchievementsCard(isDark: isDark),
+                    const SizedBox(height: 28),
                     _SectionTitle('Article mastery', isDark: isDark),
                     const SizedBox(height: 12),
                     _ArticleMasteryCard(stats: stats, isDark: isDark),
+                    const SizedBox(height: 28),
+                    _SectionTitle('Spaced repetition', isDark: isDark),
+                    const SizedBox(height: 12),
+                    _SrsMasteryCard(stats: srs.stats, isDark: isDark),
                     if (user != null) ...[
                       const SizedBox(height: 28),
                       _SectionTitle('Account', isDark: isDark),
@@ -870,6 +897,164 @@ class _ArticleRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Spaced Repetition Mastery ────────────────────────────────────────────────
+
+class _SrsMasteryCard extends StatelessWidget {
+  const _SrsMasteryCard({required this.stats, required this.isDark});
+
+  final SrsStats stats;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    if (stats.totalCount == 0) {
+      return _Card(
+        isDark: isDark,
+        child: Row(
+          children: [
+            _IconBubble(
+              icon: Icons.psychology_rounded,
+              color: AppColors.derBlue,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                'Quiz nouns to begin spaced repetition tracking and retention intervals.',
+                style: _subtitleStyle(isDark),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final masteryRate = stats.masteryRate;
+
+    return _Card(
+      isDark: isDark,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _SrsMetricTile(
+                icon: Icons.access_time_rounded,
+                label: 'Due now',
+                value: '${stats.dueCount}',
+                color: stats.dueCount > 0
+                    ? AppColors.streakOrange
+                    : AppColors.correctGreen,
+                isDark: isDark,
+              ),
+              const SizedBox(width: 8),
+              _SrsMetricTile(
+                icon: Icons.school_rounded,
+                label: 'Learning',
+                value: '${stats.learningCount}',
+                color: AppColors.derBlue,
+                isDark: isDark,
+              ),
+              const SizedBox(width: 8),
+              _SrsMetricTile(
+                icon: Icons.trending_up_rounded,
+                label: 'Reviewing',
+                value: '${stats.reviewingCount}',
+                color: AppColors.dasGreen,
+                isDark: isDark,
+              ),
+              const SizedBox(width: 8),
+              _SrsMetricTile(
+                icon: Icons.workspace_premium_rounded,
+                label: 'Mastered',
+                value: '${stats.masteredCount}',
+                color: const Color(0xFFFFB800),
+                isDark: isDark,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text(
+                'Mastery rate',
+                style:
+                    _subtitleStyle(isDark).copyWith(fontWeight: FontWeight.w700),
+              ),
+              const Spacer(),
+              Text(
+                '${(masteryRate * 100).toStringAsFixed(0)}% of tracked words',
+                style: _subtitleStyle(isDark).copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFFFFB800),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: masteryRate,
+              minHeight: 8,
+              color: const Color(0xFFFFB800),
+              backgroundColor: const Color(0xFFFFB800).withValues(alpha: 0.15),
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 250.ms, duration: 400.ms);
+  }
+}
+
+class _SrsMetricTile extends StatelessWidget {
+  const _SrsMetricTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.isDark,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: isDark ? 0.12 : 0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: _titleStyle(isDark).copyWith(
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _subtitleStyle(isDark).copyWith(fontSize: 10),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

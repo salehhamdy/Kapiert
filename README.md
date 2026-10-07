@@ -22,6 +22,7 @@
 |---|---|
 | 🔍 Instant article lookup (90,000+ nouns) | ✅ Live |
 | 🎯 Quiz mode with correct/incorrect tracking | ✅ Live |
+| 🃏 Spaced repetition (SRS) & smart scheduling | ✅ Live |
 | 📜 Full lookup history with filters | ✅ Live |
 | ⭐ Favorites & focused review mode | ✅ Live |
 | 🔥 Daily streak tracking | ✅ Live |
@@ -32,6 +33,8 @@
 | ☁️ Cloud sync via Supabase (history, streak, settings) | ✅ Live |
 | 🔐 User accounts (email OTP, Google Sign-In) | ✅ Live |
 | 🛡️ First-use Terms & Privacy Policy consent gate | ✅ Live |
+| 📈 Advanced stats (weekly heatmap & progress trends) | ✅ Live |
+| 🏆 Achievements & milestone badges (19 unlockables) | ✅ Live |
 
 ---
 
@@ -238,7 +241,7 @@ cd backend
 pip install -r requirements-dev.txt
 pytest tests/ -v
 
-# Flutter unit, widget & sync tests (58 tests)
+# Flutter unit, widget & sync tests (70 tests)
 cd flutter_app
 flutter test
 
@@ -258,10 +261,10 @@ flutter analyze
 
 ### Phase 3 — Learning Features
 - [x] ⭐ Favorites — save words for focused review
-- [ ] 🃏 Spaced repetition (SRS) — smart quiz scheduling based on past performance
+- [x] 🃏 Spaced repetition (SRS) — smart quiz scheduling based on past performance
 - [x] 📊 Article mastery stats — accuracy per article (der/die/das), weakest article recommendation
-- [ ] 📈 Advanced stats — weekly activity heatmap, progress over time
-- [ ] 🏆 Achievements & milestones (7-day streak, 100 words, etc.)
+- [x] 📈 Advanced stats — weekly activity heatmap, progress over time
+- [x] 🏆 Achievements & milestones (7-day streak, 100 words, etc.)
 
 ### Phase 4 — Content & Polish
 - [ ] 🌍 English translations for all nouns (Wiktionary enrichment)

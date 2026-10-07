@@ -4,25 +4,30 @@ import 'package:mocktail/mocktail.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:derdiedas/features/profile/screens/profile_screen.dart';
+import 'package:derdiedas/domain/repositories/i_achievements_repository.dart';
 import 'package:derdiedas/domain/repositories/i_auth_repository.dart';
 import 'package:derdiedas/domain/repositories/i_history_repository.dart';
 import 'package:derdiedas/domain/repositories/i_sync_repository.dart';
 import 'package:derdiedas/core/di/providers.dart';
+import 'package:derdiedas/domain/models/advanced_stats.dart';
 import 'package:derdiedas/domain/models/auth_user.dart';
 
 class MockAuthRepository extends Mock implements IAuthRepository {}
 class MockHistoryRepository extends Mock implements IHistoryRepository {}
 class MockSyncRepository extends Mock implements ISyncRepository {}
+class MockAchievementsRepository extends Mock implements IAchievementsRepository {}
 
 void main() {
   late MockAuthRepository mockAuthRepo;
   late MockHistoryRepository mockHistoryRepo;
   late MockSyncRepository mockSyncRepo;
+  late MockAchievementsRepository mockAchievementsRepo;
 
   setUp(() {
     mockAuthRepo = MockAuthRepository();
     mockHistoryRepo = MockHistoryRepository();
     mockSyncRepo = MockSyncRepository();
+    mockAchievementsRepo = MockAchievementsRepository();
 
     when(() => mockSyncRepo.isActive).thenReturn(false);
     when(() => mockSyncRepo.syncAll()).thenAnswer((_) async {});
@@ -39,6 +44,12 @@ void main() {
           'uniqueWords': 0,
           'byArticle': <String, Map<String, int>>{},
         });
+    when(() => mockHistoryRepo.getAdvancedStats(days: any(named: 'days')))
+        .thenAnswer((_) async => AdvancedStats.empty());
+    when(() => mockAchievementsRepo.getAchievements())
+        .thenAnswer((_) async => []);
+    when(() => mockAchievementsRepo.checkNewUnlocks())
+        .thenAnswer((_) async => []);
   });
 
   Widget createWidgetUnderTest({AppUser? user}) {
@@ -50,6 +61,7 @@ void main() {
         authRepositoryProvider.overrideWithValue(mockAuthRepo),
         historyRepositoryProvider.overrideWithValue(mockHistoryRepo),
         syncRepositoryProvider.overrideWithValue(mockSyncRepo),
+        achievementsRepositoryProvider.overrideWithValue(mockAchievementsRepo),
       ],
       child: const MaterialApp(
         home: ProfileScreen(),
@@ -74,6 +86,8 @@ void main() {
 
       // Stats section
       expect(find.text('YOUR PROGRESS'), findsOneWidget);
+      expect(find.text('ACTIVITY & TRENDS'), findsOneWidget);
+      expect(find.text('ACHIEVEMENTS'), findsOneWidget);
       expect(find.text('ARTICLE MASTERY'), findsOneWidget);
 
       // No account edit or logout for guests
