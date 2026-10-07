@@ -45,3 +45,6 @@ Thumbs.db
 make_icons.py
 
 readme.txt
+
+# Agent customizations
+.agents/
