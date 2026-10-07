@@ -103,11 +103,10 @@ Implemented in [`backend/routes/random.py`](file:///c:/Users/ASUS/Downloads/Germ
 
 ### Example Sentences Generator & Multilingual Bank
 Implemented in [`backend/sentences.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/sentences.py):
-- **Curated Sentence Bank**: Handcrafted, natural German sentences with idiomatic translations in English (`en`), Arabic (`ar`), and Turkish (`tr`) for high-frequency nouns (e.g. *Tisch*, *Katze*, *Buch*, *Apfel*, *Auto*, *Sonne*, *Stadt*, *Wasser*, *Kaffee*, etc.).
-- **Dynamic Sentence Generator**: When a noun is not in the curated bank, dynamically constructs natural, grammatically correct German sentences matching the noun's gender:
-  - Masculine (*der*): *"Ich sehe den [Noun]."* (Accusative masculine agreement)
-  - Feminine (*die*): *"Die [Noun] ist schön und nützlich."*
-  - Neuter (*das*): *"Das [Noun] gefällt mir sehr gut."*
+- **Curated Sentence Bank**: Rich bank of authentic, high-quality German example sentences with natural, idiomatic translations in English (`en`), Arabic (`ar`), and Turkish (`tr`) for high-frequency German nouns across all daily life categories (food, family, objects, places, animals, weather, feelings, abstract ideas).
+- **Compound Noun Head Deconstruction**: Recognizes productive head suffixes (e.g. `*tasse`, `*glas`, `*suppe`, `*kuchen`, `*zimmer`, `*haus`, `*tür`, `*fenster`, `*buch`, `*schlüssel`, `*uhr`, `*auto`, `*zug`, `*tasche`, `*schule`, `*spiel`, etc.) and automatically embeds compound nouns into natural, semantically appropriate contexts.
+- **Morphological Suffix Intelligence**: Matches grammatical noun suffixes (`-ung`, `-heit`, `-keit`, `-schaft`, `-ion`, `-tät`, `-er`, `-chen`, `-ment`) to appropriate abstract, qualitative, or collective sentence structures.
+- **Communicative Learner Fallback**: Avoids nonsensical physical claims (e.g. "hier steht der schmerz") by using authentic German language-learning contexts that clearly demonstrate noun gender, case, and English translation if known.
 - Returns a structured dictionary of translations for `en`, `ar`, and `tr`, enriched automatically on `/lookup/{word}` and `/random` endpoints.
 
 ### API Endpoints Reference
@@ -238,7 +237,7 @@ Implemented across [`ExampleSentence`](file:///c:/Users/ASUS/Downloads/German_Ar
   - Automatically translates the sentence into the user's active UI language (`en`, `ar`, `tr`, or `de`).
   - Includes a quick-copy icon button with animated clipboard confirmation.
 - **Quiz Feedback Reveal**: Contextual reinforcement after each quiz answer displays the example sentence and translated meaning before proceeding to the next noun.
-- **Offline Guarantee**: When API responses do not contain sentences, `LocalSentenceProvider` synthesizes gender-appropriate German example sentences and localized translations on-device.
+- **Offline Guarantee & Semantic Intelligence**: When API responses do not contain sentences, `LocalSentenceProvider` mirrors the backend engine with an extensive curated bank (over 250 nouns), compound head matching across common suffixes, morphological derivations (`-ung`, `-heit`, `-keit`, `-chen`, `-lein`), and communicative language learning fallbacks that eliminate nonsensical generated sentences.
 
 #### 8. Multilingual Localization & RTL System
 Implemented in [`AppLocalizations`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/core/localization/app_localizations.dart) and [`SettingsNotifier`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/settings/providers/settings_provider.dart):

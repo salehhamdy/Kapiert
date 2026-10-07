@@ -97,20 +97,27 @@ void main() {
       expect(katze.german, contains('Katze'));
     });
 
-    test('generates dynamic gender-matched sentences for arbitrary words', () {
+    test('generates sensible dynamic sentences for arbitrary words', () {
       final mWord = LocalSentenceProvider.getSentence('Zeppelin', 'der');
-      expect(mWord.german, 'Hier steht der Zeppelin.');
-      expect(mWord.english, 'Here stands the zeppelin.');
+      expect(mWord.german, contains('Zeppelin'));
+      expect(mWord.german, contains('der'));
+      expect(mWord.english, contains('Zeppelin'));
+      expect(mWord.english, contains('masculine'));
       expect(mWord.arabic, contains('Zeppelin'));
-      expect(mWord.turkish, contains('zeppelin'));
+      expect(mWord.turkish, contains('Zeppelin'));
 
       final fWord = LocalSentenceProvider.getSentence('Rakete', 'die');
-      expect(fWord.german, 'Hier ist die Rakete.');
-      expect(fWord.english, 'Here is the rakete.');
+      expect(fWord.german, contains('Rakete'));
+      expect(fWord.german, contains('die'));
+      expect(fWord.english, contains('feminine'));
 
-      final nWord = LocalSentenceProvider.getSentence('Mikroskop', 'das');
-      expect(nWord.german, 'Hier liegt das Mikroskop.');
-      expect(nWord.english, 'Here lies the mikroskop.');
+      final nWord = LocalSentenceProvider.getSentence(
+        'Mikroskop',
+        'das',
+        translation: 'microscope',
+      );
+      expect(nWord.german, contains('Mikroskop'));
+      expect(nWord.english, contains('microscope'));
     });
 
     test('WordModel integrates with resolvedExampleSentence', () {

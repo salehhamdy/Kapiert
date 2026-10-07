@@ -24,7 +24,12 @@ class WordModel {
 
   /// Guaranteed example sentence — falls back to local sentence engine if remote payload didn't include one.
   ExampleSentence get resolvedExampleSentence =>
-      exampleSentence ?? LocalSentenceProvider.getSentence(word, article);
+      exampleSentence ??
+      LocalSentenceProvider.getSentence(
+        word,
+        article,
+        translation: translation,
+      );
 
   /// Full form with article, e.g. "das Buch"
   String get fullForm => '$article $word';

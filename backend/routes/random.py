@@ -17,7 +17,7 @@ _ARTICLES = ("der", "die", "das")
 
 def _enrich(entry: dict) -> dict:
     res = dict(entry)
-    sent = get_example_sentence(res["word"], res["article"])
+    sent = get_example_sentence(res["word"], res["article"], translation=res.get("translation"))
     res["example_sentence"] = sent["de"]
     res["example_translation"] = sent["en"]
     res["example_translations"] = sent
