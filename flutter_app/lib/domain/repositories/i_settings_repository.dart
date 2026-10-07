@@ -1,7 +1,9 @@
-﻿/// Abstract contract for user settings/preferences.
+/// Abstract contract for user settings/preferences.
 abstract interface class ISettingsRepository {
   bool getDarkMode();
   Future<void> setDarkMode(bool value);
   bool getShowHints();
   Future<void> setShowHints(bool value);
+  String getLanguage();
+  Future<void> setLanguage(String code);
 }

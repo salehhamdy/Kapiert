@@ -12,11 +12,13 @@
    - [In-Memory Dataset Engine](#in-memory-dataset-engine)
    - [Wiktionary Fallback Pipeline](#wiktionary-fallback-pipeline)
    - [Balanced Quiz Distribution & Anti-Clumping](#balanced-quiz-distribution--anti-clumping)
+   - [Example Sentences Generator & Multilingual Bank](#example-sentences-generator--multilingual-bank)
    - [API Endpoints Reference](#api-endpoints-reference)
 4. [Flutter Client Application](#4-flutter-client-application)
    - [Clean Architecture & Directory Layout](#clean-architecture--directory-layout)
    - [State Management & Dependency Injection](#state-management--dependency-injection)
    - [Local-First Storage Engine](#local-first-storage-engine)
+   - [Multilingual Localization & RTL Engine](#multilingual-localization--rtl-engine)
    - [Core Features & UI Modules](#core-features--ui-modules)
    - [Spaced Repetition System (SRS) Mechanics](#spaced-repetition-system-srs-mechanics)
    - [Weekly Activity Heatmap & Progress Trends](#weekly-activity-heatmap--progress-trends)
@@ -99,6 +101,15 @@ Implemented in [`backend/routes/random.py`](file:///c:/Users/ASUS/Downloads/Germ
 - `/random/batch/{count}` guarantees an exact 1:1:1 quota distribution among masculine, feminine, and neuter nouns.
 - **Anti-clumping Algorithm**: Scans the generated list and swaps adjacent items to guarantee that no more than 2 consecutive nouns share the same article.
 
+### Example Sentences Generator & Multilingual Bank
+Implemented in [`backend/sentences.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/sentences.py):
+- **Curated Sentence Bank**: Handcrafted, natural German sentences with idiomatic translations in English (`en`), Arabic (`ar`), and Turkish (`tr`) for high-frequency nouns (e.g. *Tisch*, *Katze*, *Buch*, *Apfel*, *Auto*, *Sonne*, *Stadt*, *Wasser*, *Kaffee*, etc.).
+- **Dynamic Sentence Generator**: When a noun is not in the curated bank, dynamically constructs natural, grammatically correct German sentences matching the noun's gender:
+  - Masculine (*der*): *"Ich sehe den [Noun]."* (Accusative masculine agreement)
+  - Feminine (*die*): *"Die [Noun] ist schön und nützlich."*
+  - Neuter (*das*): *"Das [Noun] gefällt mir sehr gut."*
+- Returns a structured dictionary of translations for `en`, `ar`, and `tr`, enriched automatically on `/lookup/{word}` and `/random` endpoints.
+
 ### API Endpoints Reference
 
 | Endpoint | Method | Response Model | Description |
@@ -117,6 +128,13 @@ Implemented in [`backend/routes/random.py`](file:///c:/Users/ASUS/Downloads/Germ
   "gender": "n",
   "plural": "Bücher",
   "translation": "book",
+  "example_sentence": "Das Buch liegt auf dem Tisch.",
+  "example_translation": "The book is on the table.",
+  "example_translations": {
+    "en": "The book is on the table.",
+    "ar": "الكتاب موجود على الطاولة.",
+    "tr": "Kitap masanın üzerinde."
+  },
   "source": "dataset",
   "found": true
 }
@@ -137,6 +155,7 @@ flutter_app/lib/
 ├── core/                # Infrastructure & Foundation
 │   ├── di/              # Riverpod dependency injection registry (providers.dart)
 │   ├── errors/          # Strongly typed Failure hierarchy (failures.dart)
+│   ├── localization/    # AppLocalizations, AppLocalizationsDelegate, supported locales
 │   ├── network/         # ApiClient (HTTP client wrapper)
 │   ├── storage/         # StorageService (SQLite & SharedPreferences)
 │   └── utils/           # UUID generator and helper utilities
@@ -145,21 +164,21 @@ flutter_app/lib/
 │   ├── dto/             # Data Transfer Objects & JSON serialization
 │   └── repositories/    # Concrete implementations of Domain repositories
 ├── domain/              # Business Domain (Pure Dart, Zero Framework Dependencies)
-│   ├── models/          # WordModel, LookupHistory, AuthUser, SrsItem, SrsStats
+│   ├── models/          # WordModel, ExampleSentence, LocalSentenceProvider, LookupHistory, AuthUser, SrsItem, SrsStats
 │   └── repositories/    # Abstract interfaces (IArticleRepository, ISrsRepository, etc.)
 ├── features/            # Presentation & Feature Slices
 │   ├── auth/            # Sign-in, sign-up, email OTP, OAuth, Supabase setup sheet
 │   ├── favorites/       # Word bookmarking & focused review quiz
 │   ├── history/         # Chronological log, filter tabs, stats calculation
 │   ├── legal/           # First-use consent gate, Terms of Use, Privacy Policy
-│   ├── lookup/          # Instant search bar, article badges, result cards
+│   ├── lookup/          # Instant search bar, article badges, result cards, sentence view
 │   ├── profile/         # User profile, mastery breakdown, name editor, SRS metrics
-│   ├── quiz/            # 3-button quiz trainer, streak progression, queue prefetch
-│   ├── settings/        # Theme toggle, hints toggle, history clear, streak reset
+│   ├── quiz/            # 3-button quiz trainer, streak progression, queue prefetch, sentence reveal
+│   ├── settings/        # Theme toggle, language selector sheet, hints toggle, streak reset
 │   ├── srs/             # Spaced Repetition providers and state
 │   └── sync/            # Local-first background synchronization
 └── shared/              # Shared Design System & UI
-    ├── router/          # AppRouter & MainScaffold (4-tab bottom navigation)
+    ├── router/          # AppRouter & MainScaffold (4-tab localized bottom navigation)
     ├── theme/           # AppColors & AppTheme (Light & Dark mode)
     └── widgets/         # AppButton, AppTextField, AuthWidgets
 ```
@@ -167,7 +186,7 @@ flutter_app/lib/
 ### State Management & Dependency Injection
 - Driven by **Riverpod 2.x**.
 - All datasources and repositories are registered with interfaces in [`core/di/providers.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/core/di/providers.dart).
-- Feature screens consume reactive `StateNotifier` and `Notifier` models (e.g., [`QuizNotifier`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/quiz/providers/quiz_provider.dart), [`HistoryNotifier`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/history/providers/history_provider.dart), [`SrsNotifier`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/srs/providers/srs_provider.dart)).
+- Feature screens consume reactive `StateNotifier` and `Notifier` models (e.g., [`QuizNotifier`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/quiz/providers/quiz_provider.dart), [`HistoryNotifier`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/history/providers/history_provider.dart), [`SrsNotifier`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/srs/providers/srs_provider.dart), [`SettingsNotifier`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/settings/providers/settings_provider.dart)).
 
 ### Local-First Storage Engine
 Implemented in [`StorageService`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/core/storage/storage_service.dart):
@@ -177,18 +196,19 @@ Implemented in [`StorageService`](file:///c:/Users/ASUS/Downloads/German_Article
   - `favorites`: User-bookmarked words (`word`, `article`, `gender`, `plural`, `translation`, `created_at`).
   - `srs_items`: Spaced repetition state (`word`, `article`, `gender`, `stage`, `consecutive_correct`, `total_attempts`, `total_correct`, `last_reviewed`, `next_review`).
   - `achievements`: Unlocked and in-progress milestones (`id`, `title`, `description`, `category`, `icon_name`, `target_value`, `current_value`, `is_unlocked`, `unlocked_at`, `notified`).
-- **SharedPreferences**: Stores light/dark theme preference, hints toggle, current streak count, and sync timestamps.
+- **SharedPreferences**: Stores light/dark theme preference, selected UI language (`en`, `ar`, `tr`, `de`), hints toggle, current streak count, and sync timestamps.
 
 ### Core Features & UI Modules
 
 #### 1. Instant Lookup ([`LookupScreen`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/lookup/screens/lookup_screen.dart))
-- Real-time search with clear buttons and instant submit.
-- Displays color-coded article badges, plural forms, gender labels, and Wiktionary definitions.
+- Real-time search with clear buttons, instant submit, and localized input placeholders.
+- Displays color-coded article badges, plural forms, gender labels, Wiktionary definitions, and contextual example sentences.
 - Star button to toggle favorites directly from the result card.
 
 #### 2. Quiz Trainer ([`QuizScreen`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/quiz/screens/quiz_screen.dart))
 - Three large, tactile buttons: **der** (blue), **die** (red), **das** (green).
 - Immediate color and haptic feedback on selection.
+- Reveals example sentences with active UI language translations upon answer submission.
 - Streak progression counter (🔥) with animated accuracy progress bar.
 - Offline fallback pool of 60 balanced nouns ensures the quiz functions without network connectivity.
 
@@ -209,6 +229,27 @@ Implemented in [`StorageService`](file:///c:/Users/ASUS/Downloads/German_Article
 #### 6. In-App Legal Gate ([`FirstUseConsentScreen`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/legal/screens/first_use_consent_screen.dart))
 - Gated first-use modal requiring agreement to Terms of Use and Privacy Policy before accessing the app.
 - Full markdown viewers for [TERMS_OF_USE.md](file:///c:/Users/ASUS/Downloads/German_Articles/TERMS_OF_USE.md) and [PRIVACY_POLICY.md](file:///c:/Users/ASUS/Downloads/German_Articles/PRIVACY_POLICY.md).
+
+#### 7. Example Sentences with Multilingual Translation
+Implemented across [`ExampleSentence`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/domain/models/example_sentence.dart), [`LocalSentenceProvider`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/domain/models/local_sentence_provider.dart), and [`_ExampleSentenceView`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/lookup/screens/result_card.dart):
+- **Domain Representation**: Encapsulates the German sentence and dynamic translation mapping (`Map<String, String>`).
+- **Result Card Presentation**:
+  - Highlights German example in an accent card container with italic quotation styling.
+  - Automatically translates the sentence into the user's active UI language (`en`, `ar`, `tr`, or `de`).
+  - Includes a quick-copy icon button with animated clipboard confirmation.
+- **Quiz Feedback Reveal**: Contextual reinforcement after each quiz answer displays the example sentence and translated meaning before proceeding to the next noun.
+- **Offline Guarantee**: When API responses do not contain sentences, `LocalSentenceProvider` synthesizes gender-appropriate German example sentences and localized translations on-device.
+
+#### 8. Multilingual Localization & RTL System
+Implemented in [`AppLocalizations`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/core/localization/app_localizations.dart) and [`SettingsNotifier`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/settings/providers/settings_provider.dart):
+- **Supported Locales**:
+  - 🇬🇧 English (`en`) — Default international locale.
+  - 🇸🇦 Arabic (`ar`) — Complete Right-to-Left (RTL) layout switching, directional navigation, and Arabic typography.
+  - 🇹🇷 Turkish (`tr`) — Full Turkish locale coverage.
+  - 🇩🇪 German (`de`) — Native German interface strings.
+- **Synchronous First-Frame Delegate**: `AppLocalizationsDelegate` resolves strings synchronously using `SynchronousFuture` to eliminate async microtask delay during widget bootstrapping and golden frame rendering.
+- **Scrollable Modal Bottom Sheet**: Language selection sheet in Settings uses bounded scroll physics and high-contrast active checkmarks, eliminating any RenderFlex bottom overflow on compact devices.
+- **Global Reactive Propagation**: Riverpod `localeProvider` drives instant UI layout and string re-rendering across navigation bars, headers, cards, dialogs, and snackbars without restarting the application.
 
 ---
 
@@ -420,11 +461,11 @@ Both the backend and Flutter applications maintain comprehensive automated test 
 ### Test Execution Commands
 
 ```bash
-# 1. Backend API Tests (12 tests)
+# 1. Backend API Tests (13 tests)
 cd backend
 python -m pytest tests/ -v
 
-# 2. Flutter Unit, Widget & Integration Tests (82 tests)
+# 2. Flutter Unit, Widget & Integration Tests (110 tests)
 cd flutter_app
 flutter test
 
@@ -436,15 +477,19 @@ flutter analyze
 
 | Test Suite | File | Tests | Validates |
 |---|---|---|---|
-| **API Contract** | [`backend/tests/test_api.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/tests/test_api.py) | 12 | Query normalization, exact lookup, plural lookup, umlaut variants, Wiktionary fallback, random batch balance, and anti-clumping. |
+| **API Contract & Sentences** | [`backend/tests/test_api.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/tests/test_api.py) | 13 | Query normalization, exact lookup, plural lookup, umlaut variants, Wiktionary fallback, random batch balance, anti-clumping, and multilingual example sentences (`de`, `en`, `ar`, `tr`). |
+| **Localization Engine** | [`flutter_app/test/core/localization/app_localizations_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/core/localization/app_localizations_test.dart) | 5 | All 4 locales (`en`, `ar`, `tr`, `de`), RTL directionality detection, translation fallbacks, and delegate resolution. |
+| **Sentence Domain Models** | [`flutter_app/test/domain/models/example_sentence_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/example_sentence_test.dart) | 5 | Translation retrieval by language code, fallback order, JSON serialization/deserialization, and offline sentence provider. |
 | **Network Client** | [`flutter_app/test/core/network/api_client_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/core/network/api_client_test.dart) | 4 | HTTP GET parsing, timeout handling, error mapping. |
-| **Word Models** | [`flutter_app/test/domain/models/word_model_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/word_model_test.dart) | 7 | Equality, JSON conversion, gender labels. |
+| **Word Models** | [`flutter_app/test/domain/models/word_model_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/word_model_test.dart) | 7 | Equality, JSON conversion, gender labels, backward-compatible sentence serialization. |
+| **Result Card & Sentences** | [`flutter_app/test/features/lookup/screens/result_card_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/lookup/screens/result_card_test.dart) | 1 | Article badge, German word, translation, example sentence rendering with active locale translation, and clipboard copy action. |
+| **Settings & Language Selection** | [`flutter_app/test/features/settings/screens/settings_screen_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/settings/screens/settings_screen_test.dart) | 3 | Language tile display, modal bottom sheet opening with 4 languages, dynamic switching to Arabic RTL with live UI update. |
 | **Daily Activity Model** | [`flutter_app/test/domain/models/daily_activity_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/daily_activity_test.dart) | 3 | Intensity levels 0–4 thresholds, accuracy calculation, model immutability. |
 | **Advanced Stats Model** | [`flutter_app/test/domain/models/advanced_stats_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/advanced_stats_test.dart) | 4 | Aggregation logic, week-over-week trends, rolling slice computations, best day tracking. |
 | **Achievements Model** | [`flutter_app/test/domain/models/achievement_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/achievement_test.dart) | 3 | Categories, unlock status, progress percentage, copyWith behavior. |
 | **SRS Domain Model** | [`flutter_app/test/domain/models/srs_item_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/srs_item_test.dart) | 6 | Stages 1–5 advancement, incorrect answer regression, interval durations, `isDue` logic, SQLite serialization. |
 | **SRS Scheduling** | [`flutter_app/test/features/quiz/srs_scheduling_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/quiz/srs_scheduling_test.dart) | 3 | Smart batch prioritization of due words, review mode entry/exit, session completion. |
-| **SRS Quiz Widgets** | [`flutter_app/test/features/quiz/srs_quiz_widget_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/quiz/srs_quiz_widget_test.dart) | 2 | Due chip rendering, mode banner toggle, feedback badge with review scheduling. |
+| **SRS Quiz Widgets** | [`flutter_app/test/features/quiz/srs_quiz_widget_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/quiz/srs_quiz_widget_test.dart) | 2 | Due chip rendering, mode banner toggle, feedback badge with review scheduling and sentence reveal. |
 | **SRS Profile Stats** | [`flutter_app/test/features/profile/srs_profile_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/profile/srs_profile_test.dart) | 1 | Spaced repetition section rendering, retention metric tiles, mastery bar. |
 | **Advanced Stats Widget** | [`flutter_app/test/features/profile/advanced_stats_widget_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/profile/advanced_stats_widget_test.dart) | 2 | 7-day activity heatmap grid, interactive day inspector pill, volume bar chart, key metric tiles. |
 | **Achievements Widget** | [`flutter_app/test/features/profile/achievements_widget_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/profile/achievements_widget_test.dart) | 1 | Milestones summary card, badge previews, modal gallery sheet invocation. |

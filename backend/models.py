@@ -13,6 +13,12 @@ class WordResponse(BaseModel):
     gender: str = Field(description='Gender code: "m", "f", or "n"')
     plural: str | None = None
     translation: str | None = None
+    example_sentence: str | None = Field(default=None, description="German example sentence")
+    example_translation: str | None = Field(default=None, description="Default English translation of example")
+    example_translations: dict[str, str] | None = Field(
+        default=None,
+        description="Multilingual translations of example sentence (en, ar, tr)",
+    )
     source: str = Field(description='Source: "dataset" or "wiktionary"')
     found: bool = True
 

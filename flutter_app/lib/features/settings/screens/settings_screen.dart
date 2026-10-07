@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../config/app_config.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../domain/models/auth_user.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -30,11 +31,122 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
   }
 
+  void _showLanguageSelector(
+    BuildContext context,
+    String currentCode,
+    bool isDark,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: (isDark ? Colors.white : Colors.black)
+                          .withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.selectLanguage,
+                  style: GoogleFonts.nunito(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...AppLanguage.values.map((lang) {
+                  final isSelected = lang.code == currentCode;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.derBlue
+                              .withValues(alpha: isDark ? 0.15 : 0.08)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.derBlue
+                            : (isDark ? Colors.white : Colors.black)
+                                .withValues(alpha: 0.06),
+                      ),
+                    ),
+                    child: ListTile(
+                      key: Key('lang_option_${lang.code}'),
+                      leading: Text(
+                        lang.flag,
+                        style: const TextStyle(fontSize: 24),
+                      ),
+                      title: Text(
+                        lang.nativeName,
+                        style: GoogleFonts.nunito(
+                          fontSize: 16,
+                          fontWeight:
+                              isSelected ? FontWeight.w800 : FontWeight.w600,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimaryLight,
+                        ),
+                      ),
+                      subtitle: Text(
+                        lang.englishName,
+                        style: GoogleFonts.nunito(
+                          fontSize: 12,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight,
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? const Icon(Icons.check_circle_rounded,
+                              color: AppColors.derBlue)
+                          : null,
+                      onTap: () {
+                        ref
+                            .read(settingsProvider.notifier)
+                            .setLanguage(lang.code);
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isDarkMode = ref.watch(themeProvider);
     final showHints = ref.watch(showHintsProvider);
+    final currentLangCode = ref.watch(languageProvider);
+    final currentLang = AppLanguage.fromCode(currentLangCode);
     final serverHealth = ref.watch(serverHealthProvider);
     final authState = ref.watch(authProvider);
     final hasAcceptedTerms = ref.watch(termsConsentProvider);
@@ -60,13 +172,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // ── Account Section ────────────────────────────────────────
-                _SectionTitle(title: 'Account', isDark: isDark),
+                _SectionTitle(title: l10n.sectionAccount, isDark: isDark),
                 const SizedBox(height: 12),
 
                 _SettingsTile(
                   key: const Key('settings_profile_tile'),
                   icon: Icons.person_outline_rounded,
-                  title: 'Profile',
+                  title: l10n.profileTitle,
                   subtitle: 'Your name, progress and account details',
                   isDark: isDark,
                   onTap: _openProfile,
@@ -84,7 +196,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: isDarkMode
                       ? Icons.dark_mode_rounded
                       : Icons.light_mode_rounded,
-                  title: 'Dark mode',
+                  title: l10n.darkMode,
                   subtitle: 'Switch app appearance',
                   isDark: isDark,
                   trailing: Switch.adaptive(
@@ -96,22 +208,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
 
                 _SettingsTile(
+                  key: const Key('settings_language_tile'),
                   icon: Icons.language_rounded,
-                  title: 'Language',
-                  subtitle: 'English',
+                  title: l10n.language,
+                  subtitle: '${currentLang.flag} ${currentLang.nativeName} (${currentLang.englishName})',
                   isDark: isDark,
-                  onTap: () {},
+                  onTap: () => _showLanguageSelector(
+                    context,
+                    currentLangCode,
+                    isDark,
+                  ),
                 ),
 
                 const SizedBox(height: 28),
 
                 // ── Preferences Section ───────────────────────────────────
-                _SectionTitle(title: 'Preferences', isDark: isDark),
+                _SectionTitle(title: l10n.sectionPreferences, isDark: isDark),
                 const SizedBox(height: 12),
 
                 _SettingsTile(
                   icon: Icons.lightbulb_outline_rounded,
-                  title: 'Show hints & explanations',
+                  title: l10n.showHints,
                   subtitle: 'Display extra info on result cards',
                   isDark: isDark,
                   trailing: Switch.adaptive(

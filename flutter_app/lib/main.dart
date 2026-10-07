@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'config/app_config.dart';
+import 'core/localization/app_localizations.dart';
 import 'core/storage/storage_service.dart';
 import 'data/datasources/auth_remote_ds.dart';
 import 'features/auth/screens/sign_in_screen.dart';
@@ -44,6 +46,7 @@ class KapiertApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDarkMode = ref.watch(themeProvider);
     final hasAcceptedTerms = ref.watch(termsConsentProvider);
+    final currentLocale = ref.watch(localeProvider);
 
     // Keep cloud sync alive for the app's lifetime (reacts to auth events).
     ref.listen<SyncState>(syncProvider, (_, _) {});
@@ -63,6 +66,14 @@ class KapiertApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Kapiert',
       debugShowCheckedModeBanner: false,
+      locale: currentLocale,
+      supportedLocales: AppLanguage.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizationsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),

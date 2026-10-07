@@ -556,6 +556,7 @@ class StorageService {
 
   static const _keyShowHints = 'show_hints';
   static const _keyDarkMode = 'dark_mode';
+  static const _keyLanguage = 'app_language';
   static const _keySettingsUpdatedAt = 'settings_updated_at';
   static const _keyHasAcceptedTerms = 'has_accepted_terms_and_policy';
   static const _keyTermsAcceptedAt = 'terms_accepted_at';
@@ -595,6 +596,12 @@ class StorageService {
   static bool getDarkMode() => _p.getBool(_keyDarkMode) ?? false;
   static Future<void> setDarkMode(bool value) async {
     await _p.setBool(_keyDarkMode, value);
+    await _touchSettings();
+  }
+
+  static String getLanguage() => _p.getString(_keyLanguage) ?? 'en';
+  static Future<void> setLanguage(String code) async {
+    await _p.setString(_keyLanguage, code);
     await _touchSettings();
   }
 

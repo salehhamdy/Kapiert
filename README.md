@@ -35,6 +35,8 @@
 | 🛡️ First-use Terms & Privacy Policy consent gate | ✅ Live |
 | 📈 Advanced stats (weekly heatmap & progress trends) | ✅ Live |
 | 🏆 Achievements & milestone badges (19 unlockables) | ✅ Live |
+| 📝 Example sentences per word with multilingual translations | ✅ Live |
+| 🌐 Multi-language UI (English, Arabic RTL, Turkish, German) | ✅ Live |
 
 ---
 
@@ -236,12 +238,12 @@ All tables have **Row Level Security (RLS)** — users can only access their own
 ## 🧪 Tests
 
 ```bash
-# Backend API tests
+# Backend API tests (13 tests)
 cd backend
 pip install -r requirements-dev.txt
 pytest tests/ -v
 
-# Flutter unit, widget & sync tests (70 tests)
+# Flutter unit, widget & sync tests (110 tests)
 cd flutter_app
 flutter test
 
@@ -269,8 +271,8 @@ flutter analyze
 ### Phase 4 — Content & Polish
 - [ ] 🌍 English translations for all nouns (Wiktionary enrichment)
 - [ ] 🔊 Audio pronunciation (text-to-speech)
-- [ ] 📝 Example sentences per word
-- [ ] 🌐 Multi-language UI (Arabic, Turkish, English)
+- [x] 📝 Example sentences per word
+- [x] 🌐 Multi-language UI (Arabic, Turkish, English)
 
 ### Phase 5 — Platform & Release
 - [ ] 🔔 Daily practice reminders (push notifications)

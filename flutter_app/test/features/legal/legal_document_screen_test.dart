@@ -38,6 +38,7 @@ void main() {
     when(() => mockHistoryRepo.getHistory()).thenAnswer((_) async => []);
     when(() => mockSettingsRepo.getDarkMode()).thenReturn(false);
     when(() => mockSettingsRepo.getShowHints()).thenReturn(true);
+    when(() => mockSettingsRepo.getLanguage()).thenReturn('en');
   });
 
   testWidgets('LegalDocumentScreen renders Terms of Use by default and switches to Privacy Policy',

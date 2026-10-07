@@ -8,10 +8,20 @@ from fastapi import APIRouter, HTTPException
 
 from dataset import dataset_ready, get_noun_dict, get_quiz_pools
 from models import WordResponse
+from sentences import get_example_sentence
 
 router = APIRouter(tags=["random"])
 
 _ARTICLES = ("der", "die", "das")
+
+
+def _enrich(entry: dict) -> dict:
+    res = dict(entry)
+    sent = get_example_sentence(res["word"], res["article"])
+    res["example_sentence"] = sent["de"]
+    res["example_translation"] = sent["en"]
+    res["example_translations"] = sent
+    return res
 
 
 def _anti_clump(entries: list[dict]) -> list[dict]:
@@ -45,12 +55,12 @@ async def random_word() -> WordResponse:
     for art in shuffled_articles:
         pool = quiz_pools.get(art, [])
         if pool:
-            return WordResponse(**random.choice(pool))
+            return WordResponse(**_enrich(random.choice(pool)))
 
     # Fallback to entire noun dict if pools are empty
     noun_dict = get_noun_dict()
     entry = random.choice(list(noun_dict.values()))
-    return WordResponse(**entry)
+    return WordResponse(**_enrich(entry))
 
 
 @router.get("/random/batch/{count}", response_model=list[WordResponse])
@@ -99,4 +109,4 @@ async def random_words(count: int = 10) -> list[WordResponse]:
     random.shuffle(batch)
     batch = _anti_clump(batch)
 
-    return [WordResponse(**entry) for entry in batch]
+    return [WordResponse(**_enrich(entry)) for entry in batch]

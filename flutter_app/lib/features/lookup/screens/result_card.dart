@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../domain/models/word_model.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -17,6 +20,7 @@ class ResultCard extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = AppTheme.colorForArticle(word.article);
     final isFavorite = ref.watch(favoritesProvider).isFavorite(word.word);
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       width: double.infinity,
@@ -152,6 +156,14 @@ class ResultCard extends ConsumerWidget {
                   ).animate().fadeIn(delay: 300.ms, duration: 300.ms),
                 ],
 
+                // Example sentence
+                _ExampleSentenceView(
+                  word: word,
+                  color: color,
+                  isDark: isDark,
+                  l10n: l10n,
+                ).animate().fadeIn(delay: 350.ms, duration: 300.ms),
+
                 const SizedBox(height: 16),
 
                 // Source badge
@@ -172,6 +184,7 @@ class ResultCard extends ConsumerWidget {
         child: Material(
           color: Colors.transparent,
           child: IconButton(
+            key: const Key('favorite_star_button'),
             iconSize: 26,
             splashRadius: 22,
             tooltip: isFavorite
@@ -311,6 +324,148 @@ class _SourceBadge extends StatelessWidget {
               ? AppColors.textSecondaryDark.withValues(alpha: 0.7)
               : AppColors.textSecondaryLight.withValues(alpha: 0.7),
         ),
+      ),
+    );
+  }
+}
+
+class _ExampleSentenceView extends StatelessWidget {
+  final WordModel word;
+  final Color color;
+  final bool isDark;
+  final AppLocalizations l10n;
+
+  const _ExampleSentenceView({
+    required this.word,
+    required this.color,
+    required this.isDark,
+    required this.l10n,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final example = word.resolvedExampleSentence;
+    if (example.sentence.isEmpty) return const SizedBox.shrink();
+
+    final localizedTranslation = example.translationFor(l10n.languageCode);
+
+    return Container(
+      key: const Key('example_sentence_card'),
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.fromLTRB(16, 12, 12, 14),
+      decoration: BoxDecoration(
+        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.035),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withValues(alpha: isDark ? 0.22 : 0.18),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.format_quote_rounded,
+                  size: 16,
+                  color: color,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.exampleSentenceHeader,
+                  style: GoogleFonts.nunito(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                    color: color,
+                  ),
+                ),
+              ),
+              IconButton(
+                key: const Key('copy_sentence_button'),
+                iconSize: 18,
+                splashRadius: 18,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: l10n.copySentence,
+                icon: Icon(
+                  Icons.content_copy_rounded,
+                  size: 16,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
+                ),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: example.sentence));
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            color: AppColors.correctGreen,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              l10n.sentenceCopied,
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // German sentence
+          Text(
+            example.sentence,
+            style: GoogleFonts.nunito(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              height: 1.35,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
+            ),
+          ),
+          const SizedBox(height: 6),
+          // Translated sentence (in active locale)
+          Text(
+            localizedTranslation,
+            textDirection: l10n.isRtl ? TextDirection.rtl : TextDirection.ltr,
+            style: GoogleFonts.nunito(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              fontStyle: FontStyle.italic,
+              height: 1.3,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -82,7 +82,7 @@ void main() {
     expect(find.text('der'), findsOneWidget);
 
     // Verify star button exists
-    final starButtonFinder = find.byType(IconButton);
+    final starButtonFinder = find.byKey(const Key('favorite_star_button'));
     expect(starButtonFinder, findsOneWidget);
 
     // Initial state: star outline icon

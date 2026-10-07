@@ -51,6 +51,22 @@ def test_lookup_known_word(client):
     assert data["gender"] == "n"
     assert data["source"] == "dataset"
     assert data["found"] is True
+    assert data["example_sentence"] is not None
+    assert "Buch" in data["example_sentence"]
+    assert data["example_translations"]["en"] is not None
+    assert data["example_translations"]["ar"] is not None
+    assert data["example_translations"]["tr"] is not None
+
+
+def test_example_sentence_multilingual(client):
+    response = client.get("/lookup/Katze")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["article"] == "die"
+    assert "Katze" in data["example_sentence"]
+    assert "cat" in data["example_translation"].lower()
+    assert "ar" in data["example_translations"]
+    assert "tr" in data["example_translations"]
 
 
 def test_lookup_with_article_prefix(client):

@@ -58,6 +58,7 @@ void main() {
     when(() => mockFavoritesRepo.getFavorites()).thenAnswer((_) async => []);
     when(() => mockSettingsRepo.getDarkMode()).thenReturn(false);
     when(() => mockSettingsRepo.getShowHints()).thenReturn(true);
+    when(() => mockSettingsRepo.getLanguage()).thenReturn('en');
   });
 
   testWidgets(

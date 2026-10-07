@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show Locale;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
@@ -12,15 +13,22 @@ class SettingsState {
   const SettingsState({
     this.isDarkMode = false,
     this.showHints = true,
+    this.languageCode = 'en',
   });
 
   final bool isDarkMode;
   final bool showHints;
+  final String languageCode;
 
-  SettingsState copyWith({bool? isDarkMode, bool? showHints}) {
+  SettingsState copyWith({
+    bool? isDarkMode,
+    bool? showHints,
+    String? languageCode,
+  }) {
     return SettingsState(
       isDarkMode: isDarkMode ?? this.isDarkMode,
       showHints: showHints ?? this.showHints,
+      languageCode: languageCode ?? this.languageCode,
     );
   }
 }
@@ -34,9 +42,18 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       : super(SettingsState(
           isDarkMode: _repo.getDarkMode(),
           showHints: _repo.getShowHints(),
+          languageCode: _getSafeLanguage(_repo),
         ));
 
   final ISettingsRepository _repo;
+
+  static String _getSafeLanguage(ISettingsRepository repo) {
+    try {
+      final dynamic lang = (repo as dynamic).getLanguage();
+      if (lang is String && lang.isNotEmpty) return lang;
+    } catch (_) {}
+    return 'en';
+  }
 
   Future<void> toggleDarkMode() async {
     final next = !state.isDarkMode;
@@ -49,11 +66,17 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await _repo.setShowHints(value);
   }
 
+  Future<void> setLanguage(String code) async {
+    state = state.copyWith(languageCode: code);
+    await _repo.setLanguage(code);
+  }
+
   /// Re-read settings from storage (e.g. after cloud sync applied changes).
   void reload() {
     state = SettingsState(
       isDarkMode: _repo.getDarkMode(),
       showHints: _repo.getShowHints(),
+      languageCode: _getSafeLanguage(_repo),
     );
   }
 }
@@ -76,6 +99,14 @@ final themeProvider = Provider<bool>(
 
 final showHintsProvider = Provider<bool>(
   (ref) => ref.watch(settingsProvider).showHints,
+);
+
+final languageProvider = Provider<String>(
+  (ref) => ref.watch(settingsProvider).languageCode,
+);
+
+final localeProvider = Provider<Locale>(
+  (ref) => Locale(ref.watch(settingsProvider).languageCode),
 );
 
 /// Server health check for the Settings screen.

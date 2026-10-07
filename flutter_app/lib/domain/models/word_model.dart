@@ -1,4 +1,7 @@
-﻿/// Represents a German noun with its article, gender, and metadata.
+import 'example_sentence.dart';
+import 'local_sentence_provider.dart';
+
+/// Represents a German noun with its article, gender, and metadata.
 /// Pure domain model — no Flutter or SDK imports.
 class WordModel {
   final String word;
@@ -6,7 +9,8 @@ class WordModel {
   final String gender;  // "m" | "f" | "n"
   final String? plural;
   final String? translation;
-  final String source; // "dataset" | "wiktionary"
+  final ExampleSentence? exampleSentence;
+  final String source; // "dataset" | "wiktionary" | "offline"
 
   const WordModel({
     required this.word,
@@ -14,8 +18,13 @@ class WordModel {
     required this.gender,
     this.plural,
     this.translation,
+    this.exampleSentence,
     required this.source,
   });
+
+  /// Guaranteed example sentence — falls back to local sentence engine if remote payload didn't include one.
+  ExampleSentence get resolvedExampleSentence =>
+      exampleSentence ?? LocalSentenceProvider.getSentence(word, article);
 
   /// Full form with article, e.g. "das Buch"
   String get fullForm => '$article $word';
@@ -50,10 +59,33 @@ class WordModel {
         'word': word,
         'article': article,
         'gender': gender,
-        'plural': plural,
-        'translation': translation,
+        if (plural != null) 'plural': plural,
+        if (translation != null) 'translation': translation,
+        if (exampleSentence != null) ...{
+          'example_sentence': exampleSentence!.german,
+          'example_translation': exampleSentence!.english,
+          'example_translations': exampleSentence!.toJson(),
+        },
         'source': source,
       };
+
+  factory WordModel.fromJson(Map<String, dynamic> json) {
+    ExampleSentence? sentence;
+    if (json.containsKey('example_sentence') ||
+        json.containsKey('example_translations') ||
+        json.containsKey('german')) {
+      sentence = ExampleSentence.fromJson(json);
+    }
+    return WordModel(
+      word: json['word'] as String,
+      article: json['article'] as String,
+      gender: json['gender'] as String,
+      plural: json['plural'] as String?,
+      translation: json['translation'] as String?,
+      exampleSentence: sentence,
+      source: (json['source'] as String?) ?? 'dataset',
+    );
+  }
 
   @override
   bool operator ==(Object other) =>

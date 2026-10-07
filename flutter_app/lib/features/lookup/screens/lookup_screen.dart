@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../providers/lookup_provider.dart';
 import 'article_pill.dart';
@@ -33,6 +34,7 @@ class _LookupScreenState extends ConsumerState<LookupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final state = ref.watch(lookupProvider);
 
@@ -53,7 +55,7 @@ class _LookupScreenState extends ConsumerState<LookupScreen> {
             const SizedBox(height: 28),
 
             // ── Search Input ──
-            _buildSearchField(isDark),
+            _buildSearchField(isDark, l10n),
             const SizedBox(height: 16),
 
             // ── Check Button ──
@@ -124,7 +126,7 @@ class _LookupScreenState extends ConsumerState<LookupScreen> {
     );
   }
 
-  Widget _buildSearchField(bool isDark) {
+  Widget _buildSearchField(bool isDark, AppLocalizations l10n) {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
@@ -151,7 +153,7 @@ class _LookupScreenState extends ConsumerState<LookupScreen> {
               isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
         ),
         decoration: InputDecoration(
-          hintText: 'Enter a German noun',
+          hintText: l10n.searchHint,
           hintStyle: TextStyle(
             color: isDark
                 ? AppColors.textSecondaryDark.withValues(alpha: 0.6)

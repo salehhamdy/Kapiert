@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/localization/app_localizations.dart';
 import '../../features/auth/screens/sign_in_screen.dart';
 import '../../features/auth/screens/sign_up_screen.dart';
 import '../../features/lookup/screens/lookup_screen.dart';
@@ -60,6 +61,7 @@ class MainScaffold extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = ref.watch(mainTabProvider);
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dividerColor = isDark
         ? const Color(0xFF2D3140)
@@ -82,26 +84,26 @@ class MainScaffold extends ConsumerWidget {
           selectedIndex: selectedIndex,
           onDestinationSelected: (i) =>
               ref.read(mainTabProvider.notifier).state = i,
-          destinations: const [
+          destinations: [
             NavigationDestination(
-              icon: Icon(Icons.search_rounded),
-              selectedIcon: Icon(Icons.search_rounded),
-              label: 'Lookup',
+              icon: const Icon(Icons.search_rounded),
+              selectedIcon: const Icon(Icons.search_rounded),
+              label: l10n.tabLookup,
             ),
             NavigationDestination(
-              icon: Icon(Icons.quiz_outlined),
-              selectedIcon: Icon(Icons.quiz_rounded),
-              label: 'Quiz',
+              icon: const Icon(Icons.quiz_outlined),
+              selectedIcon: const Icon(Icons.quiz_rounded),
+              label: l10n.tabQuiz,
             ),
             NavigationDestination(
-              icon: Icon(Icons.history_rounded),
-              selectedIcon: Icon(Icons.history_rounded),
-              label: 'History',
+              icon: const Icon(Icons.history_rounded),
+              selectedIcon: const Icon(Icons.history_rounded),
+              label: l10n.tabHistory,
             ),
             NavigationDestination(
-              icon: Icon(Icons.settings_outlined),
-              selectedIcon: Icon(Icons.settings_rounded),
-              label: 'Settings',
+              icon: const Icon(Icons.settings_outlined),
+              selectedIcon: const Icon(Icons.settings_rounded),
+              label: l10n.tabSettings,
             ),
           ],
         ),

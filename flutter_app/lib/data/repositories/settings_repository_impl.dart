@@ -28,4 +28,13 @@ class SettingsRepositoryImpl implements ISettingsRepository {
     await StorageService.setShowHints(value);
     unawaited(_sync.pushSettings());
   }
+
+  @override
+  String getLanguage() => StorageService.getLanguage();
+
+  @override
+  Future<void> setLanguage(String code) async {
+    await StorageService.setLanguage(code);
+    unawaited(_sync.pushSettings());
+  }
 }

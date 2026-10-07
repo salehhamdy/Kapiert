@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/localization/app_localizations.dart';
 import '../../../domain/models/achievement.dart';
 import '../../../domain/models/srs_item.dart';
 import '../../../shared/theme/app_colors.dart';
@@ -14,6 +15,7 @@ class QuizScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final state = ref.watch(quizProvider);
     final favState = ref.watch(favoritesProvider);
@@ -40,7 +42,7 @@ class QuizScreen extends ConsumerWidget {
                     ? _buildSessionComplete(isDark, ref)
                     : state.currentWord == null
                         ? _buildError(isDark, ref)
-                        : _buildQuizContent(isDark, state, ref),
+                        : _buildQuizContent(isDark, state, ref, l10n),
           ),
         ],
       ),
@@ -322,7 +324,12 @@ class QuizScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQuizContent(bool isDark, QuizState state, WidgetRef ref) {
+  Widget _buildQuizContent(
+    bool isDark,
+    QuizState state,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) {
     final word = state.currentWord!;
     final isFav = ref.watch(favoritesProvider).isFavorite(word.word);
     final srs = state.currentSrsItem;
@@ -430,13 +437,13 @@ class QuizScreen extends ConsumerWidget {
 
                   const SizedBox(height: 24),
 
-                  if (state.hasAnswered) _buildFeedback(isDark, state),
+                  if (state.hasAnswered) _buildFeedback(isDark, state, l10n),
 
                   const Spacer(flex: 2),
 
                   if (state.hasAnswered) ...[
                     const SizedBox(height: 16),
-                    _buildNextButton(isDark, ref),
+                    _buildNextButton(isDark, ref, l10n),
                   ],
                 ],
               ),
@@ -523,11 +530,12 @@ class QuizScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFeedback(bool isDark, QuizState state) {
+  Widget _buildFeedback(bool isDark, QuizState state, AppLocalizations l10n) {
     final word = state.currentWord!;
     final feedbackColor =
         state.isCorrect! ? AppColors.correctGreen : AppColors.incorrectRed;
     final srs = state.currentSrsItem;
+    final example = word.resolvedExampleSentence;
 
     return Container(
       width: double.infinity,
@@ -551,7 +559,7 @@ class QuizScreen extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                state.isCorrect! ? 'Correct!' : 'Incorrect',
+                state.isCorrect! ? l10n.correct : l10n.incorrect,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -581,6 +589,50 @@ class QuizScreen extends ConsumerWidget {
                 color: isDark
                     ? AppColors.textSecondaryDark
                     : AppColors.textSecondaryLight,
+              ),
+            ),
+          ],
+          if (example.sentence.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              key: const Key('quiz_feedback_sentence'),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: feedbackColor.withValues(alpha: 0.15),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    example.sentence,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    example.translationFor(l10n.languageCode),
+                    textDirection:
+                        l10n.isRtl ? TextDirection.rtl : TextDirection.ltr,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
           ],
@@ -702,7 +754,7 @@ class QuizScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNextButton(bool isDark, WidgetRef ref) {
+  Widget _buildNextButton(bool isDark, WidgetRef ref, AppLocalizations l10n) {
     return SizedBox(
       width: double.infinity,
       height: 54,
@@ -710,9 +762,9 @@ class QuizScreen extends ConsumerWidget {
         key: const Key('quiz_next_button'),
         onPressed: () => ref.read(quizProvider.notifier).loadNext(),
         icon: const Icon(Icons.arrow_forward_rounded, size: 20),
-        label: const Text(
-          'Next Word',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        label: Text(
+          l10n.nextWord,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor:
