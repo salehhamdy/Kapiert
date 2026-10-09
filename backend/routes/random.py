@@ -9,6 +9,8 @@ from fastapi import APIRouter, HTTPException
 from dataset import dataset_ready, get_noun_dict, get_quiz_pools
 from models import WordResponse
 from sentences import get_example_sentence
+from translations import get_curated_translation
+from wiktionary import get_cached_translations
 
 router = APIRouter(tags=["random"])
 
@@ -17,6 +19,10 @@ _ARTICLES = ("der", "die", "das")
 
 def _enrich(entry: dict) -> dict:
     res = dict(entry)
+    if not res.get("translation"):
+        tr = get_curated_translation(res["word"].lower()) or get_cached_translations().get(res["word"].lower())
+        if tr:
+            res["translation"] = tr
     sent = get_example_sentence(res["word"], res["article"], translation=res.get("translation"))
     res["example_sentence"] = sent["de"]
     res["example_translation"] = sent["en"]
@@ -80,8 +86,10 @@ async def random_word() -> WordResponse:
 
     for art in shuffled_articles:
         pool = quiz_pools.get(art, [])
-        if pool:
-            return WordResponse(**_enrich(random.choice(pool)))
+        translated_pool = [e for e in pool if e.get("translation")]
+        chosen_pool = translated_pool if translated_pool else pool
+        if chosen_pool:
+            return WordResponse(**_enrich(random.choice(chosen_pool)))
 
     # Fallback to entire noun dict if pools are empty
     noun_dict = get_noun_dict()
@@ -117,11 +125,15 @@ async def random_words(count: int = 10) -> list[WordResponse]:
     for art in _ARTICLES:
         quota = quotas[art]
         pool = quiz_pools.get(art, [])
-        if len(pool) >= quota and quota > 0:
-            batch.extend(random.sample(pool, quota))
-        elif pool:
-            batch.extend(pool)
-            fallback_needed += quota - len(pool)
+        # Prefer nouns with translations for enhanced quiz learning
+        translated_pool = [e for e in pool if e.get("translation")]
+        active_pool = translated_pool if len(translated_pool) >= quota else pool
+
+        if len(active_pool) >= quota and quota > 0:
+            batch.extend(random.sample(active_pool, quota))
+        elif active_pool:
+            batch.extend(active_pool)
+            fallback_needed += quota - len(active_pool)
         else:
             fallback_needed += quota
 

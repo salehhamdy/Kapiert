@@ -276,6 +276,16 @@ Implemented across [`ArticleLocalDS`](file:///c:/Users/ASUS/Downloads/German_Art
 - **Visual Offline Badging**: When an article is served offline, `ResultCard` displays a distinctive green offline badge with an `Icons.offline_pin_rounded` icon and localized label.
 - **Cache Management Dashboard**: In Settings -> Data -> Offline Article Cache, users can inspect stored word counts, pre-seed vocabulary on demand, and clear local cache.
 
+#### 11. English Translations & Wiktionary Enrichment
+Implemented across [`translations.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/translations.py), [`wiktionary.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/wiktionary.py), [`lookup.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/routes/lookup.py), [`random.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/routes/random.py), [`enrich_wiktionary.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/scripts/enrich_wiktionary.py), and [`article_local_ds.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/data/datasources/article_local_ds.dart):
+- **Curated A1–B2 Translation Bank**: 1,200+ high-frequency German nouns mapped to clean, concise English glosses (`translations.py`) for instantaneous (<1ms) in-memory resolution without remote latency.
+- **Dynamic Wiktionary REST Enrichment**: When a noun is not in the curated bank, the backend queries Wikimedia REST API (`/page/definition/{word}`) with compliant Wikimedia user-agent headers and a polite timeout. Definitions are cleaned by stripping HTML tags, removing Latin taxonomic binomials, unnesting multi-sense semicolons, and truncating long parentheticals.
+- **Persistent Translations Cache**: Dynamically fetched Wiktionary translations are saved to `backend/translations_cache.json` on disk, guaranteeing that each unique German noun is only fetched from Wikimedia once.
+- **Lookup & Compound Enrichment**: `/lookup/{word}` enriches dataset words, compound nouns (via head suffix decomposition, e.g. `Küchentisch` -> `Tisch` -> `table`), and plural forms (`Bücher` -> `Buch` -> `book`) with English translations.
+- **Quiz Vocabulary Prioritization**: `/random` and `/random/batch/{count}` actively prioritize nouns with verified English translations, ensuring learners always see clear `= translation` feedback on answer cards.
+- **Batch Enrichment CLI Utility**: Standalone tool [`enrich_wiktionary.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/scripts/enrich_wiktionary.py) to inspect coverage statistics, batch-enrich word lists, or pre-populate top quiz vocabulary offline.
+- **Seamless Frontend Presentation**: Flutter's `ResultCard`, `QuizScreen`, and `HistoryScreen` render sleek English translation chips with `Icons.translate_rounded`.
+
 ---
 
 ### Spaced Repetition System (SRS) Mechanics
@@ -486,11 +496,11 @@ Both the backend and Flutter applications maintain comprehensive automated test 
 ### Test Execution Commands
 
 ```bash
-# 1. Backend API Tests (13 tests)
+# 1. Backend API & Translation Tests (21 tests)
 cd backend
 python -m pytest tests/ -v
 
-# 2. Flutter Unit, Widget & Integration Tests (111 tests)
+# 2. Flutter Unit, Widget & Integration Tests (147 tests)
 cd flutter_app
 flutter test
 
@@ -503,6 +513,7 @@ flutter analyze
 | Test Suite | File | Tests | Validates |
 |---|---|---|---|
 | **API Contract & Sentences** | [`backend/tests/test_api.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/tests/test_api.py) | 13 | Query normalization, exact lookup, plural lookup, umlaut variants, Wiktionary fallback, random batch balance, anti-clumping, and multilingual example sentences (`de`, `en`, `ar`, `tr`). |
+| **Translation & Wiktionary Engine** | [`backend/tests/test_translations.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/tests/test_translations.py) | 8 | Curated vocabulary bank (1,200+ words), clean HTML/markup definition formatter, transcription variant lookups, live/cached English translation retrieval, compound noun glosses, plural lemma resolution, and translated quiz batches. |
 | **Localization Engine** | [`flutter_app/test/core/localization/app_localizations_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/core/localization/app_localizations_test.dart) | 6 | All 4 locales (`en`, `ar`, `tr`, `de`), RTL directionality detection, translation fallbacks, delegate resolution, and dynamic parameterized helper methods. |
 | **Sentence Domain Models** | [`flutter_app/test/domain/models/example_sentence_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/example_sentence_test.dart) | 5 | Translation retrieval by language code, fallback order, JSON serialization/deserialization, and offline sentence provider. |
 | **Network Client** | [`flutter_app/test/core/network/api_client_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/core/network/api_client_test.dart) | 4 | HTTP GET parsing, timeout handling, error mapping. |
@@ -512,7 +523,7 @@ flutter analyze
 | **Notification Settings Model** | [`flutter_app/test/domain/models/notification_settings_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/notification_settings_test.dart) | 5 | Default values, TimeOfDay reminderTime conversion, copyWith updates, symmetric JSON serialization, equality, and hash code. |
 | **Notification Scheduler** | [`flutter_app/test/features/notifications/providers/notification_provider_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/notifications/providers/notification_provider_test.dart) | 7 | State initialization, toggling daily reminders, permission requests, zonedSchedule daily reminders, cancel schedules, time picker updates, streak/SRS switches, and instant test notification. |
 | **Notification Settings Widget** | [`flutter_app/test/features/notifications/widgets/notification_settings_sheet_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/notifications/widgets/notification_settings_sheet_test.dart) | 3 | Modal bottom sheet header, master switch toggle, revealed reminder controls, time picker trigger, and test notification button with confirmation SnackBar. |
-| **Article Local Data Source** | [`flutter_app/test/data/datasources/article_local_ds_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/data/datasources/article_local_ds_test.dart) | 10 | Leading article query normalization (`der`, `die`, `das`, `ein`, `eine`), punctuation cleanup, case-insensitivity, masculine/feminine/neuter core lookups, compound noun head suffix analysis, random word batching, and unknown word fallbacks. |
+| **Article Local Data Source** | [`flutter_app/test/data/datasources/article_local_ds_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/data/datasources/article_local_ds_test.dart) | 11 | Leading article query normalization (`der`, `die`, `das`, `ein`, `eine`), punctuation cleanup, case-insensitivity, masculine/feminine/neuter core lookups, English translation verification, compound noun head suffix analysis, random word batching, and unknown word fallbacks. |
 | **Article Repository Fallback** | [`flutter_app/test/data/repositories/article_repository_impl_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/data/repositories/article_repository_impl_test.dart) | 8 | Remote-first lookup with auto-caching, transparent offline fallback to local SQLite cache on network failure, error rethrow when absent, random/randomBatch offline fallbacks, and health checks. |
 | **Offline Cache Sheet Widget** | [`flutter_app/test/features/settings/widgets/offline_cache_sheet_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/settings/widgets/offline_cache_sheet_test.dart) | 3 | Stored article count metric display, pre-seed essential vocabulary button invocation with feedback SnackBar, and clear offline cache button with confirmation. |
 | **Daily Activity Model** | [`flutter_app/test/domain/models/daily_activity_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/daily_activity_test.dart) | 3 | Intensity levels 0–4 thresholds, accuracy calculation, model immutability. |

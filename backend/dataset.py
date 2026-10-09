@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 from config import get_settings
+from translations import get_curated_translation
 
 GENDER_TO_ARTICLE = {"m": "der", "f": "die", "n": "das"}
 
@@ -141,12 +142,14 @@ def lookup_compound_fallback(word: str) -> dict | None:
             suffix = cand[i:]
             if len(suffix) >= 3 and suffix in _noun_dict:
                 base = _noun_dict[suffix]
+                base_tr = base.get("translation") or get_curated_translation(suffix)
+                tr = f"compound of {base['word']} ({base_tr})" if base_tr else None
                 return {
                     "word": cleaned.capitalize(),
                     "article": base["article"],
                     "gender": base["gender"],
                     "plural": None,
-                    "translation": None,
+                    "translation": tr,
                     "source": "dataset",
                 }
     return None
@@ -201,12 +204,13 @@ def load_dataset() -> None:
 
         article = GENDER_TO_ARTICLE[genus]
         lemma_lower = lemma.lower()
+        translation = get_curated_translation(lemma_lower)
         entry = {
             "word": lemma,
             "article": article,
             "gender": genus,
             "plural": plural,
-            "translation": None,
+            "translation": translation,
             "source": "dataset",
         }
         _noun_dict[lemma_lower] = entry

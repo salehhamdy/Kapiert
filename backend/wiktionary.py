@@ -1,19 +1,113 @@
-"""Wiktionary fallback lookup for words missing from the dataset."""
+"""Wiktionary fallback lookup and English translation enrichment engine."""
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 import re
 
 import httpx
 
 from config import get_settings
 from dataset import GENDER_TO_ARTICLE, generate_transcription_variants
+from translations import get_curated_translation
 
 WIKTIONARY_API = "https://en.wiktionary.org/api/rest_v1/page/definition"
 _TAG_STRIP = re.compile(r"<[^>]+>")
+_TAXON_STRIP = re.compile(r",?\s*(?:\()?[A-Z][a-z]+ [a-z]+(?: [a-z]+)?(?:\))?")
+_SPACE_NORM = re.compile(r"\s+")
+
+# Persistent on-disk translation cache
+_CACHE_PATH = Path(__file__).parent / "translations_cache.json"
+_translation_cache: dict[str, str] = {}
+
+
+def _load_cache() -> None:
+    global _translation_cache
+    if _CACHE_PATH.exists():
+        try:
+            with open(_CACHE_PATH, "r", encoding="utf-8") as f:
+                _translation_cache = json.load(f)
+        except Exception as exc:
+            print(f"Warning: could not load translations cache: {exc}")
+            _translation_cache = {}
+
+
+def _save_cache() -> None:
+    try:
+        with open(_CACHE_PATH, "w", encoding="utf-8") as f:
+            json.dump(_translation_cache, f, ensure_ascii=False, indent=2)
+    except Exception as exc:
+        print(f"Warning: could not save translations cache: {exc}")
+
+
+# Initialize cache at module load time
+_load_cache()
+
+
+def get_cached_translations() -> dict[str, str]:
+    """Return in-memory dynamic translations cache."""
+    return _translation_cache
+
+
+def _clean_definition(raw_text: str) -> str | None:
+    """Clean Wiktionary raw definition into concise, readable English gloss."""
+    if not raw_text:
+        return None
+
+    # 1. Strip HTML tags
+    text = _TAG_STRIP.sub("", raw_text)
+    # 2. Strip Latin taxonomic names, e.g. (Felis silvestris catus)
+    text = _TAXON_STRIP.sub("", text)
+    # 3. Normalize whitespace and remove leading bullet markers or numbers
+    text = _SPACE_NORM.sub(" ", text).strip()
+    text = re.sub(r"^[0-9]+[.)]\s*", "", text)
+    text = re.sub(r"^[-–—*•]\s*", "", text)
+
+    if not text:
+        return None
+
+    # 4. If definition has multiple semicolon-separated senses or newline senses,
+    # take the primary 1-2 senses
+    first_chunk = text.split("\n")[0].strip()
+    raw_senses = [s.strip() for s in first_chunk.split(";") if s.strip()]
+    senses = []
+    for s in raw_senses:
+        s_clean = re.sub(r"^[0-9]+[.)]\s*", "", s).strip()
+        s_clean = re.sub(r"^[-–—*•]\s*", "", s_clean).strip()
+        if s_clean:
+            senses.append(s_clean)
+
+    if len(senses) > 1:
+        # Check if first sense is very verbose with parentheses
+        primary = senses[0]
+        secondary = senses[1]
+        # If secondary is short and clear, combine: "dog, hound"
+        if len(primary) < 35 and len(secondary) < 35 and not secondary.startswith("specific uses"):
+            text = f"{primary}, {secondary}"
+        else:
+            text = primary
+    elif senses:
+        text = senses[0]
+
+    # 5. Clean trailing punctuation
+    text = text.rstrip(".;:,")
+
+    # 6. Simplify long parenthetical descriptors if text is excessively long
+    if len(text) > 85 and "(" in text and ")" in text:
+        simplified = re.sub(r"\s*\([^)]*\)", "", text).strip().rstrip(".;:,")
+        if len(simplified) >= 3:
+            text = simplified
+
+    # Cap maximum length to avoid UI overflows
+    if len(text) > 95:
+        text = text[:92].rstrip() + "..."
+
+    return text if len(text) >= 2 else None
 
 
 def _extract_translation(data: dict) -> str | None:
+    """Extract English translation from Wiktionary REST definitions payload."""
     german_section = None
     for lang_section in data.get("de", data.get("en", [])):
         german_section = lang_section
@@ -24,15 +118,98 @@ def _extract_translation(data: dict) -> str | None:
 
     for defn in german_section.get("definitions", []):
         defn_text = defn.get("definition", "")
-        stripped = _TAG_STRIP.sub("", defn_text).strip()
-        if stripped and len(stripped) < 200:
-            return stripped
+        cleaned = _clean_definition(defn_text)
+        if cleaned:
+            return cleaned
+
+    return None
+
+
+async def get_english_translation(word: str, client: httpx.AsyncClient | None = None) -> str | None:
+    """
+    Resolve English translation for any German noun with multi-tier fallback:
+    1. Curated in-memory dictionary (<1ms)
+    2. Dynamic persistent translation cache (<1ms)
+    3. Live Wiktionary REST definition API
+    4. Compound noun suffix decomposition
+    """
+    cleaned_lower = word.strip().lower()
+    if not cleaned_lower:
+        return None
+
+    # Tier 1: Curated dictionary
+    curated = get_curated_translation(cleaned_lower)
+    if curated:
+        return curated
+
+    # Tier 2: Dynamic translation cache
+    if cleaned_lower in _translation_cache:
+        return _translation_cache[cleaned_lower]
+
+    # Transcription variant check in curated or cache
+    for tvar in generate_transcription_variants(cleaned_lower):
+        if tvar in _translation_cache:
+            return _translation_cache[tvar]
+        tvar_curated = get_curated_translation(tvar)
+        if tvar_curated:
+            return tvar_curated
+
+    # Tier 3: Live Wiktionary REST API lookup
+    settings = get_settings()
+    headers = {
+        "User-Agent": settings.wiktionary_user_agent,
+        "Accept": "application/json",
+    }
+
+    variants = [word.capitalize(), word, cleaned_lower]
+    for tvar in generate_transcription_variants(cleaned_lower):
+        if tvar not in variants:
+            variants.extend([tvar.capitalize(), tvar])
+
+    own_client = client is None
+    http_client = (
+        client
+        if client is not None
+        else httpx.AsyncClient(
+            timeout=min(settings.wiktionary_timeout_seconds, 3.0),
+            follow_redirects=True,
+            headers=headers,
+        )
+    )
+
+    try:
+        for variant in variants:
+            try:
+                resp = await http_client.get(f"{WIKTIONARY_API}/{variant}")
+                if resp.status_code == 200:
+                    trans = _extract_translation(resp.json())
+                    if trans:
+                        _translation_cache[cleaned_lower] = trans
+                        _save_cache()
+                        return trans
+            except Exception:
+                continue
+    finally:
+        if own_client:
+            await http_client.aclose()
+
+    # Tier 4: Compound noun head decomposition (e.g. Küchentisch -> ends with Tisch -> table)
+    if len(cleaned_lower) >= 6:
+        for i in range(2, len(cleaned_lower) - 2):
+            suffix = cleaned_lower[i:]
+            if len(suffix) >= 3:
+                head_trans = get_curated_translation(suffix) or _translation_cache.get(suffix)
+                if head_trans:
+                    compound_gloss = f"compound of {suffix.capitalize()} ({head_trans})"
+                    _translation_cache[cleaned_lower] = compound_gloss
+                    _save_cache()
+                    return compound_gloss
 
     return None
 
 
 async def wiktionary_lookup(word: str) -> dict | None:
-    """Attempt to find the word on Wiktionary and extract gender + translation."""
+    """Attempt to find a noun on Wiktionary and extract gender, article, plural, and translation."""
     settings = get_settings()
     headers = {"User-Agent": settings.wiktionary_user_agent}
 
@@ -114,16 +291,8 @@ async def wiktionary_lookup(word: str) -> dict | None:
                 if not gender:
                     continue
 
-                translation = None
-                try:
-                    def_resp = await client.get(
-                        f"{WIKTIONARY_API}/{variant}",
-                        headers={"Accept": "application/json", **headers},
-                    )
-                    if def_resp.status_code == 200:
-                        translation = _extract_translation(def_resp.json())
-                except Exception:
-                    pass
+                # Fetch English translation
+                translation = await get_english_translation(variant, client=client)
 
                 article = GENDER_TO_ARTICLE[gender]
                 return {

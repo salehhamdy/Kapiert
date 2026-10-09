@@ -269,7 +269,7 @@ flutter analyze
 - [x] 🏆 Achievements & milestones (7-day streak, 100 words, etc.)
 
 ### Phase 4 — Content & Polish
-- [ ] 🌍 English translations for all nouns (Wiktionary enrichment)
+- [x] 🌍 English translations for all nouns (Wiktionary enrichment)
 - [ ] 🔊 Audio pronunciation (text-to-speech)
 - [x] 📝 Example sentences per word
 - [x] 🌐 Multi-language UI (Arabic, Turkish, English)

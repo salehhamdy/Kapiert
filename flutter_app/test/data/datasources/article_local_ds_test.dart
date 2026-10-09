@@ -95,6 +95,24 @@ void main() {
       expect(['der', 'die', 'das'], contains(word!.article));
     });
 
+    test('provides clean English translations for core vocabulary and compounds', () async {
+      final book = await localDS.lookup('Buch');
+      expect(book, isNotNull);
+      expect(book!.translation, equals('book'));
+
+      final dog = await localDS.lookup('Hund');
+      expect(dog, isNotNull);
+      expect(dog!.translation, equals('dog'));
+
+      final cat = await localDS.lookup('Katze');
+      expect(cat, isNotNull);
+      expect(cat!.translation, equals('cat'));
+
+      final compound = await localDS.lookup('Küchentisch');
+      expect(compound, isNotNull);
+      expect(compound!.translation, contains('table'));
+    });
+
     test('getRandomBatch returns requested batch count of unique words', () async {
       final batch = await localDS.getRandomBatch(count: 10);
       expect(batch.length, equals(10));

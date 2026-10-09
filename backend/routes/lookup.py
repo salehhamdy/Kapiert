@@ -11,7 +11,7 @@ from dataset import (
 )
 from models import WordResponse
 from sentences import get_example_sentence
-from wiktionary import wiktionary_lookup
+from wiktionary import get_english_translation, wiktionary_lookup
 
 router = APIRouter(tags=["lookup"])
 
@@ -42,6 +42,10 @@ async def lookup_word(word: str) -> WordResponse:
     # 1. Exact dataset match
     dataset_result = lookup_in_dataset(cleaned)
     if dataset_result:
+        if not dataset_result.get("translation"):
+            trans = await get_english_translation(dataset_result["word"])
+            if trans:
+                dataset_result["translation"] = trans
         return WordResponse(**_enrich(dataset_result))
 
     # 2. Wiktionary fallback
@@ -52,6 +56,10 @@ async def lookup_word(word: str) -> WordResponse:
     # 3. Compound noun fallback
     compound_result = lookup_compound_fallback(cleaned)
     if compound_result:
+        if not compound_result.get("translation"):
+            trans = await get_english_translation(compound_result["word"])
+            if trans:
+                compound_result["translation"] = trans
         return WordResponse(**_enrich(compound_result))
 
     raise HTTPException(
