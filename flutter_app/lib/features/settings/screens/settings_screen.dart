@@ -19,6 +19,7 @@ import '../../notifications/widgets/notification_settings_sheet.dart';
 import '../../profile/providers/achievements_provider.dart';
 import '../../srs/providers/srs_provider.dart';
 import '../widgets/offline_cache_sheet.dart';
+import '../../../shared/router/app_router.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -241,6 +242,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ref.read(settingsProvider.notifier).setShowHints(val),
                     activeTrackColor: AppColors.derBlue,
                   ),
+                ),
+
+                _SettingsTile(
+                  key: const Key('settings_grammar_rules_tile'),
+                  icon: Icons.menu_book_rounded,
+                  title: l10n.grammarRulesTitle,
+                  subtitle: l10n.grammarRulesSubtitle,
+                  isDark: isDark,
+                  onTap: () =>
+                      Navigator.of(context).pushNamed(AppRoutes.grammarRules),
                 ),
 
                 const SizedBox(height: 28),

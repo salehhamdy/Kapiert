@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../shared/router/app_router.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../providers/lookup_provider.dart';
 import 'article_pill.dart';
@@ -52,7 +54,47 @@ class _LookupScreenState extends ConsumerState<LookupScreen> {
             ArticleLegend(activeArticle: state.result?.article)
                 .animate()
                 .fadeIn(duration: 400.ms),
-            const SizedBox(height: 28),
+            const SizedBox(height: 10),
+            InkWell(
+              key: const Key('lookup_grammar_rules_button'),
+              borderRadius: BorderRadius.circular(20),
+              onTap: () =>
+                  Navigator.of(context).pushNamed(AppRoutes.grammarRules),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.menu_book_rounded,
+                      size: 14,
+                      color:
+                          isDark ? AppColors.derBlue : const Color(0xFF2563EB),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      l10n.grammarRulesTitle,
+                      style: GoogleFonts.nunito(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.derBlue
+                            : const Color(0xFF2563EB),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 10,
+                      color:
+                          isDark ? AppColors.derBlue : const Color(0xFF2563EB),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
 
             // ── Search Input ──
             _buildSearchField(isDark, l10n),

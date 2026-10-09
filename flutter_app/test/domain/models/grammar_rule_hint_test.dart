@@ -85,5 +85,28 @@ void main() {
       expect(hint.localizedRule('ar'), contains("الأسماء المنتهية بـ '-ung'"));
       expect(hint.localizedRule('tr'), contains("'-ung' ekiyle biten"));
     });
+
+    test('allRules exposes full catalog of German article suffix guidelines', () {
+      final rules = GrammarRuleHint.allRules;
+      expect(rules.length, greaterThanOrEqualTo(24));
+
+      final derRules = rules.where((r) => r.article == 'der').toList();
+      final dieRules = rules.where((r) => r.article == 'die').toList();
+      final dasRules = rules.where((r) => r.article == 'das').toList();
+
+      expect(derRules.isNotEmpty, isTrue);
+      expect(dieRules.isNotEmpty, isTrue);
+      expect(dasRules.isNotEmpty, isTrue);
+
+      for (final rule in rules) {
+        expect(rule.suffix, isNotEmpty);
+        expect(['der', 'die', 'das'].contains(rule.article), isTrue);
+        expect(rule.reliabilityPercent, inInclusiveRange(70, 100));
+        expect(rule.examples, isNotEmpty);
+        for (final ex in rule.examples) {
+          expect(ex.toLowerCase(), endsWith(rule.suffix.toLowerCase()));
+        }
+      }
+    });
   });
 }

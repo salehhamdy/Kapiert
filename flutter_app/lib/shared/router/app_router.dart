@@ -11,6 +11,7 @@ import '../../features/profile/screens/profile_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/legal/screens/legal_document_screen.dart';
 import '../../features/legal/screens/first_use_consent_screen.dart';
+import '../../features/lookup/screens/grammar_rules_screen.dart';
 
 /// Named route constants.
 class AppRoutes {
@@ -22,6 +23,7 @@ class AppRoutes {
   static const profile = '/profile';
   static const legal = '/legal';
   static const consent = '/consent';
+  static const grammarRules = '/grammar-rules';
 }
 
 /// Route map for [MaterialApp.routes].
@@ -35,6 +37,7 @@ class AppRouter {
         AppRoutes.profile: (_) => const ProfileScreen(),
         AppRoutes.legal: (_) => const LegalDocumentScreen(),
         AppRoutes.consent: (_) => const FirstUseConsentScreen(),
+        AppRoutes.grammarRules: (_) => const GrammarRulesScreen(),
       };
 }
 

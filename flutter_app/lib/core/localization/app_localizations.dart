@@ -1940,6 +1940,77 @@ class AppLocalizations {
     }
   }
 
+  // ── Grammar Rules Cheat Sheet ──────────────────────────────────────────────
+  String get grammarRulesTitle => _t({
+        'en': 'Grammar Rules & Suffixes',
+        'ar': 'قواعد التذكير والتأنيث واللواحق',
+        'tr': 'Dilbilgisi Kuralları ve Ekler',
+        'de': 'Grammatikregeln & Endungen',
+      });
+
+  String get grammarRulesSubtitle => _t({
+        'en': 'Suffix guidelines, reliability, examples & exceptions',
+        'ar': 'دليل نهايات الكلمات ونسب الدقة والأمثلة والاستثناءات',
+        'tr': 'Son ek rehberi, güvenilirlik oranları, örnekler ve istisnalar',
+        'de': 'Endungs-Regeln, Zuverlässigkeit, Beispiele & Ausnahmen',
+      });
+
+  String get searchRulesHint => _t({
+        'en': 'Search suffix or rule (e.g. -ung, -chen)...',
+        'ar': 'ابحث عن لاحقة أو قاعدة (مثل ung, chen)...',
+        'tr': 'Son ek veya kural ara (örn. -ung, -chen)...',
+        'de': 'Endung oder Regel suchen (z. B. -ung, -chen)...',
+      });
+
+  String get allRulesTab => _t({
+        'en': 'All',
+        'ar': 'الكل',
+        'tr': 'Tümü',
+        'de': 'Alle',
+      });
+
+  String get examplesLabel => _t({
+        'en': 'Examples',
+        'ar': 'أمثلة',
+        'tr': 'Örnekler',
+        'de': 'Beispiele',
+      });
+
+  String get exceptionsLabel => _t({
+        'en': 'Exceptions',
+        'ar': 'استثناءات',
+        'tr': 'İstisnalar',
+        'de': 'Ausnahmen',
+      });
+
+  String get reliabilityLabel => _t({
+        'en': 'Reliability',
+        'ar': 'الدقة',
+        'tr': 'Güvenilirlik',
+        'de': 'Zuverlässigkeit',
+      });
+
+  String get noRulesFound => _t({
+        'en': 'No grammar rules match your search.',
+        'ar': 'لا توجد قواعد تطابق بحثك.',
+        'tr': 'Aramanızla eşleşen dilbilgisi kuralı bulunamadı.',
+        'de': 'Keine Grammatikregeln entsprechen Ihrer Suche.',
+      });
+
+  String get viewAllRules => _t({
+        'en': 'View All Grammar Rules',
+        'ar': 'عرض جميع قواعد النحو',
+        'tr': 'Tüm Dilbilgisi Kurallarını Gör',
+        'de': 'Alle Grammatikregeln anzeigen',
+      });
+
+  String get tapExampleToLookup => _t({
+        'en': 'Tap any example to look up its details',
+        'ar': 'اضغط على أي مثال لمعرفة تفاصيله',
+        'tr': 'Detaylarını aramak için herhangi bir örneğe dokunun',
+        'de': 'Tippe auf ein Beispiel, um es nachzuschlagen',
+      });
+
   // ── Internal translation selector ──────────────────────────────────────────
   String _t(Map<String, String> values) {
     return values[languageCode] ?? values['en'] ?? '';

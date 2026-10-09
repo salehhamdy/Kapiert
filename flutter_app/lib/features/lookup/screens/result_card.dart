@@ -8,6 +8,7 @@ import '../../../domain/models/grammar_rule_hint.dart';
 import '../../../domain/models/word_model.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/router/app_router.dart';
 import '../../favorites/providers/favorites_provider.dart';
 import '../../settings/providers/settings_provider.dart';
 
@@ -580,6 +581,29 @@ class _GrammarHintView extends StatelessWidget {
                     color: isDark
                         ? AppColors.textPrimaryDark
                         : AppColors.textPrimaryLight,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  key: const Key('grammar_hint_view_all_rules_button'),
+                  onTap: () =>
+                      Navigator.of(context).pushNamed(AppRoutes.grammarRules),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${l10n.viewAllRules} →',
+                          style: GoogleFonts.nunito(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: color,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

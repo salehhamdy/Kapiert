@@ -312,6 +312,19 @@ Implemented across [`GrammarRuleHint`](file:///c:/Users/ASUS/Downloads/German_Ar
 - **Clean ResultCard Presentation**: When enabled, `ResultCard` displays the `_GrammarHintView` (`Icons.lightbulb_outline_rounded`) alongside `_ExampleSentenceView`. When toggled off, both disappear reactively without disrupting core word lookups.
 - **Quiz Feedback Integration**: Quiz feedback card conditionally renders example sentences and grammar hints when `showHints` is true, and suppresses them when false for rapid quiz drilling.
 
+#### 15. German Grammar Rules & Suffixes Cheat Sheet Reference Screen
+Implemented across [`GrammarRulesScreen`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/lookup/screens/grammar_rules_screen.dart), [`GrammarRuleHint`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/domain/models/grammar_rule_hint.dart), [`AppRouter`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/shared/router/app_router.dart), [`LookupScreen`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/lookup/screens/lookup_screen.dart), and [`SettingsScreen`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/settings/screens/settings_screen.dart):
+- **Comprehensive 24-Rule Suffix Reference**: Catalog of 24 canonical German noun gender rules categorized across feminine (*die*), neuter (*das*), and masculine (*der*).
+- **Reliability Ratings & Exception Guidance**: Each rule displays a verified reliability badge (90% to 100%) and highlights important grammatical exceptions (e.g., *das Stadion* / *der Spion* for `-ion`, *das Labor* for `-or`, *die Firma* for `-ma`).
+- **Real-Time Suffix & Content Search**: Instant search filtering across suffixes, rule descriptions, curated examples, and exceptions with dynamic clear-search controls.
+- **Gender Filter Pills**: Fast category filtering (`All`, `der`, `die`, `das`) with active count badges and signature gender theme colors.
+- **Interactive Tap-to-Lookup**: Every example word (e.g., *Zeitung*, *Mädchen*, *Tourismus*) is an interactive chip; tapping it triggers immediate lookup in `lookupProvider`, switches to the lookup tab, and displays the result card.
+- **Direct Entry Points Throughout App**:
+  - **Settings -> Preferences**: `Grammar Rules & Suffixes` tile with navigation to `/grammar-rules`.
+  - **Lookup Screen**: Quick-access reference link beneath `ArticleLegend`.
+  - **ResultCard Contextual Hint**: "View all grammar rules →" link at the bottom of the active grammar hint view.
+- **Full Multilingual Localization**: Complete native translations across English, German, Turkish, and Arabic (with complete RTL text directionality).
+
 ---
 
 ### Spaced Repetition System (SRS) Mechanics
@@ -540,7 +553,8 @@ flutter analyze
 |---|---|---|---|
 | **API Contract & Sentences** | [`backend/tests/test_api.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/tests/test_api.py) | 13 | Query normalization, exact lookup, plural lookup, umlaut variants, Wiktionary fallback, random batch balance, anti-clumping, and multilingual example sentences (`de`, `en`, `ar`, `tr`). |
 | **Translation & Wiktionary Engine** | [`backend/tests/test_translations.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/tests/test_translations.py) | 8 | Curated vocabulary bank (1,200+ words), clean HTML/markup definition formatter, transcription variant lookups, live/cached English translation retrieval, compound noun glosses, plural lemma resolution, and translated quiz batches. |
-| **Grammar Rule Hint Model** | [`flutter_app/test/domain/models/grammar_rule_hint_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/grammar_rule_hint_test.dart) | 5 | Suffix pattern matching for feminine (`-ung`, `-heit`, `-keit`, `-schaft`, `-tion`, `-tät`), neuter (`-chen`, `-lein`, `-ment`, `-um`), masculine (`-ismus`, `-ling`, `-or`, `-ist`), non-matching exception guards, and 4-language localized explanations. |
+| **Grammar Rule Hint Model** | [`flutter_app/test/domain/models/grammar_rule_hint_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/grammar_rule_hint_test.dart) | 6 | Suffix pattern matching for feminine (`-ung`, `-heit`, `-keit`, `-schaft`, `-tion`, `-tät`), neuter (`-chen`, `-lein`, `-ment`, `-um`), masculine (`-ismus`, `-ling`, `-or`, `-ist`), non-matching exception guards, full 24-rule catalog validation, reliability bounds, and 4-language localized explanations. |
+| **Grammar Rules Cheat Sheet Screen** | [`flutter_app/test/features/lookup/screens/grammar_rules_screen_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/lookup/screens/grammar_rules_screen_test.dart) | 6 | Screen header, suffix search bar, gender filter pills (`All`, `der`, `die`, `das`), real-time query filtering, clear search button, empty state, interactive example word tap-to-lookup, and multi-language localized rendering (`de`, `ar`). |
 | **Localization Engine** | [`flutter_app/test/core/localization/app_localizations_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/core/localization/app_localizations_test.dart) | 6 | All 4 locales (`en`, `ar`, `tr`, `de`), RTL directionality detection, translation fallbacks, delegate resolution, and dynamic parameterized helper methods. |
 | **Sentence Domain Models** | [`flutter_app/test/domain/models/example_sentence_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/example_sentence_test.dart) | 5 | Translation retrieval by language code, fallback order, JSON serialization/deserialization, and offline sentence provider. |
 | **Network Client** | [`flutter_app/test/core/network/api_client_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/core/network/api_client_test.dart) | 4 | HTTP GET parsing, timeout handling, error mapping. |
