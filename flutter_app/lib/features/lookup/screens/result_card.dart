@@ -170,6 +170,7 @@ class ResultCard extends ConsumerWidget {
                 _SourceBadge(
                   label: l10n.sourceLabel(word.source),
                   isDark: isDark,
+                  isOffline: word.source == 'offline_cache' || word.source == 'offline',
                 ).animate().fadeIn(delay: 400.ms, duration: 300.ms),
               ],
             ),
@@ -301,29 +302,55 @@ class _InfoChip extends StatelessWidget {
 class _SourceBadge extends StatelessWidget {
   final String label;
   final bool isDark;
+  final bool isOffline;
 
-  const _SourceBadge({required this.label, required this.isDark});
+  const _SourceBadge({
+    required this.label,
+    required this.isDark,
+    this.isOffline = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04),
+        color: isOffline
+            ? (isDark
+                ? AppColors.dasGreen.withValues(alpha: 0.15)
+                : AppColors.dasGreen.withValues(alpha: 0.10))
+            : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+          color: isOffline
+              ? AppColors.dasGreen.withValues(alpha: 0.3)
+              : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
         ),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: isDark
-              ? AppColors.textSecondaryDark.withValues(alpha: 0.7)
-              : AppColors.textSecondaryLight.withValues(alpha: 0.7),
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isOffline) ...[
+            Icon(
+              Icons.offline_pin_rounded,
+              size: 13,
+              color: isDark ? AppColors.dasGreen : const Color(0xFF2E7D32),
+            ),
+            const SizedBox(width: 5),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isOffline ? FontWeight.w600 : FontWeight.w500,
+              color: isOffline
+                  ? (isDark ? AppColors.dasGreen : const Color(0xFF2E7D32))
+                  : (isDark
+                      ? AppColors.textSecondaryDark.withValues(alpha: 0.7)
+                      : AppColors.textSecondaryLight.withValues(alpha: 0.7)),
+            ),
+          ),
+        ],
       ),
     );
   }

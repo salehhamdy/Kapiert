@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/app_config.dart';
 import '../../core/network/api_client.dart';
+import '../../data/datasources/article_local_ds.dart';
 import '../../data/datasources/article_remote_ds.dart';
 import '../../data/datasources/auth_remote_ds.dart';
 import '../../data/datasources/sync_remote_ds.dart';
@@ -35,6 +36,10 @@ final apiClientProvider = Provider<ApiClient>(
 // Data sources
 // ---------------------------------------------------------------------------
 
+final articleLocalDSProvider = Provider<ArticleLocalDS>(
+  (_) => const ArticleLocalDS(),
+);
+
 final articleRemoteDSProvider = Provider<ArticleRemoteDS>(
   (ref) => ArticleRemoteDS(ref.watch(apiClientProvider)),
 );
@@ -44,7 +49,10 @@ final articleRemoteDSProvider = Provider<ArticleRemoteDS>(
 // ---------------------------------------------------------------------------
 
 final articleRepositoryProvider = Provider<IArticleRepository>(
-  (ref) => ArticleRepositoryImpl(ref.watch(articleRemoteDSProvider)),
+  (ref) => ArticleRepositoryImpl(
+    ref.watch(articleRemoteDSProvider),
+    ref.watch(articleLocalDSProvider),
+  ),
 );
 
 /// Cloud sync. Inert (all no-ops) when Supabase isn't configured or the

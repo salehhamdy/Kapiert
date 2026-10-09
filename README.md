@@ -243,7 +243,7 @@ cd backend
 pip install -r requirements-dev.txt
 pytest tests/ -v
 
-# Flutter unit, widget & sync tests (111 tests)
+# Flutter unit, widget & sync tests (146 tests)
 cd flutter_app
 flutter test
 
@@ -275,8 +275,8 @@ flutter analyze
 - [x] 🌐 Multi-language UI (Arabic, Turkish, English)
 
 ### Phase 5 — Platform & Release
-- [ ] 🔔 Daily practice reminders (push notifications)
-- [ ] 📴 Full offline mode (local article cache)
+- [x] 🔔 Daily practice reminders (push notifications)
+- [x] 📴 Full offline mode (local article cache)
 - [ ] 🍎 iOS support (TestFlight → App Store)
 - [ ] 🤖 Android Play Store release
 - [ ] 🖥️ Windows Store / direct APK distribution

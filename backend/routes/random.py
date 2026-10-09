@@ -30,15 +30,41 @@ def _anti_clump(entries: list[dict]) -> list[dict]:
     if n <= 2:
         return entries
 
+    def has_clump(items: list[dict]) -> bool:
+        for i in range(2, len(items)):
+            if items[i]["article"] == items[i - 1]["article"] == items[i - 2]["article"]:
+                return True
+        return False
+
     res = list(entries)
-    for i in range(2, n):
-        if res[i]["article"] == res[i - 1]["article"] == res[i - 2]["article"]:
-            # Find a later element with a different article to swap
-            for j in range(i + 1, n):
-                if res[j]["article"] != res[i]["article"]:
-                    res[i], res[j] = res[j], res[i]
-                    break
-    return res
+    for _ in range(50):
+        if not has_clump(res):
+            return res
+        random.shuffle(res)
+
+    # Deterministic greedy placement if random shuffles didn't satisfy
+    pools: dict[str, list[dict]] = {}
+    for item in entries:
+        pools.setdefault(item["article"], []).append(item)
+
+    arranged: list[dict] = []
+    for _ in range(n):
+        # Find candidates that don't produce 3 in a row
+        valid_articles = []
+        for art, items in pools.items():
+            if not items:
+                continue
+            if len(arranged) >= 2 and arranged[-1]["article"] == art and arranged[-2]["article"] == art:
+                continue
+            valid_articles.append(art)
+
+        if not valid_articles:
+            valid_articles = [art for art, items in pools.items() if items]
+
+        best_art = max(valid_articles, key=lambda a: len(pools[a]))
+        arranged.append(pools[best_art].pop())
+
+    return arranged
 
 
 @router.get("/random", response_model=WordResponse)

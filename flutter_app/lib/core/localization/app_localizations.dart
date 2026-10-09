@@ -310,6 +310,13 @@ class AppLocalizations {
         'de': 'über Wiktionary',
       });
 
+  String get sourceOfflineCache => _t({
+        'en': 'offline cache',
+        'ar': 'ذاكرة دون اتصال',
+        'tr': 'çevrimdışı önbellek',
+        'de': 'Offline-Speicher',
+      });
+
   // ── Example Sentences ──────────────────────────────────────────────────────
   String get exampleSentenceHeader => _t({
         'en': 'Example in context',
@@ -774,6 +781,139 @@ class AppLocalizations {
         'ar': 'تذكيرات يومية وتنبيهات الحماس',
         'tr': 'Günlük hatırlatıcılar ve seri uyarıları',
         'de': 'Tägliche Erinnerungen und Serien-Benachrichtigungen',
+      });
+
+  String get dailyReminders => _t({
+        'en': 'Daily Reminders',
+        'ar': 'التذكيرات اليومية',
+        'tr': 'Günlük Hatırlatıcılar',
+        'de': 'Tägliche Erinnerungen',
+      });
+
+  String get dailyRemindersDesc => _t({
+        'en': 'Set daily practice reminders to maintain your German learning routine',
+        'ar': 'اضبط تذكيرات يومية للحفاظ على استمرارية تعلم الألمانية',
+        'tr': 'Almanca öğrenme rutininizi sürdürmek için günlük hatırlatıcılar ayarlayın',
+        'de': 'Stellen Sie tägliche Erinnerungen ein, um Ihre Lernroutine beizubehalten',
+      });
+
+  String get reminderTime => _t({
+        'en': 'Reminder Time',
+        'ar': 'وقت التذكير',
+        'tr': 'Hatırlatıcı Saati',
+        'de': 'Erinnerungszeit',
+      });
+
+  String get enableReminders => _t({
+        'en': 'Enable Daily Reminders',
+        'ar': 'تفعيل التذكيرات اليومية',
+        'tr': 'Günlük Hatırlatıcıları Etkinleştir',
+        'de': 'Tägliche Erinnerungen aktivieren',
+      });
+
+  String get streakProtectionAlerts => _t({
+        'en': 'Streak Saver Alerts',
+        'ar': 'تنبيهات حماية السلسلة',
+        'tr': 'Seri Koruma Uyarıları',
+        'de': 'Streak-Schutzhinweise',
+      });
+
+  String get streakProtectionAlertsDesc => _t({
+        'en': 'Get an evening alert if you haven\'t practiced today',
+        'ar': 'تنبيه مسائي إذا لم تتدرب اليوم للحفاظ على سلسلتك',
+        'tr': 'Bugün henüz pratik yapmadıysanız akşam uyarısı alın',
+        'de': 'Erinnerung am Abend, falls Sie heute noch nicht geübt haben',
+      });
+
+  String get srsDueAlerts => _t({
+        'en': 'SRS Reviews Due Alerts',
+        'ar': 'تنبيهات مراجعة الكلمات المستحقة',
+        'tr': 'Zamanı Gelen SRS Uyarıları',
+        'de': 'SRS-Wiederholungshinweise',
+      });
+
+  String get srsDueAlertsDesc => _t({
+        'en': 'Get notified when spaced repetition flashcards are due for review',
+        'ar': 'تلقي إشعارات عندما يحين وقت مراجعة البطاقات التعليمية',
+        'tr': 'Aralıklı tekrar kartlarının zamanı geldiğinde bildirim alın',
+        'de': 'Benachrichtigung erhalten, wenn Karteikarten wiederholt werden müssen',
+      });
+
+  String get sendTestNotification => _t({
+        'en': 'Send Test Notification',
+        'ar': 'إرسال إشعار تجريبي',
+        'tr': 'Test Bildirimi Gönder',
+        'de': 'Test-Benachrichtigung senden',
+      });
+
+  String get testNotificationSent => _t({
+        'en': 'Test notification sent! Check your notification tray.',
+        'ar': 'تم إرسال الإشعار التجريبي! تحقق من لوحة الإشعارات.',
+        'tr': 'Test bildirimi gönderildi! Bildirim panelinizi kontrol edin.',
+        'de': 'Test-Benachrichtigung gesendet! Prüfen Sie Ihre Benachrichtigungen.',
+      });
+
+  String get offlineCacheTitle => _t({
+        'en': 'Offline Article Cache',
+        'ar': 'ذاكرة المقالات دون اتصال',
+        'tr': 'Çevrimdışı Sözlük Önbelleği',
+        'de': 'Offline-Artikelspeicher',
+      });
+
+  String get offlineCacheSubtitle => _t({
+        'en': 'Pre-seed vocabulary and manage offline storage',
+        'ar': 'تحميل الكلمات مسبقاً وإدارة التخزين دون اتصال',
+        'tr': 'Kelimeleri önceden yükle ve çevrimdışı depolamayı yönet',
+        'de': 'Grundwortschatz vorladen & Offline-Speicher verwalten',
+      });
+
+  String get offlineArticlesStored => _t({
+        'en': 'Stored Offline Articles',
+        'ar': 'المقالات المحفوظة دون اتصال',
+        'tr': 'Kayıtlı Çevrimdışı Kelimeler',
+        'de': 'Gespeicherte Offline-Artikel',
+      });
+
+  String get preseedOfflineVocab => _t({
+        'en': 'Pre-seed Essential Vocabulary',
+        'ar': 'تحميل المفردات الأساسية مسبقاً',
+        'tr': 'Temel Kelimeleri Önceden Yükle',
+        'de': 'Grundwortschatz vorladen',
+      });
+
+  String get preseedOfflineVocabDesc => _t({
+        'en': 'Save 100+ high-frequency German nouns with plurals, translations and examples for instant offline lookups and quizzes.',
+        'ar': 'حفظ أكثر من 100 اسم ألماني شائع مع الجموع والترجمات والأمثلة للبحث والاختبار دون اتصال.',
+        'tr': 'Anında çevrimdışı arama ve alıştırmalar için çoğulları, çevirileri ve örnekleriyle 100+ yaygın Almanca ismi kaydedin.',
+        'de': 'Speichere 100+ häufige deutsche Nomen mit Pluralen, Übersetzungen und Beispielen für sofortige Offline-Abfragen & Quizzes.',
+      });
+
+  String get preseedSuccess => _t({
+        'en': 'Essential offline vocabulary loaded successfully!',
+        'ar': 'تم تحميل المفردات الأساسية دون اتصال بنجاح!',
+        'tr': 'Temel çevrimdışı kelimeler başarıyla yüklendi!',
+        'de': 'Grundwortschatz erfolgreich offline gespeichert!',
+      });
+
+  String get clearOfflineCache => _t({
+        'en': 'Clear Offline Cache',
+        'ar': 'مسح الذاكرة المؤقتة دون اتصال',
+        'tr': 'Çevrimdışı Önbelleği Temizle',
+        'de': 'Offline-Speicher leeren',
+      });
+
+  String get clearOfflineCacheSubtitle => _t({
+        'en': 'Remove all cached articles from local device',
+        'ar': 'إزالة جميع الكلمات المخزنة مؤقتاً من الجهاز',
+        'tr': 'Cihazdaki tüm önbelleğe alınmış kelimeleri sil',
+        'de': 'Alle zwischengespeicherten Artikel vom Gerät löschen',
+      });
+
+  String get offlineCacheCleared => _t({
+        'en': 'Offline cache cleared.',
+        'ar': 'تم مسح الذاكرة المؤقتة دون اتصال.',
+        'tr': 'Çevrimdışı önbellek temizlendi.',
+        'de': 'Offline-Speicher geleert.',
       });
 
   String get viewProfile => _t({
@@ -1607,6 +1747,9 @@ class AppLocalizations {
         return sourceFromDataset;
       case 'wiktionary':
         return sourceViaWiktionary;
+      case 'offline':
+      case 'offline_cache':
+        return sourceOfflineCache;
       default:
         return source;
     }

@@ -109,5 +109,42 @@ void main() {
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.text('Example sentence copied to clipboard!'), findsOneWidget);
     });
+
+    testWidgets('renders offline cache badge and icon when source is offline_cache',
+        (tester) async {
+      const offlineWord = WordModel(
+        word: 'Tisch',
+        article: 'der',
+        gender: 'm',
+        source: 'offline_cache',
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            favoritesRepositoryProvider.overrideWithValue(mockFavRepo),
+          ],
+          child: const MaterialApp(
+            locale: Locale('en'),
+            supportedLocales: AppLanguage.supportedLocales,
+            localizationsDelegates: [
+              AppLocalizationsDelegate(),
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ResultCard(word: offlineWord),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('offline cache'), findsOneWidget);
+      expect(find.byIcon(Icons.offline_pin_rounded), findsOneWidget);
+    });
   });
 }

@@ -1,10 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart' show Icons, IconData;
 import 'package:sqflite/sqflite.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/achievement.dart';
 import '../../domain/models/advanced_stats.dart';
 import '../../domain/models/daily_activity.dart';
+import '../../domain/models/example_sentence.dart';
 import '../../domain/models/lookup_history.dart';
+import '../../domain/models/notification_settings.dart';
 import '../../domain/models/srs_item.dart';
 import '../../domain/models/srs_stats.dart';
 import '../../domain/models/word_model.dart';
@@ -34,7 +37,7 @@ class StorageService {
 
     return openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE history (
@@ -80,6 +83,19 @@ class StorageService {
             id TEXT PRIMARY KEY,
             unlocked_at TEXT NOT NULL,
             notified INTEGER NOT NULL DEFAULT 0
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE article_cache (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            word TEXT NOT NULL UNIQUE,
+            article TEXT NOT NULL,
+            gender TEXT NOT NULL,
+            plural TEXT,
+            translation TEXT,
+            source TEXT NOT NULL DEFAULT 'offline_cache',
+            examples TEXT,
+            cached_at TEXT NOT NULL
           )
         ''');
         await _createSyncIndexes(db);
@@ -143,6 +159,21 @@ class StorageService {
             )
           ''');
         }
+        if (oldVersion < 6) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS article_cache (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              word TEXT NOT NULL UNIQUE,
+              article TEXT NOT NULL,
+              gender TEXT NOT NULL,
+              plural TEXT,
+              translation TEXT,
+              source TEXT NOT NULL DEFAULT 'offline_cache',
+              examples TEXT,
+              cached_at TEXT NOT NULL
+            )
+          ''');
+        }
         await _createSyncIndexes(db);
       },
     );
@@ -166,6 +197,9 @@ class StorageService {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS achievements_notified_idx ON achievements (notified)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS article_cache_word_idx ON article_cache (LOWER(word))',
     );
   }
 
@@ -602,6 +636,32 @@ class StorageService {
   static String getLanguage() => _p.getString(_keyLanguage) ?? 'en';
   static Future<void> setLanguage(String code) async {
     await _p.setString(_keyLanguage, code);
+    await _touchSettings();
+  }
+
+  static const _keyNotificationSettings = 'notification_settings';
+
+  /// Retrieves user notification preferences.
+  static NotificationSettings getNotificationSettings() {
+    if (_prefs == null) return const NotificationSettings();
+    final raw = _p.getString(_keyNotificationSettings);
+    if (raw == null || raw.isEmpty) return const NotificationSettings();
+    try {
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      return NotificationSettings.fromJson(decoded);
+    } catch (_) {
+      return const NotificationSettings();
+    }
+  }
+
+  /// Saves user notification preferences.
+  static Future<void> setNotificationSettings(
+      NotificationSettings settings) async {
+    if (_prefs == null) return;
+    await _p.setString(
+      _keyNotificationSettings,
+      jsonEncode(settings.toJson()),
+    );
     await _touchSettings();
   }
 
@@ -1152,6 +1212,130 @@ class StorageService {
   /// Clears stored achievements.
   static Future<void> resetAchievements() async {
     await _db.delete('achievements');
+  }
+
+  // ---------------------------------------------------------------------------
+  // Article Cache (SQLite) - Offline Mode
+  // ---------------------------------------------------------------------------
+
+  /// Caches an individual article for offline availability.
+  static Future<void> cacheArticle(WordModel word) async {
+    final examplesJson = word.exampleSentence != null
+        ? jsonEncode(word.exampleSentence!.toJson())
+        : null;
+
+    await _db.insert(
+      'article_cache',
+      {
+        'word': word.word,
+        'article': word.article,
+        'gender': word.gender,
+        'plural': word.plural,
+        'translation': word.translation,
+        'source': word.source,
+        'examples': examplesJson,
+        'cached_at': DateTime.now().toUtc().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Bulk caches multiple articles in a single SQLite transaction.
+  static Future<void> cacheArticles(List<WordModel> words) async {
+    if (words.isEmpty) return;
+    final batch = _db.batch();
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    for (final word in words) {
+      final examplesJson = word.exampleSentence != null
+          ? jsonEncode(word.exampleSentence!.toJson())
+          : null;
+
+      batch.insert(
+        'article_cache',
+        {
+          'word': word.word,
+          'article': word.article,
+          'gender': word.gender,
+          'plural': word.plural,
+          'translation': word.translation,
+          'source': word.source,
+          'examples': examplesJson,
+          'cached_at': now,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  /// Retrieves a cached article by exact or lowercase word.
+  static Future<WordModel?> getCachedArticle(String word) async {
+    final clean = word.trim().toLowerCase();
+    final rows = await _db.query(
+      'article_cache',
+      where: 'LOWER(word) = ?',
+      whereArgs: [clean],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return _mapRowToCachedWord(rows.first);
+  }
+
+  /// Searches cached articles with prefix or substring matching.
+  static Future<List<WordModel>> searchCachedArticles(String query, {int limit = 20}) async {
+    final clean = query.trim().toLowerCase();
+    if (clean.isEmpty) return const [];
+    final rows = await _db.query(
+      'article_cache',
+      where: 'LOWER(word) LIKE ?',
+      whereArgs: ['%$clean%'],
+      limit: limit,
+    );
+    return rows.map(_mapRowToCachedWord).toList();
+  }
+
+  /// Returns random cached articles (useful for offline quiz batching).
+  static Future<List<WordModel>> getRandomCachedArticles({int count = 15}) async {
+    final rows = await _db.query(
+      'article_cache',
+      orderBy: 'RANDOM()',
+      limit: count,
+    );
+    return rows.map(_mapRowToCachedWord).toList();
+  }
+
+  /// Returns the total number of cached articles stored offline.
+  static Future<int> getCachedArticlesCount() async {
+    final result =
+        await _db.rawQuery('SELECT COUNT(*) as count FROM article_cache');
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  /// Clears all offline cached articles.
+  static Future<void> clearArticleCache() async {
+    await _db.delete('article_cache');
+  }
+
+  static WordModel _mapRowToCachedWord(Map<String, dynamic> row) {
+    ExampleSentence? exampleSentence;
+    final examplesRaw = row['examples'] as String?;
+    if (examplesRaw != null && examplesRaw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(examplesRaw) as Map<String, dynamic>;
+        exampleSentence = ExampleSentence.fromJson(decoded);
+      } catch (_) {}
+    }
+
+    return WordModel(
+      word: row['word'] as String,
+      article: row['article'] as String,
+      gender: row['gender'] as String,
+      plural: row['plural'] as String?,
+      translation: row['translation'] as String?,
+      exampleSentence: exampleSentence,
+      source: 'offline_cache',
+    );
   }
 }
 

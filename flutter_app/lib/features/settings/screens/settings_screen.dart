@@ -16,6 +16,8 @@ import '../../auth/logout_flow.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../legal/screens/legal_document_screen.dart';
 import '../../legal/providers/terms_consent_provider.dart';
+import '../../notifications/widgets/notification_settings_sheet.dart';
+import '../widgets/offline_cache_sheet.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -185,11 +187,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
 
                 _SettingsTile(
+                  key: const Key('settings_notifications_tile'),
                   icon: Icons.notifications_outlined,
                   title: l10n.notifications,
                   subtitle: l10n.notificationsSubtitle,
                   isDark: isDark,
-                  onTap: () {},
+                  onTap: () => NotificationSettingsSheet.show(context),
                 ),
 
                 _SettingsTile(
@@ -273,6 +276,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: l10n.resetStreakSubtitle,
                   isDark: isDark,
                   onTap: () => _confirmResetStreak(context, isDark),
+                ),
+
+                _SettingsTile(
+                  key: const Key('settings_offline_cache_tile'),
+                  icon: Icons.inventory_2_outlined,
+                  title: l10n.offlineCacheTitle,
+                  subtitle: l10n.offlineCacheSubtitle,
+                  isDark: isDark,
+                  onTap: () => OfflineCacheSheet.show(context),
                 ),
 
                 const SizedBox(height: 28),
