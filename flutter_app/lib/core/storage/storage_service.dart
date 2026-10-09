@@ -654,20 +654,35 @@ class StorageService {
     return _p.getString(_keyTermsAcceptedAt);
   }
 
-  static bool getShowHints() => _p.getBool(_keyShowHints) ?? true;
+  static bool getShowHints() {
+    if (_prefs == null) return true;
+    return _p.getBool(_keyShowHints) ?? true;
+  }
+
   static Future<void> setShowHints(bool value) async {
+    if (_prefs == null) return;
     await _p.setBool(_keyShowHints, value);
     await _touchSettings();
   }
 
-  static bool getDarkMode() => _p.getBool(_keyDarkMode) ?? false;
+  static bool getDarkMode() {
+    if (_prefs == null) return false;
+    return _p.getBool(_keyDarkMode) ?? false;
+  }
+
   static Future<void> setDarkMode(bool value) async {
+    if (_prefs == null) return;
     await _p.setBool(_keyDarkMode, value);
     await _touchSettings();
   }
 
-  static String getLanguage() => _p.getString(_keyLanguage) ?? 'en';
+  static String getLanguage() {
+    if (_prefs == null) return 'en';
+    return _p.getString(_keyLanguage) ?? 'en';
+  }
+
   static Future<void> setLanguage(String code) async {
+    if (_prefs == null) return;
     await _p.setString(_keyLanguage, code);
     await _touchSettings();
   }

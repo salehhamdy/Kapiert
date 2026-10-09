@@ -762,6 +762,13 @@ class AppLocalizations {
         'de': 'Zusatzinfos auf Ergebniskarten anzeigen',
       });
 
+  String get grammarHintTitle => _t({
+        'en': 'Grammar Hint',
+        'ar': 'تلميح وقاعدة نحوية',
+        'tr': 'Dilbilgisi İpucu',
+        'de': 'Grammatik-Tipp',
+      });
+
   String get profileSubtitle => _t({
         'en': 'Your name, progress and account details',
         'ar': 'اسمك وتقدمك وتفاصيل حسابك',

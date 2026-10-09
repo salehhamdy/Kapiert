@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/app_localizations.dart';
 import '../../../domain/models/achievement.dart';
+import '../../../domain/models/grammar_rule_hint.dart';
 import '../../../domain/models/srs_item.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../favorites/providers/favorites_provider.dart';
+import '../../settings/providers/settings_provider.dart';
 import '../../srs/providers/srs_provider.dart';
 import '../providers/quiz_provider.dart';
 
@@ -518,7 +520,7 @@ class QuizScreen extends ConsumerWidget {
 
                   const SizedBox(height: 24),
 
-                  if (state.hasAnswered) _buildFeedback(isDark, state, l10n),
+                  if (state.hasAnswered) _buildFeedback(isDark, state, l10n, ref),
 
                   const Spacer(flex: 2),
 
@@ -611,12 +613,15 @@ class QuizScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFeedback(bool isDark, QuizState state, AppLocalizations l10n) {
+  Widget _buildFeedback(
+      bool isDark, QuizState state, AppLocalizations l10n, WidgetRef ref) {
     final word = state.currentWord!;
     final feedbackColor =
         state.isCorrect! ? AppColors.correctGreen : AppColors.incorrectRed;
     final srs = state.currentSrsItem;
     final example = word.resolvedExampleSentence;
+    final showHints = ref.watch(showHintsProvider);
+    final grammarHint = GrammarRuleHint.findFor(word.word, word.article);
 
     return Container(
       width: double.infinity,
@@ -673,49 +678,93 @@ class QuizScreen extends ConsumerWidget {
               ),
             ),
           ],
-          if (example.sentence.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Container(
-              key: const Key('quiz_feedback_sentence'),
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: feedbackColor.withValues(alpha: 0.15),
+          if (showHints) ...[
+            if (grammarHint != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                key: const Key('quiz_feedback_grammar_hint'),
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: feedbackColor.withValues(alpha: isDark ? 0.08 : 0.05),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: feedbackColor.withValues(alpha: 0.15),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.lightbulb_outline_rounded,
+                      size: 16,
+                      color: feedbackColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        grammarHint.localizedRule(l10n.languageCode),
+                        textDirection:
+                            l10n.isRtl ? TextDirection.rtl : TextDirection.ltr,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimaryLight,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Column(
-                children: [
-                  Text(
-                    example.sentence,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: isDark
-                          ? AppColors.textPrimaryDark
-                          : AppColors.textPrimaryLight,
-                    ),
-                    textAlign: TextAlign.center,
+            ],
+            if (example.sentence.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Container(
+                key: const Key('quiz_feedback_sentence'),
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: (isDark ? Colors.white : Colors.black)
+                      .withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: feedbackColor.withValues(alpha: 0.15),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    example.translationFor(l10n.languageCode),
-                    textDirection:
-                        l10n.isRtl ? TextDirection.rtl : TextDirection.ltr,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                      color: isDark
-                          ? AppColors.textSecondaryDark
-                          : AppColors.textSecondaryLight,
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      example.sentence,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                    const SizedBox(height: 3),
+                    Text(
+                      example.translationFor(l10n.languageCode),
+                      textDirection:
+                          l10n.isRtl ? TextDirection.rtl : TextDirection.ltr,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ],
           if (srs != null) ...[
             const SizedBox(height: 10),

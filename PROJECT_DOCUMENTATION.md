@@ -301,6 +301,17 @@ Implemented across [`ProfileScreen`](file:///c:/Users/ASUS/Downloads/German_Arti
 - **Dedicated Reset Password Flow**: Screen providing email password reset instructions dispatched via Supabase email recovery.
 - **Offline Cache Status & Gender Breakdown**: `OfflineCacheSheet` displays live cache readiness badge ("Ready for Offline Use" or "Cache Empty"), individual gender counts for `der`, `die`, and `das`, and extended core vocabulary pre-seeding (130+ words).
 
+#### 14. Reactive "Show Hints & Explanations" Preference & German Grammar Rule Engine
+Implemented across [`GrammarRuleHint`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/domain/models/grammar_rule_hint.dart), [`ResultCard`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/lookup/screens/result_card.dart), [`QuizScreen`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/quiz/screens/quiz_screen.dart), [`SettingsProvider`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/settings/providers/settings_provider.dart), and [`AppLocalizations`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/core/localization/app_localizations.dart):
+- **Full Reactive Preference Integration**: Connected `showHintsProvider` directly to `ResultCard` and `QuizScreen`. When disabled by the user ("Show hints & explanations: Display extra info on result cards" toggled off), all contextual hints, example sentences, and grammar explanations are cleanly hidden from result cards and quiz feedback cards, leaving a minimal, clean article presentation.
+- **German Grammar Suffix Rule Engine**: Added `GrammarRuleHint` domain model detecting 20+ canonical German noun gender suffixes:
+  - **Feminine (*die*)**: `-ung`, `-heit`, `-keit`, `-schaft`, `-tion`, `-ion`, `-tät`, `-ik`, `-ei`, `-ie`, `-ur`, `-in` (female titles/professions)
+  - **Neuter (*das*)**: `-chen` (diminutives), `-lein` (diminutives), `-ment`, `-um` (Latin loans), `-tum`, `-ma` (Greek loans)
+  - **Masculine (*der*)**: `-ismus`, `-ling`, `-or`, `-ist` (person nouns), `-ant`, `-ent`
+- **Multilingual Explanations**: Grammar rules are fully localized across English, German, Arabic (RTL), and Turkish.
+- **Clean ResultCard Presentation**: When enabled, `ResultCard` displays the `_GrammarHintView` (`Icons.lightbulb_outline_rounded`) alongside `_ExampleSentenceView`. When toggled off, both disappear reactively without disrupting core word lookups.
+- **Quiz Feedback Integration**: Quiz feedback card conditionally renders example sentences and grammar hints when `showHints` is true, and suppresses them when false for rapid quiz drilling.
+
 ---
 
 ### Spaced Repetition System (SRS) Mechanics
@@ -515,7 +526,7 @@ Both the backend and Flutter applications maintain comprehensive automated test 
 cd backend
 python -m pytest tests/ -v
 
-# 2. Flutter Unit, Widget & Integration Tests (157 tests)
+# 2. Flutter Unit, Widget & Integration Tests (165 tests)
 cd flutter_app
 flutter test
 
@@ -529,11 +540,12 @@ flutter analyze
 |---|---|---|---|
 | **API Contract & Sentences** | [`backend/tests/test_api.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/tests/test_api.py) | 13 | Query normalization, exact lookup, plural lookup, umlaut variants, Wiktionary fallback, random batch balance, anti-clumping, and multilingual example sentences (`de`, `en`, `ar`, `tr`). |
 | **Translation & Wiktionary Engine** | [`backend/tests/test_translations.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/tests/test_translations.py) | 8 | Curated vocabulary bank (1,200+ words), clean HTML/markup definition formatter, transcription variant lookups, live/cached English translation retrieval, compound noun glosses, plural lemma resolution, and translated quiz batches. |
+| **Grammar Rule Hint Model** | [`flutter_app/test/domain/models/grammar_rule_hint_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/grammar_rule_hint_test.dart) | 5 | Suffix pattern matching for feminine (`-ung`, `-heit`, `-keit`, `-schaft`, `-tion`, `-tät`), neuter (`-chen`, `-lein`, `-ment`, `-um`), masculine (`-ismus`, `-ling`, `-or`, `-ist`), non-matching exception guards, and 4-language localized explanations. |
 | **Localization Engine** | [`flutter_app/test/core/localization/app_localizations_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/core/localization/app_localizations_test.dart) | 6 | All 4 locales (`en`, `ar`, `tr`, `de`), RTL directionality detection, translation fallbacks, delegate resolution, and dynamic parameterized helper methods. |
 | **Sentence Domain Models** | [`flutter_app/test/domain/models/example_sentence_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/example_sentence_test.dart) | 5 | Translation retrieval by language code, fallback order, JSON serialization/deserialization, and offline sentence provider. |
 | **Network Client** | [`flutter_app/test/core/network/api_client_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/core/network/api_client_test.dart) | 4 | HTTP GET parsing, timeout handling, error mapping. |
 | **Word Models** | [`flutter_app/test/domain/models/word_model_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/word_model_test.dart) | 7 | Equality, JSON conversion, gender labels, backward-compatible sentence serialization. |
-| **Result Card & Sentences** | [`flutter_app/test/features/lookup/screens/result_card_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/lookup/screens/result_card_test.dart) | 2 | Article badge, German word, translation, example sentence rendering with active locale translation, clipboard copy, and offline cache badge. |
+| **Result Card & Sentences** | [`flutter_app/test/features/lookup/screens/result_card_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/lookup/screens/result_card_test.dart) | 7 | Article badge, German word, translation, example sentence rendering with active locale translation, clipboard copy, offline cache badge, reactive suppression of hints/sentences when `showHints` is false, and grammar rule hint card when `showHints` is true. |
 | **Settings & Bottom Sheets** | [`flutter_app/test/features/settings/screens/settings_screen_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/settings/screens/settings_screen_test.dart) | 5 | Language tile, 4-language bottom sheet, Arabic RTL dynamic update, notifications sheet opening, and offline cache sheet opening with gender breakdown chips. |
 | **Notification Settings Model** | [`flutter_app/test/domain/models/notification_settings_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/notification_settings_test.dart) | 5 | Default values, TimeOfDay reminderTime conversion, copyWith updates, symmetric JSON serialization, equality, and hash code. |
 | **Notification Scheduler** | [`flutter_app/test/features/notifications/providers/notification_provider_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/notifications/providers/notification_provider_test.dart) | 7 | State initialization, toggling daily reminders, permission requests, zonedSchedule daily reminders, cancel schedules, time picker updates, streak/SRS switches, and instant test notification. |
@@ -546,7 +558,7 @@ flutter analyze
 | **Achievements Model** | [`flutter_app/test/domain/models/achievement_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/achievement_test.dart) | 3 | Categories, unlock status, progress percentage, copyWith behavior. |
 | **SRS Domain Model** | [`flutter_app/test/domain/models/srs_item_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/srs_item_test.dart) | 6 | Stages 1–5 advancement, incorrect answer regression, interval durations, `isDue` logic, SQLite serialization. |
 | **SRS Scheduling** | [`flutter_app/test/features/quiz/srs_scheduling_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/quiz/srs_scheduling_test.dart) | 3 | Smart batch prioritization of due words, review mode entry/exit, session completion. |
-| **SRS Quiz Widgets** | [`flutter_app/test/features/quiz/srs_quiz_widget_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/quiz/srs_quiz_widget_test.dart) | 2 | Due chip rendering, mode banner toggle, feedback badge with review scheduling and sentence reveal. |
+| **SRS Quiz Widgets** | [`flutter_app/test/features/quiz/srs_quiz_widget_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/quiz/srs_quiz_widget_test.dart) | 3 | Due chip rendering, mode banner toggle, feedback badge with review scheduling, and reactive suppression of feedback sentence/grammar hint when `showHints` is false. |
 | **SRS Profile Stats** | [`flutter_app/test/features/profile/srs_profile_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/profile/srs_profile_test.dart) | 1 | Spaced repetition section rendering, retention metric tiles, mastery bar. |
 | **Advanced Stats Widget** | [`flutter_app/test/features/profile/advanced_stats_widget_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/profile/advanced_stats_widget_test.dart) | 2 | 7-day activity heatmap grid, interactive day inspector pill, volume bar chart, key metric tiles. |
 | **Achievements Widget** | [`flutter_app/test/features/profile/achievements_widget_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/profile/achievements_widget_test.dart) | 1 | Milestones summary card, badge previews, modal gallery sheet invocation. |

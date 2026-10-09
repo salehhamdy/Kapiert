@@ -13,6 +13,7 @@ import 'package:derdiedas/domain/models/word_model.dart';
 import 'package:derdiedas/domain/models/lookup_history.dart';
 import 'package:derdiedas/domain/models/srs_item.dart';
 import 'package:derdiedas/domain/models/srs_stats.dart';
+import 'package:derdiedas/features/settings/providers/settings_provider.dart';
 
 class MockArticleRepository extends Mock implements IArticleRepository {}
 class MockHistoryRepository extends Mock implements IHistoryRepository {}
@@ -102,13 +103,14 @@ void main() {
     });
   });
 
-  Widget createWidgetUnderTest() {
+  Widget createWidgetUnderTest({bool showHints = true}) {
     return ProviderScope(
       overrides: [
         articleRepositoryProvider.overrideWithValue(mockArticleRepo),
         historyRepositoryProvider.overrideWithValue(mockHistoryRepo),
         srsRepositoryProvider.overrideWithValue(mockSrsRepo),
         favoritesRepositoryProvider.overrideWithValue(mockFavRepo),
+        showHintsProvider.overrideWithValue(showHints),
       ],
       child: const MaterialApp(
         home: Scaffold(body: QuizScreen()),
@@ -133,6 +135,24 @@ void main() {
 
     // Feedback and Next button are shown
     expect(find.byKey(const Key('quiz_next_button')), findsOneWidget);
+    expect(find.byKey(const Key('quiz_feedback_sentence')), findsOneWidget);
+  });
+
+  testWidgets('QuizScreen feedback hides extra sentence when showHints is false',
+      (tester) async {
+    await tester.pumpWidget(createWidgetUnderTest(showHints: false));
+    await tester.pumpAndSettle();
+
+    final derButton = find.byKey(const Key('quiz_button_der'));
+    expect(derButton, findsOneWidget);
+    await tester.tap(derButton);
+    await tester.pumpAndSettle();
+
+    // Feedback and Next button are shown
+    expect(find.byKey(const Key('quiz_next_button')), findsOneWidget);
+    // But hints/example sentence is suppressed
+    expect(find.byKey(const Key('quiz_feedback_sentence')), findsNothing);
+    expect(find.byKey(const Key('quiz_feedback_grammar_hint')), findsNothing);
   });
 
   testWidgets('Tapping Due chip enters SRS mode and shows Spaced Repetition banner',
@@ -155,3 +175,4 @@ void main() {
     expect(find.text('Spaced Repetition Review'), findsNothing);
   });
 }
+

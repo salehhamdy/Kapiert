@@ -9,6 +9,7 @@ import 'package:derdiedas/domain/models/example_sentence.dart';
 import 'package:derdiedas/domain/models/word_model.dart';
 import 'package:derdiedas/domain/repositories/i_favorites_repository.dart';
 import 'package:derdiedas/features/lookup/screens/result_card.dart';
+import 'package:derdiedas/features/settings/providers/settings_provider.dart';
 
 class MockFavoritesRepository extends Mock implements IFavoritesRepository {}
 
@@ -36,10 +37,15 @@ void main() {
     ),
   );
 
-  Widget createWidgetUnderTest({Locale locale = const Locale('en')}) {
+  Widget createWidgetUnderTest({
+    Locale locale = const Locale('en'),
+    WordModel word = testWord,
+    bool showHints = true,
+  }) {
     return ProviderScope(
       overrides: [
         favoritesRepositoryProvider.overrideWithValue(mockFavRepo),
+        showHintsProvider.overrideWithValue(showHints),
       ],
       child: MaterialApp(
         locale: locale,
@@ -50,9 +56,9 @@ void main() {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        home: const Scaffold(
+        home: Scaffold(
           body: SingleChildScrollView(
-            child: ResultCard(word: testWord),
+            child: ResultCard(word: word),
           ),
         ),
       ),
@@ -119,32 +125,73 @@ void main() {
         source: 'offline_cache',
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            favoritesRepositoryProvider.overrideWithValue(mockFavRepo),
-          ],
-          child: const MaterialApp(
-            locale: Locale('en'),
-            supportedLocales: AppLanguage.supportedLocales,
-            localizationsDelegates: [
-              AppLocalizationsDelegate(),
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            home: Scaffold(
-              body: SingleChildScrollView(
-                child: ResultCard(word: offlineWord),
-              ),
-            ),
-          ),
-        ),
-      );
+      await tester.pumpWidget(createWidgetUnderTest(word: offlineWord));
       await tester.pumpAndSettle();
 
       expect(find.text('offline cache'), findsOneWidget);
       expect(find.byIcon(Icons.offline_pin_rounded), findsOneWidget);
     });
+
+    testWidgets('hides example sentence and grammar hints when showHints is false',
+        (tester) async {
+      const zeitungWord = WordModel(
+        word: 'Zeitung',
+        article: 'die',
+        gender: 'f',
+        source: 'dataset',
+        plural: 'Zeitungen',
+        translation: 'newspaper',
+        exampleSentence: ExampleSentence(
+          german: 'Ich lese die Zeitung jeden Morgen.',
+          english: 'I read the newspaper every morning.',
+        ),
+      );
+
+      await tester.pumpWidget(createWidgetUnderTest(
+        word: zeitungWord,
+        showHints: false,
+      ));
+      await tester.pumpAndSettle();
+
+      // Core word details remain visible
+      expect(find.text('die'), findsOneWidget);
+      expect(find.text('Zeitung'), findsOneWidget);
+      expect(find.text('newspaper'), findsOneWidget);
+      expect(find.text('pl. Zeitungen'), findsOneWidget);
+
+      // Extra hints and explanations are hidden
+      expect(find.byKey(const Key('example_sentence_card')), findsNothing);
+      expect(find.byKey(const Key('grammar_rule_hint')), findsNothing);
+      expect(find.text('Ich lese die Zeitung jeden Morgen.'), findsNothing);
+    });
+
+    testWidgets('shows grammar rule hint when showHints is true and word matches rule',
+        (tester) async {
+      const zeitungWord = WordModel(
+        word: 'Zeitung',
+        article: 'die',
+        gender: 'f',
+        source: 'dataset',
+        plural: 'Zeitungen',
+        translation: 'newspaper',
+        exampleSentence: ExampleSentence(
+          german: 'Ich lese die Zeitung jeden Morgen.',
+          english: 'I read the newspaper every morning.',
+        ),
+      );
+
+      await tester.pumpWidget(createWidgetUnderTest(
+        word: zeitungWord,
+        showHints: true,
+      ));
+      await tester.pumpAndSettle();
+
+      // Both grammar hint and example sentence are visible
+      expect(find.byKey(const Key('grammar_rule_hint')), findsOneWidget);
+      expect(find.text('Grammar Hint'), findsOneWidget);
+      expect(find.text("Nouns ending in '-ung' are feminine (die)."), findsOneWidget);
+      expect(find.byKey(const Key('example_sentence_card')), findsOneWidget);
+    });
   });
 }
+

@@ -39,6 +39,8 @@
 | 📈 Advanced stats (weekly heatmap & progress trends) | ✅ Live |
 | 🏆 6-Month Achievements & Milestone Badges (up to 180 days) | ✅ Live |
 | 📝 Example sentences per word with multilingual translations | ✅ Live |
+| 💡 Reactive hints & explanations preference (clean result cards toggle) | ✅ Live |
+| 📚 German suffix gender rule engine (20+ rules in 4 languages) | ✅ Live |
 | 🌐 Multi-language UI (English, Arabic RTL, Turkish, German) | ✅ Live |
 
 ---

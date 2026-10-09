@@ -4,10 +4,12 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../domain/models/grammar_rule_hint.dart';
 import '../../../domain/models/word_model.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../favorites/providers/favorites_provider.dart';
+import '../../settings/providers/settings_provider.dart';
 
 /// Displays the result of an article lookup with rich formatting and favorites toggle.
 class ResultCard extends ConsumerWidget {
@@ -20,7 +22,9 @@ class ResultCard extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = AppTheme.colorForArticle(word.article);
     final isFavorite = ref.watch(favoritesProvider).isFavorite(word.word);
+    final showHints = ref.watch(showHintsProvider);
     final l10n = AppLocalizations.of(context);
+    final grammarHint = GrammarRuleHint.findFor(word.word, word.article);
 
     return Container(
       width: double.infinity,
@@ -156,13 +160,22 @@ class ResultCard extends ConsumerWidget {
                   ).animate().fadeIn(delay: 300.ms, duration: 300.ms),
                 ],
 
-                // Example sentence
-                _ExampleSentenceView(
-                  word: word,
-                  color: color,
-                  isDark: isDark,
-                  l10n: l10n,
-                ).animate().fadeIn(delay: 350.ms, duration: 300.ms),
+                // ── Extra Info / Hints & Explanations (respects showHints preference) ──
+                if (showHints) ...[
+                  if (grammarHint != null)
+                    _GrammarHintView(
+                      hint: grammarHint,
+                      color: color,
+                      isDark: isDark,
+                      l10n: l10n,
+                    ).animate().fadeIn(delay: 320.ms, duration: 300.ms),
+                  _ExampleSentenceView(
+                    word: word,
+                    color: color,
+                    isDark: isDark,
+                    l10n: l10n,
+                  ).animate().fadeIn(delay: 350.ms, duration: 300.ms),
+                ],
 
                 const SizedBox(height: 16),
 
@@ -497,5 +510,86 @@ class _ExampleSentenceView extends StatelessWidget {
     );
   }
 }
+
+class _GrammarHintView extends StatelessWidget {
+  final GrammarRuleHint hint;
+  final Color color;
+  final bool isDark;
+  final AppLocalizations l10n;
+
+  const _GrammarHintView({
+    required this.hint,
+    required this.color,
+    required this.isDark,
+    required this.l10n,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('grammar_rule_hint'),
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.12 : 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: color.withValues(alpha: isDark ? 0.25 : 0.20),
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.lightbulb_outline_rounded,
+              size: 16,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.grammarHintTitle,
+                  style: GoogleFonts.nunito(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hint.localizedRule(l10n.languageCode),
+                  textDirection:
+                      l10n.isRtl ? TextDirection.rtl : TextDirection.ltr,
+                  style: GoogleFonts.nunito(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 
 
