@@ -62,7 +62,8 @@ class HistoryScreen extends ConsumerWidget {
                     ? const Center(child: CircularProgressIndicator())
                     : state.entries.isEmpty
                         ? _buildEmptyState(isDark, l10n)
-                        : _buildList(state.entries, ref)),
+                        : _buildList(state.entries, isDark, ref, l10n,
+                            isMistakesFilter: state.filter == 'incorrect')),
           ),
         ],
       ),
@@ -375,17 +376,27 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildList(List<LookupHistory> entries, WidgetRef ref) {
+  Widget _buildList(
+    List<LookupHistory> entries,
+    bool isDark,
+    WidgetRef ref,
+    AppLocalizations l10n, {
+    bool isMistakesFilter = false,
+  }) {
     return RefreshIndicator(
       onRefresh: () async {
         await ref.read(syncProvider.notifier).sync();
         await ref.read(historyProvider.notifier).refresh();
       },
       child: ListView.builder(
-        itemCount: entries.length,
+        itemCount: isMistakesFilter ? entries.length + 1 : entries.length,
         padding: const EdgeInsets.only(bottom: 40),
         itemBuilder: (context, index) {
-          return HistoryTile(entry: entries[index])
+          if (isMistakesFilter && index == 0) {
+            return _buildMistakesReviewCard(entries.length, isDark, ref, l10n);
+          }
+          final entry = isMistakesFilter ? entries[index - 1] : entries[index];
+          return HistoryTile(entry: entry)
               .animate()
               .fadeIn(
                 delay: Duration(milliseconds: (index * 30).clamp(0, 300)),
@@ -398,6 +409,92 @@ class HistoryScreen extends ConsumerWidget {
                 duration: 300.ms,
               );
         },
+      ),
+    );
+  }
+
+  Widget _buildMistakesReviewCard(
+      int count, bool isDark, WidgetRef ref, AppLocalizations l10n) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.dieRed.withValues(alpha: isDark ? 0.20 : 0.14),
+            AppColors.streakOrange.withValues(alpha: isDark ? 0.12 : 0.08),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.dieRed.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.dieRed.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.replay_rounded,
+              color: AppColors.dieRed,
+              size: 26,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.mistakesReview,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.practiceIncorrectWords(count),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          ElevatedButton.icon(
+            key: const Key('history_review_mistakes_btn'),
+            onPressed: () {
+              ref.read(quizProvider.notifier).startMistakesReview();
+              ref.read(mainTabProvider.notifier).state = 1;
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.dieRed,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.play_arrow_rounded, size: 20),
+            label: Text(
+              l10n.tabQuiz,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -2,8 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../domain/models/lookup_history.dart';
+import '../../../domain/models/word_model.dart';
 import '../../../domain/repositories/i_history_repository.dart';
+import '../../profile/providers/achievements_provider.dart';
 import '../../quiz/providers/quiz_provider.dart';
+import '../../srs/providers/srs_provider.dart';
 import '../../sync/providers/sync_provider.dart';
 
 // ---------------------------------------------------------------------------
@@ -75,9 +78,14 @@ class HistoryNotifier extends StateNotifier<HistoryState> {
   Future<void> clearAll() async {
     await _repo.clearHistory();
     _ref?.read(quizProvider.notifier).reset();
+    _ref?.read(srsProvider.notifier).reset();
+    _ref?.read(achievementsProvider.notifier).refresh();
     if (!mounted) return;
     await load();
   }
+
+  Future<List<WordModel>> getIncorrectWords({int limit = 50}) =>
+      _repo.getIncorrectWords(limit: limit);
 
   Future<void> resetStreak() async {
     await _repo.resetStreak();

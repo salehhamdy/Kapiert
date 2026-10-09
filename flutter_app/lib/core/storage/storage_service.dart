@@ -313,6 +313,39 @@ class StorageService {
     await _db.delete('achievements');
   }
 
+  /// Returns distinct words the learner has answered incorrectly in quiz sessions.
+  static Future<List<WordModel>> getIncorrectQuizWords({int limit = 50}) async {
+    final rows = await _db.rawQuery('''
+      SELECT word, article, MAX(timestamp) as last_seen
+      FROM history
+      WHERE correct = 0
+      GROUP BY LOWER(word), article
+      ORDER BY last_seen DESC
+      LIMIT ?
+    ''', [limit]);
+
+    return rows.map((r) {
+      final article = (r['article'] as String).toLowerCase();
+      final gender = article == 'der' ? 'm' : (article == 'die' ? 'f' : 'n');
+      return WordModel(
+        word: r['word'] as String,
+        article: article,
+        gender: gender,
+        source: 'mistakes',
+      );
+    }).toList();
+  }
+
+  /// Returns the count of distinct words answered incorrectly in quiz sessions.
+  static Future<int> getIncorrectWordsCount() async {
+    final result = await _db.rawQuery('''
+      SELECT COUNT(DISTINCT LOWER(word)) as count
+      FROM history
+      WHERE correct = 0
+    ''');
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
   /// Retrieves multi-day learning activity and progress metrics for the past [days] days.
   static Future<AdvancedStats> getAdvancedStats({
     int days = 14,
@@ -945,6 +978,21 @@ class StorageService {
           await _db.rawQuery('SELECT COUNT(*) FROM favorites'),
         ) ?? 0;
 
+    final activeDays = Sqflite.firstIntValue(
+          await _db.rawQuery(
+            'SELECT COUNT(DISTINCT substr(timestamp, 1, 10)) FROM history',
+          ),
+        ) ?? 0;
+
+    final mistakesCleared = Sqflite.firstIntValue(
+          await _db.rawQuery('''
+            SELECT COUNT(DISTINCT h1.word)
+            FROM history h1
+            JOIN history h2 ON LOWER(h1.word) = LOWER(h2.word)
+            WHERE h1.correct = 0 AND h2.correct = 1 AND h1.timestamp < h2.timestamp
+          '''),
+        ) ?? 0;
+
     // 2. Query already-unlocked achievements
     final unlockedRows = await _db.query('achievements');
     final unlockedMap = <String, DateTime>{
@@ -952,7 +1000,7 @@ class StorageService {
         (r['id'] as String): DateTime.parse(r['unlocked_at'] as String),
     };
 
-    // 3. Define all standard milestones
+    // 3. Define all standard milestones (spanning from Day 1 to 6 Months)
     final definitions = <({
       String id,
       String title,
@@ -962,7 +1010,7 @@ class StorageService {
       int target,
       int current,
     })>[
-      // Streaks
+      // Streaks & Consistency (up to 6 months / 180 days)
       (
         id: 'streak_3',
         title: 'Streak Starter',
@@ -993,11 +1041,83 @@ class StorageService {
       (
         id: 'streak_30',
         title: 'Monthly Titan',
-        description: 'Achieve an epic 30-day streak',
+        description: 'Achieve an epic 30-day streak (1 month)',
         category: AchievementCategory.streak,
         icon: Icons.workspace_premium_rounded,
         target: 30,
         current: streak,
+      ),
+      (
+        id: 'streak_60',
+        title: 'Two-Month Flame',
+        description: 'Maintain a 60-day learning streak (2 months)',
+        category: AchievementCategory.streak,
+        icon: Icons.local_fire_department_outlined,
+        target: 60,
+        current: streak,
+      ),
+      (
+        id: 'streak_90',
+        title: 'Quarterly Champion',
+        description: 'Reach an incredible 90-day streak (3 months)',
+        category: AchievementCategory.streak,
+        icon: Icons.military_tech_rounded,
+        target: 90,
+        current: streak,
+      ),
+      (
+        id: 'streak_120',
+        title: 'Seasoned Scholar',
+        description: 'Sustain a 120-day streak (4 months)',
+        category: AchievementCategory.streak,
+        icon: Icons.shield_rounded,
+        target: 120,
+        current: streak,
+      ),
+      (
+        id: 'streak_150',
+        title: 'Iron Will',
+        description: 'Achieve a 150-day streak (5 months)',
+        category: AchievementCategory.streak,
+        icon: Icons.verified_rounded,
+        target: 150,
+        current: streak,
+      ),
+      (
+        id: 'streak_180',
+        title: 'Half-Year Legend',
+        description: 'Complete a monumental 180-day streak (6 months)',
+        category: AchievementCategory.streak,
+        icon: Icons.stars_rounded,
+        target: 180,
+        current: streak,
+      ),
+      (
+        id: 'active_days_30',
+        title: 'Consistent Learner',
+        description: 'Practice on 30 distinct days',
+        category: AchievementCategory.streak,
+        icon: Icons.calendar_today_rounded,
+        target: 30,
+        current: activeDays,
+      ),
+      (
+        id: 'active_days_90',
+        title: 'Season of Practice',
+        description: 'Practice on 90 distinct days across 3 months',
+        category: AchievementCategory.streak,
+        icon: Icons.date_range_rounded,
+        target: 90,
+        current: activeDays,
+      ),
+      (
+        id: 'active_days_180',
+        title: 'Half-Year Odyssey',
+        description: 'Practice on 180 distinct days over 6 months',
+        category: AchievementCategory.streak,
+        icon: Icons.event_available_rounded,
+        target: 180,
+        current: activeDays,
       ),
 
       // Vocabulary
@@ -1046,8 +1166,35 @@ class StorageService {
         target: 250,
         current: uniqueWords,
       ),
+      (
+        id: 'words_500',
+        title: 'Lexicon Explorer',
+        description: 'Practice 500 unique German nouns',
+        category: AchievementCategory.vocabulary,
+        icon: Icons.library_books_rounded,
+        target: 500,
+        current: uniqueWords,
+      ),
+      (
+        id: 'words_1000',
+        title: 'Dictionary Devotee',
+        description: 'Practice 1,000 unique German nouns',
+        category: AchievementCategory.vocabulary,
+        icon: Icons.history_edu_rounded,
+        target: 1000,
+        current: uniqueWords,
+      ),
+      (
+        id: 'words_2000',
+        title: 'German Lexicographer',
+        description: 'Practice 2,000 unique German nouns',
+        category: AchievementCategory.vocabulary,
+        icon: Icons.auto_awesome_rounded,
+        target: 2000,
+        current: uniqueWords,
+      ),
 
-      // Mastery
+      // Mastery & Quizzes
       (
         id: 'quiz_10',
         title: 'Quiz Novice',
@@ -1076,12 +1223,48 @@ class StorageService {
         current: totalQuiz,
       ),
       (
+        id: 'quiz_500',
+        title: 'Quiz Champion',
+        description: 'Answer 500 quiz questions',
+        category: AchievementCategory.mastery,
+        icon: Icons.military_tech_rounded,
+        target: 500,
+        current: totalQuiz,
+      ),
+      (
+        id: 'quiz_1000',
+        title: 'Quiz Grandmaster',
+        description: 'Answer 1,000 quiz questions',
+        category: AchievementCategory.mastery,
+        icon: Icons.workspace_premium_rounded,
+        target: 1000,
+        current: totalQuiz,
+      ),
+      (
+        id: 'quiz_2500',
+        title: 'Legend of Articles',
+        description: 'Answer 2,500 quiz questions over 6 months',
+        category: AchievementCategory.mastery,
+        icon: Icons.stars_rounded,
+        target: 2500,
+        current: totalQuiz,
+      ),
+      (
         id: 'der_master',
         title: 'Herr der Wörter',
         description: 'Answer 20 "der" questions correctly',
         category: AchievementCategory.mastery,
         icon: Icons.male_rounded,
         target: 20,
+        current: derCorrect,
+      ),
+      (
+        id: 'der_grandmaster',
+        title: 'Großmeister von Der',
+        description: 'Answer 100 "der" questions correctly',
+        category: AchievementCategory.mastery,
+        icon: Icons.male_rounded,
+        target: 100,
         current: derCorrect,
       ),
       (
@@ -1094,6 +1277,15 @@ class StorageService {
         current: dieCorrect,
       ),
       (
+        id: 'die_grandmaster',
+        title: 'Großmeisterin von Die',
+        description: 'Answer 100 "die" questions correctly',
+        category: AchievementCategory.mastery,
+        icon: Icons.female_rounded,
+        target: 100,
+        current: dieCorrect,
+      ),
+      (
         id: 'das_master',
         title: 'Meister des Neutrums',
         description: 'Answer 20 "das" questions correctly',
@@ -1102,8 +1294,35 @@ class StorageService {
         target: 20,
         current: dasCorrect,
       ),
+      (
+        id: 'das_grandmaster',
+        title: 'Großmeister von Das',
+        description: 'Answer 100 "das" questions correctly',
+        category: AchievementCategory.mastery,
+        icon: Icons.diamond_rounded,
+        target: 100,
+        current: dasCorrect,
+      ),
+      (
+        id: 'mistakes_cleared_10',
+        title: 'Mistake Vanquisher',
+        description: 'Turn 10 past incorrect answers into correct answers',
+        category: AchievementCategory.mastery,
+        icon: Icons.replay_rounded,
+        target: 10,
+        current: mistakesCleared,
+      ),
+      (
+        id: 'mistakes_cleared_50',
+        title: 'Flawless Learner',
+        description: 'Turn 50 past incorrect answers into correct answers',
+        category: AchievementCategory.mastery,
+        icon: Icons.auto_fix_high_rounded,
+        target: 50,
+        current: mistakesCleared,
+      ),
 
-      // Spaced Repetition
+      // Spaced Repetition (SRS)
       (
         id: 'srs_first',
         title: 'Memory Seed',
@@ -1123,12 +1342,39 @@ class StorageService {
         current: srsStage3Plus,
       ),
       (
+        id: 'srs_stage3_25',
+        title: 'Memory Fortress',
+        description: 'Advance 25 nouns to SRS Stage 3 or higher',
+        category: AchievementCategory.srs,
+        icon: Icons.shield_rounded,
+        target: 25,
+        current: srsStage3Plus,
+      ),
+      (
         id: 'srs_mastered',
         title: 'Gold Standard',
         description: 'Reach Stage 5 (Mastered ⭐) with 5 nouns',
         category: AchievementCategory.srs,
         icon: Icons.star_rounded,
         target: 5,
+        current: srsMastered,
+      ),
+      (
+        id: 'srs_mastered_25',
+        title: 'Silver Mastery',
+        description: 'Reach Stage 5 (Mastered ⭐) with 25 nouns',
+        category: AchievementCategory.srs,
+        icon: Icons.workspace_premium_rounded,
+        target: 25,
+        current: srsMastered,
+      ),
+      (
+        id: 'srs_mastered_100',
+        title: 'Centennial Retention',
+        description: 'Reach Stage 5 (Mastered ⭐) with 100 nouns over 6 months',
+        category: AchievementCategory.srs,
+        icon: Icons.stars_rounded,
+        target: 100,
         current: srsMastered,
       ),
 
@@ -1140,6 +1386,24 @@ class StorageService {
         category: AchievementCategory.favorites,
         icon: Icons.bookmark_added_rounded,
         target: 5,
+        current: favCount,
+      ),
+      (
+        id: 'fav_20',
+        title: 'Curated Library',
+        description: 'Save 20 nouns to your Favorites',
+        category: AchievementCategory.favorites,
+        icon: Icons.collections_bookmark_rounded,
+        target: 20,
+        current: favCount,
+      ),
+      (
+        id: 'fav_50',
+        title: 'Personal Anthology',
+        description: 'Save 50 nouns to your Favorites',
+        category: AchievementCategory.favorites,
+        icon: Icons.auto_stories_rounded,
+        target: 50,
         current: favCount,
       ),
     ];
@@ -1310,6 +1574,30 @@ class StorageService {
     final result =
         await _db.rawQuery('SELECT COUNT(*) as count FROM article_cache');
     return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  /// Returns cached articles count and gender breakdown.
+  static Future<Map<String, int>> getCachedArticlesStats() async {
+    final total = await getCachedArticlesCount();
+    final rows = await _db.rawQuery('''
+      SELECT LOWER(article) as art, COUNT(*) as cnt
+      FROM article_cache
+      GROUP BY LOWER(article)
+    ''');
+    final stats = <String, int>{
+      'total': total,
+      'der': 0,
+      'die': 0,
+      'das': 0,
+    };
+    for (final r in rows) {
+      final art = r['art'] as String?;
+      final cnt = (r['cnt'] as int?) ?? 0;
+      if (art == 'der' || art == 'die' || art == 'das') {
+        stats[art!] = cnt;
+      }
+    }
+    return stats;
   }
 
   /// Clears all offline cached articles.

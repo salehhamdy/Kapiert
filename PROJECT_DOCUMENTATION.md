@@ -286,6 +286,21 @@ Implemented across [`translations.py`](file:///c:/Users/ASUS/Downloads/German_Ar
 - **Batch Enrichment CLI Utility**: Standalone tool [`enrich_wiktionary.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/scripts/enrich_wiktionary.py) to inspect coverage statistics, batch-enrich word lists, or pre-populate top quiz vocabulary offline.
 - **Seamless Frontend Presentation**: Flutter's `ResultCard`, `QuizScreen`, and `HistoryScreen` render sleek English translation chips with `Icons.translate_rounded`.
 
+#### 12. Concentrated Mistakes Review Mode & SRS Due Persistence Fix
+Implemented across [`QuizProvider`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/quiz/providers/quiz_provider.dart), [`QuizScreen`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/quiz/screens/quiz_screen.dart), [`HistoryScreen`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/history/screens/history_screen.dart), [`StorageService`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/core/storage/storage_service.dart), and [`SrsNotifier`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/srs/providers/srs_provider.dart):
+- **SRS Due Count Reset on Clear History**: Fixed bug where clearing history purged SQLite `srs_items` but left the in-memory `srsProvider` due count and due queue active. `HistoryNotifier.clearAll()` and `SettingsScreen._confirmClearHistory` now explicitly invoke `srsProvider.notifier.reset()` and `achievementsProvider.notifier.refresh()`. In addition, `SrsNotifier.reset()` wipes in-memory due counts and items.
+- **Targeted Mistakes Review Session**: Added focused quiz session exclusively querying nouns the learner answered incorrectly (`correct == false` in history).
+- **History Mistakes Drill Banner**: When browsing the `Incorrect` tab in `HistoryScreen`, a gradient banner displays the number of challenging words with a direct 1-tap "Review Mistakes" button opening a focused quiz session.
+- **Mistakes Mode Banner & Dynamic Counters**: Quiz header displays a distinct red mistake counter chip and top notification banner with quick exit action to return to standard practice.
+
+#### 13. Profile Password Management, Auth Guard & Offline Cache Handling
+Implemented across [`ProfileScreen`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/profile/screens/profile_screen.dart), [`ChangePasswordSheet`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/profile/widgets/change_password_sheet.dart), [`ResetPasswordScreen`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/auth/screens/reset_password_screen.dart), [`OfflineCacheSheet`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/settings/widgets/offline_cache_sheet.dart), and [`ArticleLocalDS`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/data/datasources/article_local_ds.dart):
+- **Change Password Relocated to Profile**: Moved password update controls from Settings into Profile -> Account.
+- **Guest Authentication Guard**: If an unauthenticated guest user taps "Change password", a dialog prompts them that sign-in is required with direct navigation to `SignInScreen`.
+- **Change Password Bottom Sheet**: Modal sheet with password validation, minimum character checks, matching verification, and Supabase auth update password integration.
+- **Dedicated Reset Password Flow**: Screen providing email password reset instructions dispatched via Supabase email recovery.
+- **Offline Cache Status & Gender Breakdown**: `OfflineCacheSheet` displays live cache readiness badge ("Ready for Offline Use" or "Cache Empty"), individual gender counts for `der`, `die`, and `das`, and extended core vocabulary pre-seeding (130+ words).
+
 ---
 
 ### Spaced Repetition System (SRS) Mechanics
@@ -372,15 +387,15 @@ Implemented in [`StorageService.getAdvancedStats()`](file:///c:/Users/ASUS/Downl
 Kapiert features a gamification engine designed to reward learner consistency, vocabulary acquisition volume, quiz accuracy, SRS mastery, and curation.
 
 #### 1. Milestone Categories & Badges
-Achievements are modeled in [`Achievement`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/domain/models/achievement.dart) across 5 distinct categories:
+Achievements are modeled in [`Achievement`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/domain/models/achievement.dart) across 5 distinct categories, spanning from Day 1 to a 6-month mastery roadmap:
 
-| Category | Icon | Predefined Milestones |
+| Category | Icon | 6-Month Spanning Milestones |
 |---|---|---|
-| **Streak** (`streak`) | 🔥 | First Step (1d), Three's a Charm (3d), Flame Keeper (7d), Two-Week Titan (14d), Month of Mastery (30d) |
-| **Vocabulary** (`vocabulary`) | 📚 | Word Novice (10 words), Vocabulary Builder (25 words), Half-Century (50 words), Century Club (100 words), Master of Lexicon (250 words), Word Titan (500 words) |
-| **Quiz Mastery** (`mastery`) | 🎯 | Quiz Debut (10 quiz answers), Quiz Enthusiast (50 answers), Century Quizzer (100 answers), Grand Quizmaster (250 answers), Sharpshooter (10 consecutive quiz answers with $\ge 90\%$ accuracy) |
-| **Spaced Repetition** (`srs`) | 🃏 | First Retention (5 words to SRS Stage 5), Memory Master (20 words to SRS Stage 5) |
-| **Favorites** (`favorites`) | ⭐ | Curator (5 bookmarked favorites), Lexicon Collector (25 bookmarked favorites) |
+| **Streak & Consistency** (`streak`) | 🔥 | Streak Starter (3d), Flame Keeper (7d), Iron Discipline (14d), Monthly Titan (30d / 1 month), Two-Month Flame (60d / 2 months), Quarterly Champion (90d / 3 months), Seasoned Scholar (120d / 4 months), Iron Will (150d / 5 months), Half-Year Legend (180d / 6 months), Consistent Learner (30 active days), Season of Practice (90 active days), Half-Year Odyssey (180 active days over 6 months) |
+| **Vocabulary Volume** (`vocabulary`) | 📚 | First Step (1 word), Curious Learner (10 words), Vocabulary Builder (50 words), Century Club (100 words), Word Master (250 words), Lexicon Explorer (500 words), Dictionary Devotee (1,000 words), German Lexicographer (2,000 unique words) |
+| **Quiz Mastery** (`mastery`) | 🎯 | Quiz Novice (10 questions), Quiz Enthusiast (50 questions), Quiz Veteran (200 questions), Quiz Champion (500 questions), Quiz Grandmaster (1,000 questions), Legend of Articles (2,500 questions over 6 months), Der / Die / Das Grandmasters (25 correct per gender), Mistake Vanquishers (10 and 50 mistakes cleared) |
+| **Spaced Repetition** (`srs`) | 🃏 | First Retention (5 words to Stage 5), Memory Master (20 words to Stage 5), Stage 3 Adept (25 words to Stage 3), Long-Term Retainer (25 words to Stage 5), Memory Legend (100 words mastered to Stage 5) |
+| **Favorites** (`favorites`) | ⭐ | Curator (5 favorites), Lexicon Collector (20 favorites), Vocabulary Vault (50 favorites) |
 
 #### 2. Evaluation & Unnotified Unlock Detection
 Implemented in [`StorageService.getAchievements()`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/core/storage/storage_service.dart) and [`AchievementsRepositoryImpl`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/data/repositories/achievements_repository_impl.dart):
@@ -392,8 +407,8 @@ Implemented in [`StorageService.getAchievements()`](file:///c:/Users/ASUS/Downlo
 #### 3. Real-Time In-Quiz Celebration & Modal Gallery
 - **Live Celebration Pill**: When an answer during a quiz session unlocks an achievement, [`QuizScreen`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/quiz/screens/quiz_screen.dart) displays an animated achievement banner with a glowing trophy icon and milestone title:
   > 🏆 **Milestone Unlocked!** [Achievement Title]
-- **Profile Summary Card** ([`AchievementsCard`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/profile/widgets/achievements_card.dart)): Shows overall progress bar (e.g. `7 of 19 badges earned (37%)`), preview badge tiles with subtle glow effects for unlocked badges, and category filter chips.
-- **Milestone Detail Sheet** ([`MilestoneDetailSheet`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/profile/widgets/milestone_detail_sheet.dart)): Full-screen modal gallery displaying all 19 achievements, unlocked timestamps, progress bars for in-progress items, and category tabs (`All`, `Streaks`, `Vocabulary`, `Quiz`, `SRS`, `Favorites`).
+- **Profile Summary Card** ([`AchievementsCard`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/profile/widgets/achievements_card.dart)): Shows overall progress bar, preview badge tiles with subtle glow effects for unlocked badges, and category filter chips.
+- **Milestone Detail Sheet** ([`MilestoneDetailSheet`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/profile/widgets/milestone_detail_sheet.dart)): Full-screen modal gallery displaying all badges spanning the 6-month roadmap, unlocked timestamps, progress bars for in-progress items, and category tabs (`All`, `Streaks`, `Vocabulary`, `Quiz`, `SRS`, `Favorites`).
 
 ---
 
@@ -500,7 +515,7 @@ Both the backend and Flutter applications maintain comprehensive automated test 
 cd backend
 python -m pytest tests/ -v
 
-# 2. Flutter Unit, Widget & Integration Tests (147 tests)
+# 2. Flutter Unit, Widget & Integration Tests (157 tests)
 cd flutter_app
 flutter test
 
@@ -519,13 +534,13 @@ flutter analyze
 | **Network Client** | [`flutter_app/test/core/network/api_client_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/core/network/api_client_test.dart) | 4 | HTTP GET parsing, timeout handling, error mapping. |
 | **Word Models** | [`flutter_app/test/domain/models/word_model_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/word_model_test.dart) | 7 | Equality, JSON conversion, gender labels, backward-compatible sentence serialization. |
 | **Result Card & Sentences** | [`flutter_app/test/features/lookup/screens/result_card_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/lookup/screens/result_card_test.dart) | 2 | Article badge, German word, translation, example sentence rendering with active locale translation, clipboard copy, and offline cache badge. |
-| **Settings & Bottom Sheets** | [`flutter_app/test/features/settings/screens/settings_screen_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/settings/screens/settings_screen_test.dart) | 5 | Language tile, 4-language bottom sheet, Arabic RTL dynamic update, notifications sheet opening, and offline cache sheet opening. |
+| **Settings & Bottom Sheets** | [`flutter_app/test/features/settings/screens/settings_screen_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/settings/screens/settings_screen_test.dart) | 5 | Language tile, 4-language bottom sheet, Arabic RTL dynamic update, notifications sheet opening, and offline cache sheet opening with gender breakdown chips. |
 | **Notification Settings Model** | [`flutter_app/test/domain/models/notification_settings_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/notification_settings_test.dart) | 5 | Default values, TimeOfDay reminderTime conversion, copyWith updates, symmetric JSON serialization, equality, and hash code. |
 | **Notification Scheduler** | [`flutter_app/test/features/notifications/providers/notification_provider_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/notifications/providers/notification_provider_test.dart) | 7 | State initialization, toggling daily reminders, permission requests, zonedSchedule daily reminders, cancel schedules, time picker updates, streak/SRS switches, and instant test notification. |
 | **Notification Settings Widget** | [`flutter_app/test/features/notifications/widgets/notification_settings_sheet_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/notifications/widgets/notification_settings_sheet_test.dart) | 3 | Modal bottom sheet header, master switch toggle, revealed reminder controls, time picker trigger, and test notification button with confirmation SnackBar. |
 | **Article Local Data Source** | [`flutter_app/test/data/datasources/article_local_ds_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/data/datasources/article_local_ds_test.dart) | 11 | Leading article query normalization (`der`, `die`, `das`, `ein`, `eine`), punctuation cleanup, case-insensitivity, masculine/feminine/neuter core lookups, English translation verification, compound noun head suffix analysis, random word batching, and unknown word fallbacks. |
 | **Article Repository Fallback** | [`flutter_app/test/data/repositories/article_repository_impl_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/data/repositories/article_repository_impl_test.dart) | 8 | Remote-first lookup with auto-caching, transparent offline fallback to local SQLite cache on network failure, error rethrow when absent, random/randomBatch offline fallbacks, and health checks. |
-| **Offline Cache Sheet Widget** | [`flutter_app/test/features/settings/widgets/offline_cache_sheet_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/settings/widgets/offline_cache_sheet_test.dart) | 3 | Stored article count metric display, pre-seed essential vocabulary button invocation with feedback SnackBar, and clear offline cache button with confirmation. |
+| **Offline Cache Sheet Widget** | [`flutter_app/test/features/settings/widgets/offline_cache_sheet_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/settings/widgets/offline_cache_sheet_test.dart) | 3 | Stored article count metric display, readiness status badge, individual gender breakdown pills (`der`, `die`, `das`), pre-seed extended vocabulary button invocation with feedback SnackBar, and clear offline cache button with confirmation. |
 | **Daily Activity Model** | [`flutter_app/test/domain/models/daily_activity_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/daily_activity_test.dart) | 3 | Intensity levels 0–4 thresholds, accuracy calculation, model immutability. |
 | **Advanced Stats Model** | [`flutter_app/test/domain/models/advanced_stats_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/advanced_stats_test.dart) | 4 | Aggregation logic, week-over-week trends, rolling slice computations, best day tracking. |
 | **Achievements Model** | [`flutter_app/test/domain/models/achievement_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/achievement_test.dart) | 3 | Categories, unlock status, progress percentage, copyWith behavior. |
@@ -536,7 +551,11 @@ flutter analyze
 | **Advanced Stats Widget** | [`flutter_app/test/features/profile/advanced_stats_widget_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/profile/advanced_stats_widget_test.dart) | 2 | 7-day activity heatmap grid, interactive day inspector pill, volume bar chart, key metric tiles. |
 | **Achievements Widget** | [`flutter_app/test/features/profile/achievements_widget_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/profile/achievements_widget_test.dart) | 1 | Milestones summary card, badge previews, modal gallery sheet invocation. |
 | **Quiz Core** | [`flutter_app/test/features/quiz/quiz_randomization_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/quiz/quiz_randomization_test.dart) | 4 | Word deduplication, anti-clumping, offline fallback pool. |
+| **Mistakes Quiz Mode** | [`flutter_app/test/features/quiz/mistakes_quiz_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/quiz/mistakes_quiz_test.dart) | 3 | Dedicated incorrect article review session initiation, distinct incorrect words queue, mistakes counter refresh, and session exit back to standard quiz practice. |
 | **Profile & Mastery** | [`flutter_app/test/features/profile/profile_screen_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/profile/profile_screen_test.dart) | 3 | Guest vs signed-in states, article mastery bars, weakest article recommendation. |
+| **Change Password & Auth Guard** | [`flutter_app/test/features/profile/change_password_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/profile/change_password_test.dart) | 4 | Change password bottom sheet fields, password mismatch validation, authenticated password update via remote datasource, and guest login requirement guard dialog. |
+| **Password Reset Flow** | [`flutter_app/test/features/auth/reset_password_screen_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/auth/reset_password_screen_test.dart) | 2 | Reset password form presentation, valid email submission triggering Supabase recovery email, and confirmation card rendering. |
+| **History & SRS Reset** | [`flutter_app/test/features/history/history_srs_reset_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/history/history_srs_reset_test.dart) | 1 | Verifies that clearing history synchronously resets Spaced Repetition (SRS) provider state, wiping due items and resetting due count to zero. |
 | **Favorites** | [`flutter_app/test/features/favorites/favorites_widget_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/favorites/favorites_widget_test.dart) | 5 | Star toggling, history favorites tab, focused review quiz. |
 | **Legal Consent Gate** | [`flutter_app/test/features/legal/app_first_use_gate_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/legal/app_first_use_gate_test.dart) | 5 | First-launch lock, legal document markdown viewers, unlock upon acceptance. |
 | **Auth & Verification** | [`flutter_app/test/features/auth/verify_email_screen_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/auth/verify_email_screen_test.dart) | 7 | OTP inputs, pasting 6-digit codes, validation errors. |

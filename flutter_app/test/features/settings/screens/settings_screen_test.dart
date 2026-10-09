@@ -58,7 +58,14 @@ void main() {
     when(() => mockNotificationService.cancel(any())).thenAnswer((_) async {});
 
     when(() => mockLocalDS.getCachedCount()).thenAnswer((_) async => 25);
+    when(() => mockLocalDS.getCachedStats()).thenAnswer((_) async => {
+          'total': 25,
+          'der': 10,
+          'die': 10,
+          'das': 5,
+        });
     when(() => mockLocalDS.preseedCoreVocabulary()).thenAnswer((_) async => 100);
+    when(() => mockLocalDS.preseedExtendedVocabulary()).thenAnswer((_) async => 130);
     when(() => mockLocalDS.clearCache()).thenAnswer((_) async {});
   });
 

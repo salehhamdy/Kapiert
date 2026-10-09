@@ -140,6 +140,29 @@ class ArticleLocalDS {
     return _coreVocabulary.length;
   }
 
+  /// Returns article cache stats breakdown: total, der, die, das counts.
+  Future<Map<String, int>> getCachedStats() async {
+    if (StorageService.isInitialized) {
+      return StorageService.getCachedArticlesStats();
+    }
+    int der = 0, die = 0, das = 0;
+    for (final w in _coreVocabulary.values) {
+      if (w.article == 'der') {
+        der++;
+      } else if (w.article == 'die') {
+        die++;
+      } else if (w.article == 'das') {
+        das++;
+      }
+    }
+    return {
+      'total': _coreVocabulary.length,
+      'der': der,
+      'die': die,
+      'das': das,
+    };
+  }
+
   /// Clears the local offline article cache.
   Future<void> clearCache() async {
     if (StorageService.isInitialized) {
@@ -154,6 +177,11 @@ class ArticleLocalDS {
       await StorageService.cacheArticles(allCore);
     }
     return allCore.length;
+  }
+
+  /// Pre-seeds the SQLite cache with extended high-frequency German vocabulary.
+  Future<int> preseedExtendedVocabulary() async {
+    return preseedCoreVocabulary();
   }
 
   // ---------------------------------------------------------------------------
@@ -363,6 +391,67 @@ class ArticleLocalDS {
       ('Land', 'das', 'n', 'Länder', 'country, land'),
       ('Meer', 'das', 'n', 'Meere', 'sea, ocean'),
       ('Wetter', 'das', 'n', null, 'weather'),
+
+      // Extended High-Frequency Vocabulary
+      // Masculine (der)
+      ('Körper', 'der', 'm', 'Körper', 'body'),
+      ('Kopf', 'der', 'm', 'Köpfe', 'head'),
+      ('Arm', 'der', 'm', 'Arme', 'arm'),
+      ('Fuß', 'der', 'm', 'Füße', 'foot'),
+      ('Mund', 'der', 'm', 'Münder', 'mouth'),
+      ('Tag', 'der', 'm', 'Tage', 'day'),
+      ('Monat', 'der', 'm', 'Monate', 'month'),
+      ('Abend', 'der', 'm', 'Abende', 'evening'),
+      ('Morgen', 'der', 'm', 'Morgen', 'morning'),
+      ('Sommer', 'der', 'm', 'Sommer', 'summer'),
+      ('Winter', 'der', 'm', 'Winter', 'winter'),
+      ('Herbst', 'der', 'm', 'Herbste', 'autumn, fall'),
+      ('Frühling', 'der', 'm', 'Frühlinge', 'spring'),
+      ('Urlaub', 'der', 'm', 'Urlaube', 'vacation, holiday'),
+      ('Brief', 'der', 'm', 'Briefe', 'letter'),
+      ('Koffer', 'der', 'm', 'Koffer', 'suitcase'),
+      ('Wald', 'der', 'm', 'Wälder', 'forest, woods'),
+      ('See', 'der', 'm', 'Seen', 'lake'),
+
+      // Feminine (die)
+      ('Hand', 'die', 'f', 'Hände', 'hand'),
+      ('Nase', 'die', 'f', 'Nasen', 'nose'),
+      ('Nacht', 'die', 'f', 'Nächte', 'night'),
+      ('Woche', 'die', 'f', 'Wochen', 'week'),
+      ('Stunde', 'die', 'f', 'Stunden', 'hour'),
+      ('Minute', 'die', 'f', 'Minuten', 'minute'),
+      ('Zeit', 'die', 'f', 'Zeiten', 'time'),
+      ('Arbeit', 'die', 'f', 'Arbeiten', 'work, job'),
+      ('Musik', 'die', 'f', null, 'music'),
+      ('Farbe', 'die', 'f', 'Farben', 'color'),
+      ('Frage', 'die', 'f', 'Fragen', 'question'),
+      ('Antwort', 'die', 'f', 'Antworten', 'answer'),
+      ('Reise', 'die', 'f', 'Reisen', 'journey, travel'),
+      ('Karte', 'die', 'f', 'Karten', 'card, map, ticket'),
+      ('Welt', 'die', 'f', 'Welten', 'world'),
+      ('Luft', 'die', 'f', null, 'air'),
+      ('Erde', 'die', 'f', null, 'earth, soil'),
+      ('Brille', 'die', 'f', 'Brillen', 'glasses, spectacles'),
+
+      // Neuter (das)
+      ('Auge', 'das', 'n', 'Augen', 'eye'),
+      ('Ohr', 'das', 'n', 'Ohren', 'ear'),
+      ('Bein', 'das', 'n', 'Beine', 'leg'),
+      ('Haar', 'das', 'n', 'Haare', 'hair'),
+      ('Jahr', 'das', 'n', 'Jahre', 'year'),
+      ('Leben', 'das', 'n', 'Leben', 'life'),
+      ('Bild', 'das', 'n', 'Bilder', 'picture, image'),
+      ('Lied', 'das', 'n', 'Lieder', 'song'),
+      ('Wort', 'das', 'n', 'Wörter', 'word'),
+      ('Problem', 'das', 'n', 'Probleme', 'problem'),
+      ('Spiel', 'das', 'n', 'Spiele', 'game'),
+      ('Tier', 'das', 'n', 'Tiere', 'animal'),
+      ('Feuer', 'das', 'n', 'Feuer', 'fire'),
+      ('Licht', 'das', 'n', 'Lichter', 'light'),
+      ('Gesicht', 'das', 'n', 'Gesichter', 'face'),
+      ('Hotel', 'das', 'n', 'Hotels', 'hotel'),
+      ('Kino', 'das', 'n', 'Kinos', 'cinema, movie theater'),
+      ('Restaurant', 'das', 'n', 'Restaurants', 'restaurant'),
     ];
 
     final map = <String, WordModel>{};

@@ -1741,6 +1741,184 @@ class AppLocalizations {
     }
   }
 
+  // ── Mistakes review mode ──────────────────────────────────────────────────
+  String get mistakesReviewMode => _t({
+        'en': 'Mistakes Review',
+        'ar': 'مراجعة الأخطاء',
+        'tr': 'Hata Tekrarı',
+        'de': 'Fehler-Wiederholung',
+      });
+
+  String get mistakes => _t({
+        'en': 'Mistakes',
+        'ar': 'الأخطاء',
+        'tr': 'Hatalar',
+        'de': 'Fehler',
+      });
+
+  String get mistakesReview => _t({
+        'en': 'Mistakes Review',
+        'ar': 'مراجعة الأخطاء',
+        'tr': 'Hata Tekrarı',
+        'de': 'Fehler-Wiederholung',
+      });
+
+  String get practicingMistakes => _t({
+        'en': 'Practicing incorrect articles',
+        'ar': 'التدرب على الأدوات غير الصحيحة',
+        'tr': 'Yanlış artikelleri tekrar etme',
+        'de': 'Falsch beantwortete Artikel üben',
+      });
+
+  String get mistakesReviewComplete => _t({
+        'en': 'Mistakes Mastered!',
+        'ar': 'تم إتقان الأخطاء!',
+        'tr': 'Hatalar Pekiştirildi!',
+        'de': 'Fehler gemeistert!',
+      });
+
+  String get mistakesReviewCompleteSubtitle => _t({
+        'en': 'Great job reinforcing challenging articles.',
+        'ar': 'عمل رائع في تثبيت وحفظ الأدوات الصعبة.',
+        'tr': 'Zorlu artikelleri pekiştirmede harika iş çıkardınız.',
+        'de': 'Großartige Arbeit beim Festigen schwieriger Artikel.',
+      });
+
+  String get reviewMistakes => _t({
+        'en': 'Review Mistakes',
+        'ar': 'مراجعة الأخطاء',
+        'tr': 'Hataları Tekrar Et',
+        'de': 'Fehler üben',
+      });
+
+  String practiceIncorrectWords(int count) => _t({
+        'en': 'Practice $count challenging words',
+        'ar': 'تدرب على $count من الكلمات الصعبة',
+        'tr': '$count zorlu kelimeyi tekrar et',
+        'de': '$count schwierige Wörter üben',
+      });
+
+  // ── Password management & reset ───────────────────────────────────────────
+  String get newPassword => _t({
+        'en': 'New password',
+        'ar': 'كلمة المرور الجديدة',
+        'tr': 'Yeni şifre',
+        'de': 'Neues Passwort',
+      });
+
+  String get confirmPassword => _t({
+        'en': 'Confirm password',
+        'ar': 'تأكيد كلمة المرور',
+        'tr': 'Şifreyi onayla',
+        'de': 'Passwort bestätigen',
+      });
+
+  String get passwordMismatch => _t({
+        'en': 'Passwords do not match',
+        'ar': 'كلمتا المرور غير متطابقتين',
+        'tr': 'Şifreler eşleşmiyor',
+        'de': 'Passwörter stimmen nicht überein',
+      });
+
+  String get passwordUpdated => _t({
+        'en': 'Password updated successfully',
+        'ar': 'تم تحديث كلمة المرور بنجاح',
+        'tr': 'Şifre başarıyla güncellendi',
+        'de': 'Passwort erfolgreich aktualisiert',
+      });
+
+  String get authRequiredToChangePassword => _t({
+        'en': 'You must be signed in to change your password.',
+        'ar': 'يجب عليك تسجيل الدخول لتتمكن من تغيير كلمة المرور.',
+        'tr': 'Şifrenizi değiştirmek için giriş yapmış olmalısınız.',
+        'de': 'Du musst angemeldet sein, um dein Passwort zu ändern.',
+      });
+
+  String get signInToChangePassword => _t({
+        'en': 'Sign In to Change Password',
+        'ar': 'تسجيل الدخول لتغيير كلمة المرور',
+        'tr': 'Şifre Değiştirmek İçin Giriş Yap',
+        'de': 'Anmelden, um Passwort zu ändern',
+      });
+
+  String get resetPasswordTitle => _t({
+        'en': 'Reset Password',
+        'ar': 'إعادة تعيين كلمة المرور',
+        'tr': 'Şifreyi Sıfırla',
+        'de': 'Passwort zurücksetzen',
+      });
+
+  String get resetPasswordSubtitle => _t({
+        'en': 'Enter your email address to receive password reset instructions.',
+        'ar': 'أدخل بريدك الإلكتروني لتلقي تعليمات إعادة تعيين كلمة المرور.',
+        'tr': 'Şifre sıfırlama talimatlarını almak için e-posta adresinizi girin.',
+        'de': 'Gib deine E-Mail-Adresse ein, um Anweisungen zum Zurücksetzen des Passworts zu erhalten.',
+      });
+
+  String get sendResetLink => _t({
+        'en': 'Send Reset Link',
+        'ar': 'إرسال رابط إعادة التعيين',
+        'tr': 'Sıfırlama Bağlantısı Gönder',
+        'de': 'Link zum Zurücksetzen senden',
+      });
+
+  String get resetLinkSent => _t({
+        'en': 'Password reset link sent to your email.',
+        'ar': 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.',
+        'tr': 'Şifre sıfırlama bağlantısı e-postanıza gönderildi.',
+        'de': 'Link zum Zurücksetzen wurde an deine E-Mail gesendet.',
+      });
+
+  String get backToSignIn => _t({
+        'en': 'Back to Sign In',
+        'ar': 'العودة إلى تسجيل الدخول',
+        'tr': 'Giriş Yap Ekranına Dön',
+        'de': 'Zurück zur Anmeldung',
+      });
+
+  // ── Offline cache ──────────────────────────────────────────────────────────
+  String get offlineCacheBreakdown => _t({
+        'en': 'Articles by Gender',
+        'ar': 'الأدوات حسب الجنس',
+        'tr': 'Cinsiyete Göre Artikeller',
+        'de': 'Artikel nach Geschlecht',
+      });
+
+  String get offlineReadyStatus => _t({
+        'en': 'Ready for Offline Use',
+        'ar': 'جاهز للاستخدام دون إنترنت',
+        'tr': 'Çevrimdışı Kullanıma Hazır',
+        'de': 'Bereit für Offline-Nutzung',
+      });
+
+  String get offlineEmptyStatus => _t({
+        'en': 'Cache Empty',
+        'ar': 'الذاكرة المؤقتة فارغة',
+        'tr': 'Önbellek Boş',
+        'de': 'Cache leer',
+      });
+
+  String get preseedExtendedVocab => _t({
+        'en': 'Pre-seed Extended Vocabulary',
+        'ar': 'تحميل المفردات الموسعة (120+ كلمة)',
+        'tr': 'Genişletilmiş Kelimeleri Önbelleğe Al',
+        'de': 'Erweiterten Wortschatz vorladen',
+      });
+
+  String get preseedExtendedVocabDesc => _t({
+        'en': 'Adds 120+ high-frequency nouns for offline quizzes and lookups.',
+        'ar': 'يضيف أكثر من 120 اسمًا شائعًا للاختبارات والبحث دون إنترنت.',
+        'tr': 'Çevrimdışı alıştırmalar ve aramalar için 120\'den fazla sık kullanılan ismi ekler.',
+        'de': 'Fügt über 120 häufige Nomen für Offline-Quizze und Suchen hinzu.',
+      });
+
+  String get preseedExtendedSuccess => _t({
+        'en': 'Extended vocabulary cached successfully!',
+        'ar': 'تم حفظ المفردات الموسعة في الذاكرة بنجاح!',
+        'tr': 'Genişletilmiş kelimeler başarıyla önbelleğe alındı!',
+        'de': 'Erweiterter Wortschatz erfolgreich zwischengespeichert!',
+      });
+
   String sourceLabel(String source) {
     switch (source.toLowerCase()) {
       case 'dataset':

@@ -30,6 +30,8 @@ class QuizState {
     this.loading = true,
     this.isFavoritesMode = false,
     this.isSrsMode = false,
+    this.isMistakesMode = false,
+    this.mistakesCount = 0,
     this.currentSrsItem,
     this.isSessionComplete = false,
     this.unlockedMilestone,
@@ -44,6 +46,8 @@ class QuizState {
   final bool loading;
   final bool isFavoritesMode;
   final bool isSrsMode;
+  final bool isMistakesMode;
+  final int mistakesCount;
   final SrsItem? currentSrsItem;
   final bool isSessionComplete;
   final Achievement? unlockedMilestone;
@@ -61,6 +65,8 @@ class QuizState {
     bool? loading,
     bool? isFavoritesMode,
     bool? isSrsMode,
+    bool? isMistakesMode,
+    int? mistakesCount,
     SrsItem? currentSrsItem,
     bool? isSessionComplete,
     Achievement? unlockedMilestone,
@@ -79,6 +85,8 @@ class QuizState {
       loading: loading ?? this.loading,
       isFavoritesMode: isFavoritesMode ?? this.isFavoritesMode,
       isSrsMode: isSrsMode ?? this.isSrsMode,
+      isMistakesMode: isMistakesMode ?? this.isMistakesMode,
+      mistakesCount: mistakesCount ?? this.mistakesCount,
       currentSrsItem:
           clearSrsItem ? null : currentSrsItem ?? this.currentSrsItem,
       isSessionComplete: isSessionComplete ?? this.isSessionComplete,
@@ -104,6 +112,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
         _achievementsRepo = achievementsRepo ??
             _ref.read(achievementsRepositoryProvider),
         super(const QuizState()) {
+    refreshMistakesCount();
     loadNext();
   }
 
@@ -119,8 +128,10 @@ class QuizNotifier extends StateNotifier<QuizState> {
   final _random = Random();
   bool _isFavoritesMode = false;
   bool _isSrsMode = false;
+  bool _isMistakesMode = false;
   List<WordModel> _favoritesPool = [];
   List<WordModel> _srsPool = [];
+  List<WordModel> _mistakesPool = [];
 
   /// Curated fallback pool of 60 common, balanced German nouns (20 der, 20 die, 20 das)
   /// used when offline or network requests fail.
@@ -246,6 +257,17 @@ class QuizNotifier extends StateNotifier<QuizState> {
         _seenWords.clear();
         queue = List<WordModel>.from(_favoritesPool)..shuffle(_random);
       }
+    } else if (_isMistakesMode) {
+      if (queue.isEmpty) {
+        if (!mounted) return;
+        state = state.copyWith(
+          loading: false,
+          clearAnswer: true,
+          clearWord: true,
+          isSessionComplete: true,
+        );
+        return;
+      }
     } else {
       if (queue.isEmpty) {
         queue = await _fetchSmartBatch();
@@ -292,7 +314,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
       );
 
       // Background pre-fetch when queue runs low (only in standard mode)
-      if (!_isFavoritesMode && !_isSrsMode && queue.length <= 4 && !_isFetchingMore) {
+      if (!_isFavoritesMode && !_isSrsMode && !_isMistakesMode && queue.length <= 4 && !_isFetchingMore) {
         _prefetchMore();
       }
     } else if (_isFavoritesMode && _favoritesPool.isNotEmpty) {
@@ -491,6 +513,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
     }).catchError((_) {});
 
     _ref.invalidate(historyProvider);
+    refreshMistakesCount();
   }
 
   /// Start focused review quiz on a list of favorite words.
@@ -597,6 +620,83 @@ class QuizNotifier extends StateNotifier<QuizState> {
     loadNext();
   }
 
+  /// Refresh the count of distinct incorrect words.
+  Future<void> refreshMistakesCount() async {
+    try {
+      final count = await _historyRepo.getIncorrectWordsCount();
+      if (mounted) {
+        state = state.copyWith(mistakesCount: count);
+      }
+    } catch (_) {}
+  }
+
+  /// Start a concentrated review session focusing strictly on words answered incorrectly.
+  Future<void> startMistakesReview([List<WordModel>? mistakes]) async {
+    _isMistakesMode = true;
+    _isFavoritesMode = false;
+    _isSrsMode = false;
+    _favoritesPool.clear();
+    _srsPool.clear();
+    _seenWords.clear();
+    _recentArticles.clear();
+
+    List<WordModel> pool = mistakes ?? [];
+    if (pool.isEmpty) {
+      try {
+        pool = await _historyRepo.getIncorrectWords(limit: 50);
+      } catch (_) {}
+    }
+
+    _mistakesPool = List<WordModel>.from(pool);
+    if (_mistakesPool.isEmpty) {
+      state = state.copyWith(
+        score: 0,
+        total: 0,
+        isMistakesMode: true,
+        isFavoritesMode: false,
+        isSrsMode: false,
+        isSessionComplete: true,
+        loading: false,
+        clearAnswer: true,
+        clearWord: true,
+      );
+      return;
+    }
+
+    final queue = List<WordModel>.from(_mistakesPool)..shuffle(_random);
+    state = state.copyWith(
+      score: 0,
+      total: 0,
+      isMistakesMode: true,
+      isFavoritesMode: false,
+      isSrsMode: false,
+      isSessionComplete: false,
+      wordQueue: queue,
+      clearAnswer: true,
+      clearWord: true,
+    );
+    await loadNext();
+  }
+
+  /// Exit mistakes review session and return to general noun practice.
+  Future<void> exitMistakesReview() async {
+    _isMistakesMode = false;
+    _mistakesPool.clear();
+    _seenWords.clear();
+    _recentArticles.clear();
+    state = state.copyWith(
+      score: 0,
+      total: 0,
+      isMistakesMode: false,
+      isSessionComplete: false,
+      wordQueue: const [],
+      clearAnswer: true,
+      clearWord: true,
+    );
+    await refreshMistakesCount();
+    await loadNext();
+  }
+
   /// Resets the quiz score, total, and answer state, and loads a fresh question.
   void reset() {
     _seenWords.clear();
@@ -618,6 +718,15 @@ class QuizNotifier extends StateNotifier<QuizState> {
         clearAnswer: true,
         wordQueue: queue,
       );
+    } else if (_isMistakesMode && _mistakesPool.isNotEmpty) {
+      final queue = List<WordModel>.from(_mistakesPool)..shuffle(_random);
+      state = state.copyWith(
+        score: 0,
+        total: 0,
+        clearAnswer: true,
+        isSessionComplete: false,
+        wordQueue: queue,
+      );
     } else {
       state = state.copyWith(
         score: 0,
@@ -626,6 +735,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
         wordQueue: const [],
       );
     }
+    refreshMistakesCount();
     loadNext();
   }
 }

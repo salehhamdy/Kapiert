@@ -59,6 +59,7 @@ class QuizScreen extends ConsumerWidget {
   ) {
     final isFavMode = state.isFavoritesMode;
     final isSrsMode = state.isSrsMode;
+    final isMistakesMode = state.isMistakesMode;
 
     return Column(
       children: [
@@ -164,6 +165,59 @@ class QuizScreen extends ConsumerWidget {
               ],
             ),
           ),
+        ] else if (isMistakesMode) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.dieRed
+                  .withValues(alpha: isDark ? 0.20 : 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.dieRed.withValues(alpha: 0.35),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.replay_rounded,
+                  color: AppColors.dieRed,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.mistakesReviewMode,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.dieRed,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  key: const Key('quiz_exit_mistakes'),
+                  onTap: () =>
+                      ref.read(quizProvider.notifier).exitMistakesReview(),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white12 : Colors.black12,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      l10n.exit,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
         Row(
           children: [
@@ -175,7 +229,9 @@ class QuizScreen extends ConsumerWidget {
                       ? l10n.srsReview
                       : isFavMode
                           ? l10n.focusedQuiz
-                          : l10n.quizMode,
+                          : isMistakesMode
+                              ? l10n.mistakesReview
+                              : l10n.quizMode,
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
@@ -191,7 +247,9 @@ class QuizScreen extends ConsumerWidget {
                       ? l10n.practicingDueWords
                       : isFavMode
                           ? l10n.reviewingFavorites
-                          : l10n.tapCorrectArticle,
+                          : isMistakesMode
+                              ? l10n.practicingMistakes
+                              : l10n.tapCorrectArticle,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -203,7 +261,7 @@ class QuizScreen extends ConsumerWidget {
               ],
             ),
             const Spacer(),
-            if (!isFavMode && !isSrsMode && srsState.dueCount > 0) ...[
+            if (!isFavMode && !isSrsMode && !isMistakesMode && srsState.dueCount > 0) ...[
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: ActionChip(
@@ -227,7 +285,7 @@ class QuizScreen extends ConsumerWidget {
                 ),
               ),
             ],
-            if (!isFavMode && !isSrsMode && favState.favorites.isNotEmpty) ...[
+            if (!isFavMode && !isSrsMode && !isMistakesMode && favState.favorites.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: ActionChip(
@@ -246,6 +304,28 @@ class QuizScreen extends ConsumerWidget {
                     ref
                         .read(quizProvider.notifier)
                         .startFavoritesReview(favState.favorites);
+                  },
+                ),
+              ),
+            ],
+            if (!isFavMode && !isSrsMode && !isMistakesMode && state.mistakesCount > 0) ...[
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ActionChip(
+                  key: const Key('quiz_mistakes_chip'),
+                  avatar: const Icon(
+                    Icons.replay_rounded,
+                    color: AppColors.dieRed,
+                    size: 16,
+                  ),
+                  label: Text('${l10n.mistakes} (${state.mistakesCount})'),
+                  backgroundColor: AppColors.dieRed
+                      .withValues(alpha: isDark ? 0.15 : 0.10),
+                  side: BorderSide(
+                    color: AppColors.dieRed.withValues(alpha: 0.3),
+                  ),
+                  onPressed: () {
+                    ref.read(quizProvider.notifier).startMistakesReview();
                   },
                 ),
               ),
@@ -765,6 +845,31 @@ class QuizScreen extends ConsumerWidget {
 
   Widget _buildSessionComplete(
       bool isDark, WidgetRef ref, AppLocalizations l10n) {
+    final state = ref.watch(quizProvider);
+    final isMistakesMode = state.isMistakesMode;
+    final isFavMode = state.isFavoritesMode;
+
+    final title = isMistakesMode
+        ? l10n.mistakesReviewComplete
+        : isFavMode
+            ? l10n.focusedReview
+            : l10n.allCaughtUpTitle;
+
+    final subtitle = isMistakesMode
+        ? l10n.mistakesReviewCompleteSubtitle
+        : isFavMode
+            ? l10n.reviewingFavorites
+            : l10n.allCaughtUpSubtitle;
+
+    VoidCallback onExit;
+    if (isMistakesMode) {
+      onExit = () => ref.read(quizProvider.notifier).exitMistakesReview();
+    } else if (isFavMode) {
+      onExit = () => ref.read(quizProvider.notifier).exitFavoritesReview();
+    } else {
+      onExit = () => ref.read(quizProvider.notifier).exitSrsReview();
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -774,19 +879,19 @@ class QuizScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.correctGreen
+                color: (isMistakesMode ? AppColors.dieRed : AppColors.correctGreen)
                     .withValues(alpha: isDark ? 0.18 : 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.celebration_rounded,
+              child: Icon(
+                isMistakesMode ? Icons.auto_awesome_rounded : Icons.celebration_rounded,
                 size: 52,
-                color: AppColors.correctGreen,
+                color: isMistakesMode ? AppColors.dieRed : AppColors.correctGreen,
               ),
             ),
             const SizedBox(height: 24),
             Text(
-              l10n.allCaughtUpTitle,
+              title,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 24,
@@ -798,7 +903,7 @@ class QuizScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              l10n.allCaughtUpSubtitle,
+              subtitle,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -811,8 +916,7 @@ class QuizScreen extends ConsumerWidget {
             const SizedBox(height: 28),
             ElevatedButton.icon(
               key: const Key('quiz_complete_continue'),
-              onPressed: () =>
-                  ref.read(quizProvider.notifier).exitSrsReview(),
+              onPressed: onExit,
               icon: const Icon(Icons.play_arrow_rounded),
               label: Text(l10n.backToQuiz),
               style: ElevatedButton.styleFrom(

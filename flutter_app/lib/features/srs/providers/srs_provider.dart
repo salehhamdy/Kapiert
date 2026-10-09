@@ -65,6 +65,7 @@ class SrsNotifier extends StateNotifier<SrsState> {
 
   /// Resets all SRS data.
   Future<void> reset() async {
+    state = const SrsState();
     await _repo.resetSrs();
     await refresh();
   }

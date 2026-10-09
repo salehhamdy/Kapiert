@@ -134,6 +134,14 @@ class AuthRemoteDS {
     await _client!.auth.resetPasswordForEmail(email);
   }
 
+  /// Update the current authenticated user's password.
+  static Future<void> updatePassword(String newPassword) async {
+    _requireClient();
+    await _client!.auth.updateUser(
+      UserAttributes(password: newPassword),
+    );
+  }
+
   /// Update the user's display name.
   ///
   /// Auth user metadata is the source of truth (it's what [currentUser]

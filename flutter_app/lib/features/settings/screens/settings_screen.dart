@@ -11,12 +11,13 @@ import '../../history/providers/history_provider.dart';
 import '../../lookup/providers/lookup_provider.dart';
 import '../../quiz/providers/quiz_provider.dart';
 import '../providers/settings_provider.dart';
-import '../../../data/datasources/auth_remote_ds.dart';
 import '../../auth/logout_flow.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../legal/screens/legal_document_screen.dart';
 import '../../legal/providers/terms_consent_provider.dart';
 import '../../notifications/widgets/notification_settings_sheet.dart';
+import '../../profile/providers/achievements_provider.dart';
+import '../../srs/providers/srs_provider.dart';
 import '../widgets/offline_cache_sheet.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -290,23 +291,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(height: 28),
 
                 // ── Session Section ───────────────────────────────────────
-                _SectionTitle(title: l10n.sectionSession, isDark: isDark),
-                const SizedBox(height: 12),
-
-                _SettingsTile(
-                  icon: Icons.lock_outline_rounded,
-                  title: l10n.changePassword,
-                  subtitle: l10n.changePasswordSubtitle,
-                  isDark: isDark,
-                  onTap: AuthRemoteDS.isEnabled ? () {} : null,
-                ),
-
-                // Log out — destructive, uses die-red
-                if (user != null)
+                if (user != null) ...[
+                  const SizedBox(height: 28),
+                  _SectionTitle(title: l10n.sectionSession, isDark: isDark),
+                  const SizedBox(height: 12),
                   _LogOutTile(
                     isDark: isDark,
                     onTap: () => confirmAndLogout(context, ref),
                   ),
+                ],
 
                 const SizedBox(height: 28),
 
@@ -454,7 +447,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           TextButton(
             onPressed: () async {
               await ref.read(historyProvider.notifier).clearAll();
+              await ref.read(srsProvider.notifier).reset();
               ref.read(quizProvider.notifier).reset();
+              ref.read(achievementsProvider.notifier).refresh();
               if (context.mounted) {
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(

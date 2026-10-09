@@ -8,6 +8,7 @@ import '../../../core/errors/failures.dart';
 import '../../../shared/widgets/auth_logo_header.dart';
 import '../../../shared/widgets/auth_widgets.dart';
 import '../widgets/configure_supabase_sheet.dart';
+import 'reset_password_screen.dart';
 import 'sign_up_screen.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -73,28 +74,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     }
   }
 
-  Future<void> _forgotPassword() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter your email above first.')),
-      );
-      return;
-    }
-    try {
-      await ref.read(authProvider.notifier).resetPassword(email: email);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Reset link sent to $email')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_friendlyError(e.toString()))),
-        );
-      }
-    }
+  void _forgotPassword() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ResetPasswordScreen(
+          initialEmail: _emailController.text.trim(),
+        ),
+      ),
+    );
   }
 
   String _friendlyError(String raw) {

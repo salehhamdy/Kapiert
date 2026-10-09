@@ -22,19 +22,22 @@
 |---|---|
 | 🔍 Instant article lookup (90,000+ nouns) | ✅ Live |
 | 🎯 Quiz mode with correct/incorrect tracking | ✅ Live |
+| 🔄 Concentrated Mistakes Review Mode (drill incorrect articles) | ✅ Live |
 | 🃏 Spaced repetition (SRS) & smart scheduling | ✅ Live |
-| 📜 Full lookup history with filters | ✅ Live |
+| 📜 Full lookup history with filters & SRS-synchronized reset | ✅ Live |
 | ⭐ Favorites & focused review mode | ✅ Live |
 | 🔥 Daily streak tracking | ✅ Live |
-| 👤 User profile & article mastery breakdown | ✅ Live |
+| 👤 User profile with article mastery & password management | ✅ Live |
+| 🔑 Secure password reset via email recovery | ✅ Live |
 | 🌙 Dark / Light mode | ✅ Live |
 | 🌐 Wiktionary fallback for unknown words | ✅ Live |
 | 📱 Android, Windows, Web | ✅ Live |
+| 📴 Full offline mode with gender breakdown & extended cache | ✅ Live |
 | ☁️ Cloud sync via Supabase (history, streak, settings) | ✅ Live |
 | 🔐 User accounts (email OTP, Google Sign-In) | ✅ Live |
 | 🛡️ First-use Terms & Privacy Policy consent gate | ✅ Live |
 | 📈 Advanced stats (weekly heatmap & progress trends) | ✅ Live |
-| 🏆 Achievements & milestone badges (19 unlockables) | ✅ Live |
+| 🏆 6-Month Achievements & Milestone Badges (up to 180 days) | ✅ Live |
 | 📝 Example sentences per word with multilingual translations | ✅ Live |
 | 🌐 Multi-language UI (English, Arabic RTL, Turkish, German) | ✅ Live |
 

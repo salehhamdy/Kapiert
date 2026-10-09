@@ -48,4 +48,8 @@ class AuthRepositoryImpl implements IAuthRepository {
   @override
   Future<void> updateDisplayName(String name) =>
       AuthRemoteDS.updateDisplayName(name);
+
+  @override
+  Future<void> updatePassword(String newPassword) =>
+      AuthRemoteDS.updatePassword(newPassword);
 }

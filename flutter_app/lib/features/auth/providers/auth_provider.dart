@@ -133,6 +133,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(user: _repo.currentUser, clearError: true);
   }
 
+  /// Update the authenticated user's password.
+  Future<void> updatePassword(String newPassword) async {
+    state = state.copyWith(loading: true, clearError: true);
+    try {
+      await _repo.updatePassword(newPassword);
+      state = state.copyWith(loading: false);
+    } catch (e) {
+      state = state.copyWith(loading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
   void clearError() => state = state.copyWith(clearError: true);
 }
 

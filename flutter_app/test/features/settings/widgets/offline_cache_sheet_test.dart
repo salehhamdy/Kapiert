@@ -17,8 +17,12 @@ void main() {
 
   setUp(() {
     mockLocalDS = MockArticleLocalDS();
+    when(() => mockLocalDS.getCachedStats()).thenAnswer(
+      (_) async => {'total': 42, 'der': 16, 'die': 14, 'das': 12},
+    );
     when(() => mockLocalDS.getCachedCount()).thenAnswer((_) async => 42);
     when(() => mockLocalDS.preseedCoreVocabulary()).thenAnswer((_) async => 100);
+    when(() => mockLocalDS.preseedExtendedVocabulary()).thenAnswer((_) async => 130);
     when(() => mockLocalDS.clearCache()).thenAnswer((_) async {});
   });
 
@@ -43,12 +47,20 @@ void main() {
   }
 
   group('OfflineCacheSheet Widget Tests', () {
-    testWidgets('renders title, article count, and action buttons', (tester) async {
+    testWidgets('renders title, article count, gender breakdown, and action buttons', (tester) async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
       expect(find.text('Offline Article Cache'), findsOneWidget);
+      expect(find.text('Ready for Offline Use'), findsOneWidget);
       expect(find.text('42 words'), findsOneWidget);
+      expect(find.text('Articles by Gender'), findsOneWidget);
+      expect(find.text('der'), findsOneWidget);
+      expect(find.text('16'), findsOneWidget);
+      expect(find.text('die'), findsOneWidget);
+      expect(find.text('14'), findsOneWidget);
+      expect(find.text('das'), findsOneWidget);
+      expect(find.text('12'), findsOneWidget);
       expect(find.byKey(const Key('preseed_vocab_btn')), findsOneWidget);
       expect(find.byKey(const Key('clear_offline_cache_btn')), findsOneWidget);
     });
@@ -61,10 +73,10 @@ void main() {
       await tester.tap(find.byKey(const Key('preseed_vocab_btn')));
       await tester.pumpAndSettle();
 
-      verify(() => mockLocalDS.preseedCoreVocabulary()).called(1);
+      verify(() => mockLocalDS.preseedExtendedVocabulary()).called(1);
       expect(find.byType(SnackBar), findsOneWidget);
       expect(
-        find.text('Essential offline vocabulary loaded successfully!'),
+        find.text('Extended vocabulary cached successfully!'),
         findsOneWidget,
       );
     });

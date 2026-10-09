@@ -13,4 +13,5 @@ abstract interface class IAuthRepository {
   Future<void> verifyOTP({required String email, required String token});
   Future<void> resendOTP({required String email});
   Future<void> updateDisplayName(String name);
+  Future<void> updatePassword(String newPassword);
 }

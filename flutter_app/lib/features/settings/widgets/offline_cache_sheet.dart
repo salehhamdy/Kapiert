@@ -28,7 +28,7 @@ class OfflineCacheSheet extends ConsumerStatefulWidget {
 }
 
 class _OfflineCacheSheetState extends ConsumerState<OfflineCacheSheet> {
-  int _cachedCount = 0;
+  Map<String, int> _stats = {'total': 0, 'der': 0, 'die': 0, 'das': 0};
   bool _isLoading = true;
 
   @override
@@ -39,10 +39,10 @@ class _OfflineCacheSheetState extends ConsumerState<OfflineCacheSheet> {
 
   Future<void> _refreshCount() async {
     setState(() => _isLoading = true);
-    final count = await ref.read(articleLocalDSProvider).getCachedCount();
+    final stats = await ref.read(articleLocalDSProvider).getCachedStats();
     if (mounted) {
       setState(() {
-        _cachedCount = count;
+        _stats = stats;
         _isLoading = false;
       });
     }
@@ -53,6 +53,11 @@ class _OfflineCacheSheetState extends ConsumerState<OfflineCacheSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
     final localDS = ref.read(articleLocalDSProvider);
+    final total = _stats['total'] ?? 0;
+    final der = _stats['der'] ?? 0;
+    final die = _stats['die'] ?? 0;
+    final das = _stats['das'] ?? 0;
+    final isReady = total > 0;
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -120,7 +125,48 @@ class _OfflineCacheSheetState extends ConsumerState<OfflineCacheSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // Status Badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: isReady
+                    ? AppColors.dasGreen.withValues(alpha: 0.12)
+                    : AppColors.streakOrange.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isReady
+                      ? AppColors.dasGreen.withValues(alpha: 0.3)
+                      : AppColors.streakOrange.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isReady
+                        ? Icons.check_circle_rounded
+                        : Icons.info_outline_rounded,
+                    size: 18,
+                    color: isReady ? AppColors.dasGreen : AppColors.streakOrange,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    isReady
+                        ? l10n.offlineReadyStatus
+                        : l10n.offlineEmptyStatus,
+                    style: GoogleFonts.nunito(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isReady
+                          ? AppColors.dasGreen
+                          : AppColors.streakOrange,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
 
             // Stats Card
             Container(
@@ -154,13 +200,13 @@ class _OfflineCacheSheetState extends ConsumerState<OfflineCacheSheet> {
                           ),
                         ),
                         Text(
-                          _isLoading ? '…' : '$_cachedCount words',
+                          _isLoading ? '…' : '$total words',
                           style: GoogleFonts.nunito(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
                             color: isDark
-                                ? AppColors.textPrimaryDark
-                                : AppColors.textPrimaryLight,
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimaryLight,
                           ),
                         ),
                       ],
@@ -174,9 +220,71 @@ class _OfflineCacheSheetState extends ConsumerState<OfflineCacheSheet> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
-            // Pre-seed Card
+            // Gender Breakdown Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: (isDark ? Colors.white : Colors.black)
+                    .withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: (isDark ? Colors.white : Colors.black)
+                      .withValues(alpha: 0.06),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.offlineCacheBreakdown,
+                    style: GoogleFonts.nunito(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ArticleGenderPill(
+                          article: 'der',
+                          count: der,
+                          color: AppColors.derBlue,
+                          isDark: isDark,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _ArticleGenderPill(
+                          article: 'die',
+                          count: die,
+                          color: AppColors.dieRed,
+                          isDark: isDark,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _ArticleGenderPill(
+                          article: 'das',
+                          count: das,
+                          color: AppColors.dasGreen,
+                          isDark: isDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Pre-seed Card (Core & Extended)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -197,7 +305,7 @@ class _OfflineCacheSheetState extends ConsumerState<OfflineCacheSheet> {
                           color: AppColors.derBlue, size: 20),
                       const SizedBox(width: 8),
                       Text(
-                        l10n.preseedOfflineVocab,
+                        l10n.preseedExtendedVocab,
                         style: GoogleFonts.nunito(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -210,7 +318,7 @@ class _OfflineCacheSheetState extends ConsumerState<OfflineCacheSheet> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    l10n.preseedOfflineVocabDesc,
+                    l10n.preseedExtendedVocabDesc,
                     style: TextStyle(
                       fontSize: 12,
                       color: isDark
@@ -224,7 +332,7 @@ class _OfflineCacheSheetState extends ConsumerState<OfflineCacheSheet> {
                     child: ElevatedButton.icon(
                       key: const Key('preseed_vocab_btn'),
                       icon: const Icon(Icons.download_done_rounded, size: 18),
-                      label: Text(l10n.preseedOfflineVocab),
+                      label: Text(l10n.preseedExtendedVocab),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.derBlue,
                         foregroundColor: Colors.white,
@@ -233,12 +341,12 @@ class _OfflineCacheSheetState extends ConsumerState<OfflineCacheSheet> {
                         ),
                       ),
                       onPressed: () async {
-                        await localDS.preseedCoreVocabulary();
+                        await localDS.preseedExtendedVocabulary();
                         await _refreshCount();
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(l10n.preseedSuccess),
+                              content: Text(l10n.preseedExtendedSuccess),
                               behavior: SnackBarBehavior.floating,
                             ),
                           );
@@ -287,6 +395,53 @@ class _OfflineCacheSheetState extends ConsumerState<OfflineCacheSheet> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ArticleGenderPill extends StatelessWidget {
+  const _ArticleGenderPill({
+    required this.article,
+    required this.count,
+    required this.color,
+    required this.isDark,
+  });
+
+  final String article;
+  final int count;
+  final Color color;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            article,
+            style: GoogleFonts.nunito(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '$count',
+            style: GoogleFonts.nunito(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+        ],
       ),
     );
   }

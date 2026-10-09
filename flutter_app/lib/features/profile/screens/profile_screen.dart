@@ -19,6 +19,7 @@ import '../providers/achievements_provider.dart';
 import '../providers/advanced_stats_provider.dart';
 import '../widgets/achievements_card.dart';
 import '../widgets/advanced_stats_card.dart';
+import '../widgets/change_password_sheet.dart';
 import '../widgets/edit_name_sheet.dart';
 import '../widgets/profile_avatar.dart';
 
@@ -61,6 +62,44 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.nameUpdated)));
+    }
+  }
+
+  Future<void> _changePassword() async {
+    final user = ref.read(authProvider).user;
+    final l10n = AppLocalizations.of(context);
+    if (user == null) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.signInToChangePassword),
+          content: Text(l10n.authRequiredToChangePassword),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              key: const Key('guest_dialog_sign_in_btn'),
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SignInScreen()),
+                );
+              },
+              child: Text(l10n.signIn),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final saved = await showChangePasswordSheet(context);
+    if (saved && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.passwordUpdated)),
+      );
     }
   }
 
@@ -115,10 +154,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     _SectionTitle(l10n.spacedRepetition, isDark: isDark),
                     const SizedBox(height: 12),
                     _SrsMasteryCard(stats: srs.stats, isDark: isDark),
+                    const SizedBox(height: 28),
+                    _SectionTitle(l10n.sectionAccount, isDark: isDark),
+                    const SizedBox(height: 12),
                     if (user != null) ...[
-                      const SizedBox(height: 28),
-                      _SectionTitle(l10n.sectionAccount, isDark: isDark),
-                      const SizedBox(height: 12),
                       _ProfileTile(
                         key: const Key('profile_edit_name_tile'),
                         icon: Icons.badge_outlined,
@@ -143,9 +182,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             : providerLabel(user.provider),
                         isDark: isDark,
                       ),
+                      _ProfileTile(
+                        key: const Key('profile_change_password_tile'),
+                        icon: Icons.lock_outline_rounded,
+                        title: l10n.changePassword,
+                        subtitle: l10n.changePasswordSubtitle,
+                        isDark: isDark,
+                        onTap: _changePassword,
+                      ),
                       const SizedBox(height: 8),
                       _LogOutButton(
                         onTap: () => confirmAndLogout(context, ref),
+                      ),
+                    ] else ...[
+                      _ProfileTile(
+                        key: const Key('profile_guest_change_password_tile'),
+                        icon: Icons.lock_outline_rounded,
+                        title: l10n.changePassword,
+                        subtitle: l10n.signInToChangePassword,
+                        isDark: isDark,
+                        onTap: _changePassword,
                       ),
                     ],
                   ],

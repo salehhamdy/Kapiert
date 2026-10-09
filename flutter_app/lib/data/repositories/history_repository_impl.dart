@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../core/storage/storage_service.dart';
 import '../../domain/models/advanced_stats.dart';
 import '../../domain/models/lookup_history.dart';
+import '../../domain/models/word_model.dart';
 import '../../domain/repositories/i_history_repository.dart';
 import '../../domain/repositories/i_sync_repository.dart';
 
@@ -37,6 +38,14 @@ class HistoryRepositoryImpl implements IHistoryRepository {
     await StorageService.clearHistory();
     unawaited(_sync.clearRemoteHistory());
   }
+
+  @override
+  Future<List<WordModel>> getIncorrectWords({int limit = 50}) =>
+      StorageService.getIncorrectQuizWords(limit: limit);
+
+  @override
+  Future<int> getIncorrectWordsCount() =>
+      StorageService.getIncorrectWordsCount();
 
   @override
   int getStreak() => StorageService.getStreak();
