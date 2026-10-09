@@ -12,6 +12,7 @@ import '../../features/settings/screens/settings_screen.dart';
 import '../../features/legal/screens/legal_document_screen.dart';
 import '../../features/legal/screens/first_use_consent_screen.dart';
 import '../../features/lookup/screens/grammar_rules_screen.dart';
+import '../../features/quiz/screens/suffix_quiz_screen.dart';
 
 /// Named route constants.
 class AppRoutes {
@@ -24,6 +25,7 @@ class AppRoutes {
   static const legal = '/legal';
   static const consent = '/consent';
   static const grammarRules = '/grammar-rules';
+  static const suffixQuiz = '/suffix-quiz';
 }
 
 /// Route map for [MaterialApp.routes].
@@ -38,6 +40,7 @@ class AppRouter {
         AppRoutes.legal: (_) => const LegalDocumentScreen(),
         AppRoutes.consent: (_) => const FirstUseConsentScreen(),
         AppRoutes.grammarRules: (_) => const GrammarRulesScreen(),
+        AppRoutes.suffixQuiz: (_) => const SuffixQuizScreen(),
       };
 }
 

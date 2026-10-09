@@ -95,6 +95,13 @@ class _GrammarRulesScreenState extends ConsumerState<GrammarRulesScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            key: const Key('grammar_rules_quiz_action'),
+            icon: const Icon(Icons.school_rounded, color: AppColors.derBlue),
+            tooltip: l10n.startSuffixQuiz,
+            onPressed: () =>
+                Navigator.of(context).pushNamed(AppRoutes.suffixQuiz),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Center(
@@ -122,7 +129,7 @@ class _GrammarRulesScreenState extends ConsumerState<GrammarRulesScreen> {
           children: [
             // Search field
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
               child: TextField(
                 key: const Key('grammar_rules_search_field'),
                 controller: _searchController,
@@ -153,6 +160,79 @@ class _GrammarRulesScreenState extends ConsumerState<GrammarRulesScreen> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+
+            // Suffix Quiz Practice Banner
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: InkWell(
+                key: const Key('grammar_rules_practice_banner'),
+                onTap: () => Navigator.of(context).pushNamed(AppRoutes.suffixQuiz),
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.derBlue.withValues(alpha: isDark ? 0.20 : 0.12),
+                        AppColors.derBlue.withValues(alpha: isDark ? 0.10 : 0.05),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.derBlue.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppColors.derBlue,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.psychology_rounded,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.startSuffixQuiz,
+                              style: GoogleFonts.nunito(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? Colors.white : const Color(0xFF1E3A8A),
+                              ),
+                            ),
+                            Text(
+                              l10n.suffixQuizSubtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.nunito(
+                                fontSize: 11,
+                                color: isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondaryLight,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 13,
+                        color: AppColors.derBlue,
+                      ),
+                    ],
                   ),
                 ),
               ),

@@ -2011,6 +2011,91 @@ class AppLocalizations {
         'de': 'Tippe auf ein Beispiel, um es nachzuschlagen',
       });
 
+  // ── Suffix Grammar Rules Quiz ──────────────────────────────────────────────
+  String get suffixQuizTitle => _t({
+        'en': 'Suffix Rules Quiz',
+        'ar': 'اختبار قواعد اللواحق',
+        'tr': 'Son Ek Kuralları Testi',
+        'de': 'Endungs-Quiz',
+      });
+
+  String get suffixQuizSubtitle => _t({
+        'en': 'Test your mastery of German noun suffix patterns',
+        'ar': 'اختبر إتقانك لقواعد لواحق ونهايات الأسماء الألمانية',
+        'tr': 'Almanca isim son ek kalıplarındaki bilginizi test edin',
+        'de': 'Teste dein Wissen über deutsche Nomen-Endungen',
+      });
+
+  String get startSuffixQuiz => _t({
+        'en': 'Practice Suffix Rules',
+        'ar': 'تدرب على قواعد اللواحق',
+        'tr': 'Son Ek Kurallarını Çalış',
+        'de': 'Endungsregeln üben',
+      });
+
+  String get whichArticleSuffix => _t({
+        'en': 'Which article do nouns with this suffix take?',
+        'ar': 'ما هي أداة التعريف للأسماء ذات هذه اللاحقة؟',
+        'tr': 'Bu son eki alan isimler hangi artikeli alır?',
+        'de': 'Welchen Artikel haben Nomen mit dieser Endung?',
+      });
+
+  String get whichArticleWord => _t({
+        'en': 'Which article does this noun take based on its suffix?',
+        'ar': 'ما هي أداة التعريف لهذا الاسم بناءً على لاحقته؟',
+        'tr': 'Son ekine göre bu isim hangi artikeli alır?',
+        'de': 'Welchen Artikel hat dieses Nomen aufgrund seiner Endung?',
+      });
+
+  String get roundComplete => _t({
+        'en': 'Round Complete!',
+        'ar': 'اكتملت الجولة!',
+        'tr': 'Tur Tamamlandı!',
+        'de': 'Runde abgeschlossen!',
+      });
+
+  String roundScore(int score, int total, int percent) {
+    switch (languageCode) {
+      case 'de':
+        return 'Du hast $score von $total richtig ($percent%)';
+      case 'ar':
+        return 'أحرزت $score من أصل $total ($percent%)';
+      case 'tr':
+        return '$total üzerinden $score doğru ($percent%)';
+      case 'en':
+      default:
+        return 'You scored $score out of $total ($percent%)';
+    }
+  }
+
+  String get playAgain => _t({
+        'en': 'Play Again',
+        'ar': 'العب مجدداً',
+        'tr': 'Tekrar Oyna',
+        'de': 'Nochmal spielen',
+      });
+
+  String get reviewRules => _t({
+        'en': 'Review Rules',
+        'ar': 'مراجعة القواعد',
+        'tr': 'Kuralları İncele',
+        'de': 'Regeln wiederholen',
+      });
+
+  String questionProgress(int current, int total) {
+    switch (languageCode) {
+      case 'de':
+        return 'Frage $current von $total';
+      case 'ar':
+        return 'السؤال $current من $total';
+      case 'tr':
+        return 'Soru $current / $total';
+      case 'en':
+      default:
+        return 'Question $current of $total';
+    }
+  }
+
   // ── Internal translation selector ──────────────────────────────────────────
   String _t(Map<String, String> values) {
     return values[languageCode] ?? values['en'] ?? '';

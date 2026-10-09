@@ -42,6 +42,7 @@
 | 💡 Reactive hints & explanations preference (clean result cards toggle) | ✅ Live |
 | 📚 German suffix gender rule engine (24 rules in 4 languages) | ✅ Live |
 | 📖 German Grammar Rules Cheat Sheet (suffix reference, search & tap lookup) | ✅ Live |
+| 🧪 Suffix Grammar Rules Quiz (interactive 10-question pattern & word drill) | ✅ Live |
 | 🌐 Multi-language UI (English, Arabic RTL, Turkish, German) | ✅ Live |
 
 ---
@@ -277,6 +278,7 @@ flutter analyze
 ### Phase 4 — Content & Polish
 - [x] 🌍 English translations for all nouns (Wiktionary enrichment)
 - [x] 📖 German Grammar Rules Cheat Sheet (24 suffix guidelines, search & tap lookup)
+- [x] 🧪 Suffix Grammar Rules Quiz (interactive 10-question pattern & word drill)
 - [ ] 🔊 Audio pronunciation (text-to-speech)
 - [x] 📝 Example sentences per word
 - [x] 🌐 Multi-language UI (Arabic, Turkish, English, German)

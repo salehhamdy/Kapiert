@@ -325,6 +325,19 @@ Implemented across [`GrammarRulesScreen`](file:///c:/Users/ASUS/Downloads/German
   - **ResultCard Contextual Hint**: "View all grammar rules →" link at the bottom of the active grammar hint view.
 - **Full Multilingual Localization**: Complete native translations across English, German, Turkish, and Arabic (with complete RTL text directionality).
 
+#### 16. Suffix Grammar Rules Quiz Drill Mode
+Implemented across [`SuffixQuizScreen`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/quiz/screens/suffix_quiz_screen.dart), [`SuffixQuizNotifier`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/quiz/providers/suffix_quiz_provider.dart), [`AppRouter`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/shared/router/app_router.dart), and [`GrammarRulesScreen`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/lib/features/lookup/screens/grammar_rules_screen.dart):
+- **Specialized Rules Drilling**: A focused 10-question quiz session explicitly designed to test and reinforce learner intuition for German suffix gender patterns and their exceptions.
+- **Dual Question Generation Mechanics**:
+  - **Suffix Pattern Prompts**: Directly questions which article nouns with a specific suffix take (e.g. *Which article do nouns with this suffix take?* **`-ung`** $\rightarrow$ *die*).
+  - **Word Application Prompts**: Questions the gender of a real German word based on its suffix rule (e.g. *Which article does this noun take based on its suffix?* **`Mädchen`** (*Suffix: -chen*) $\rightarrow$ *das*).
+- **Interactive 3-Button Article Interface**: Large, responsive *der*, *die*, and *das* buttons with immediate visual state feedback (green checkmark for correct, red highlight for incorrect selection, and glowing correct answer reveal).
+- **Contextual Answer Feedback**: Displays the full localized grammar rule explanation (`localizedRule`), reliability percentage badge, and notable exceptions upon answering before continuing.
+- **Round Progression & Linear Indicator**: Smooth animated progress bar tracking question progress (`Question X of 10`) and live score display in the AppBar.
+- **Completion Celebration Screen**: Trophy celebration icon, final score summary with accuracy percentage, and dual action buttons: "Play Again" (instant re-shuffle) and "Review Rules" (returns to reference sheet).
+- **Direct Entry Points**: Accessible from the Grammar Rules screen via the AppBar quiz action button and the prominent gradient drill banner.
+- **Full Multilingual Localization**: All prompts, headers, scores, and button labels translated across English, German, Turkish, and Arabic with native RTL text directionality.
+
 ---
 
 ### Spaced Repetition System (SRS) Mechanics
@@ -585,6 +598,8 @@ flutter analyze
 | **Favorites** | [`flutter_app/test/features/favorites/favorites_widget_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/favorites/favorites_widget_test.dart) | 5 | Star toggling, history favorites tab, focused review quiz. |
 | **Legal Consent Gate** | [`flutter_app/test/features/legal/app_first_use_gate_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/legal/app_first_use_gate_test.dart) | 5 | First-launch lock, legal document markdown viewers, unlock upon acceptance. |
 | **Auth & Verification** | [`flutter_app/test/features/auth/verify_email_screen_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/auth/verify_email_screen_test.dart) | 7 | OTP inputs, pasting 6-digit codes, validation errors. |
+| **Suffix Quiz Provider** | [`flutter_app/test/features/quiz/suffix_quiz_provider_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/quiz/suffix_quiz_provider_test.dart) | 7 | Question generation, balanced rules selection, correct/incorrect scoring, answer immutability, next question index advancement, round completion, and round restart. |
+| **Suffix Quiz Screen Widget** | [`flutter_app/test/features/quiz/screens/suffix_quiz_screen_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/quiz/screens/suffix_quiz_screen_test.dart) | 5 | Header rendering, target box display, 3-button interaction, answer feedback card reveal with rule explanation, next question progression, round completion celebration, and multi-language localized rendering (`de`, `ar`). |
 
 ---
 
