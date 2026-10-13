@@ -18,7 +18,7 @@ class VerifyEmailScreen extends ConsumerStatefulWidget {
 }
 
 class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
-  int _otpLength = 6;
+  static const int _otpLength = 8;
   static const int _timerSeconds = 9 * 60 + 47; // 09:47 matching mockup
   static const int _resendCooldownSeconds = 45;
 
@@ -75,21 +75,6 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     }
   }
 
-  void _setOtpLength(int newLength) {
-    if (_otpLength == newLength) return;
-    for (final c in _controllers) {
-      c.dispose();
-    }
-    for (final f in _focusNodes) {
-      f.dispose();
-    }
-    setState(() {
-      _otpLength = newLength;
-      _initFields();
-      _errorMessage = null;
-    });
-  }
-
   void _startTimer() {
     _countdownTimer?.cancel();
     setState(() => _remainingSeconds = _timerSeconds);
@@ -116,31 +101,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       return;
     }
 
-    // If an 8-digit code was pasted while in 6-digit mode, auto-switch to 8
-    if (digits.length == 8 && _otpLength != 8) {
-      _setOtpLength(8);
-      for (int k = 0; k < 8; k++) {
-        _controllers[k].text = digits[k];
-      }
-      _focusNodes.last.unfocus();
-      if (mounted) setState(() {});
-      if (_otpComplete) _verify();
-      return;
-    }
-
-    // If a 6-digit code was pasted while in 8-digit mode, auto-switch to 6
-    if (digits.length == 6 && _otpLength != 6) {
-      _setOtpLength(6);
-      for (int k = 0; k < 6; k++) {
-        _controllers[k].text = digits[k];
-      }
-      _focusNodes.last.unfocus();
-      if (mounted) setState(() {});
-      if (_otpComplete) _verify();
-      return;
-    }
-
-    // Case 1: Full OTP pasted (length == _otpLength)
+    // Case 1: Full 8-digit OTP pasted
     if (digits.length == _otpLength) {
       for (int k = 0; k < _otpLength; k++) {
         _controllers[k].text = digits[k];
@@ -375,7 +336,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
               RichText(
                 textAlign: TextAlign.center,
                 text: TextSpan(
-                  text: 'We sent a $_otpLength-digit code to\n',
+                  text: 'We sent an 8-digit code to\n',
                   style: GoogleFonts.nunito(
                     fontSize: 14,
                     color: textSecondary,
@@ -399,44 +360,26 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                 _InlineError(message: _errorMessage!),
                 const SizedBox(height: 12),
               ],
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(_otpLength, (i) {
-                  return Padding(
-                    padding: EdgeInsets.only(
-                        right: i < _otpLength - 1 ? (_otpLength == 8 ? 6 : 10) : 0),
-                    child: _OtpBox(
-                      controller: _controllers[i],
-                      focusNode: _focusNodes[i],
-                      autofocus: i == 0,
-                      width: _otpLength == 8 ? 36 : 44,
-                      onChanged: (val) => _onDigitInput(i, val),
-                    ),
-                  );
-                }),
-              ).animate().fadeIn(delay: 160.ms, duration: 400.ms),
-              const SizedBox(height: 12),
-              Center(
-                child: TextButton(
-                  onPressed: () => _setOtpLength(_otpLength == 6 ? 8 : 6),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    _otpLength == 6
-                        ? 'Received an 8-digit code? Switch to 8 boxes'
-                        : 'Switch to 6-digit code',
-                    style: GoogleFonts.nunito(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.derBlue,
-                    ),
-                  ),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_otpLength, (i) {
+                    return Padding(
+                      padding: EdgeInsets.only(
+                          right: i < _otpLength - 1 ? 6 : 0),
+                      child: _OtpBox(
+                        controller: _controllers[i],
+                        focusNode: _focusNodes[i],
+                        autofocus: i == 0,
+                        width: 36,
+                        onChanged: (val) => _onDigitInput(i, val),
+                      ),
+                    );
+                  }),
                 ),
-              ),
-              const SizedBox(height: 24),
+              ).animate().fadeIn(delay: 160.ms, duration: 400.ms),
+              const SizedBox(height: 28),
 
               // ── Verify button ─────────────────────────────────────────────
               SizedBox(
