@@ -650,3 +650,7 @@ The repository includes [`render.yaml`](file:///c:/Users/ASUS/Downloads/German_A
 1. Connect the repository at [dashboard.render.com](https://dashboard.render.com).
 2. Render reads `render.yaml`, downloads `nouns.csv`, installs dependencies, and launches `uvicorn main:app`.
 3. Use the deployed URL as `API_BASE_URL` in Flutter builds.
+
+### 4. Production Deployment & Email Templates
+For complete instructions on configuring custom transactional SMTP (Resend), branded 6-digit OTP email templates, Supabase rate limits, database RLS, and compiling production Android AAB/APK bundles for Google Play, see the [Production Deployment Guide](file:///c:/Users/ASUS/Downloads/German_Articles/docs/PRODUCTION_DEPLOYMENT_GUIDE.md) and [`supabase/email_templates/`](file:///c:/Users/ASUS/Downloads/German_Articles/supabase/email_templates/).
+

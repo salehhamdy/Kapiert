@@ -221,7 +221,11 @@ Base URL: `http://127.0.0.1:8000` (local) or your Render deployment URL.
    - **Redirect URLs**: Under **Authentication → URL Configuration**, add:
      - `io.supabase.kapiert://login-callback/` (Android)
      - `http://localhost:**` (Web local testing)
-4. **Connect the App**:
+4. **Custom SMTP & OTP Email Templates (Production)**:
+   - Supabase default mail is capped at 3 emails/hour. For production delivery, configure custom SMTP (e.g. Resend) under **Project Settings ➔ Authentication ➔ SMTP Settings**.
+   - Paste the branded templates from [`supabase/email_templates/confirm_signup.html`](file:///c:/Users/ASUS/Downloads/German_Articles/supabase/email_templates/confirm_signup.html) and [`reset_password.html`](file:///c:/Users/ASUS/Downloads/German_Articles/supabase/email_templates/reset_password.html) into **Authentication ➔ Email Templates**.
+   - See the complete [Production Deployment Guide](file:///c:/Users/ASUS/Downloads/German_Articles/docs/PRODUCTION_DEPLOYMENT_GUIDE.md) for full instructions.
+5. **Connect the App**:
    - **In-App Setup**: Tap the red banner's **`Setup Supabase`** button directly in the app to connect instantly without rebuilding!
    - **Or via build flags**: Pass `SUPABASE_URL` and `SUPABASE_ANON_KEY` via `--dart-define`
 
