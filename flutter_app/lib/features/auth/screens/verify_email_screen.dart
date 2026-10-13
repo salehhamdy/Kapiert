@@ -20,14 +20,18 @@ class VerifyEmailScreen extends ConsumerStatefulWidget {
 class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   static const int _otpLength = 6;
   static const int _timerSeconds = 9 * 60 + 47; // 09:47 matching mockup
+  static const int _resendCooldownSeconds = 45;
 
   late final List<TextEditingController> _controllers;
   late final List<FocusNode> _focusNodes;
 
   bool _isLoading = false;
+  bool _isResending = false;
   String? _errorMessage;
   int _remainingSeconds = _timerSeconds;
+  int _resendCooldown = 0;
   Timer? _countdownTimer;
+  Timer? _resendTimer;
 
   @override
   void initState() {
@@ -190,22 +194,59 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   }
 
   Future<void> _resend() async {
-    if (_remainingSeconds > 0) return;
+    if (_resendCooldown > 0 || _isResending) return;
+    setState(() {
+      _isResending = true;
+      _errorMessage = null;
+    });
+
     try {
+      debugPrint('Requesting resendOTP for ${widget.email}');
       await ref.read(authProvider.notifier).resendOTP(email: widget.email);
-      _startTimer();
+      _startResendCooldown();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Code resent to ${widget.email}')),
+          SnackBar(
+            content: Text('A new verification code was sent to ${widget.email}'),
+            backgroundColor: AppColors.derBlue,
+          ),
         );
       }
     } catch (e) {
+      debugPrint('Resend OTP failed: $e');
+      final errorStr = e.toString().toLowerCase();
+      String message = 'Failed to resend. Please try again later.';
+      if (errorStr.contains('rate limit') ||
+          errorStr.contains('over_email_send_rate_limit') ||
+          errorStr.contains('too many requests') ||
+          errorStr.contains('429')) {
+        message = 'Too many requests. Please wait a few minutes before resending.';
+      } else if (errorStr.contains('smtp') || errorStr.contains('error sending')) {
+        message = 'Email service is currently busy. Please try again later.';
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to resend. Try again later.')),
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppColors.dieRed,
+          ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isResending = false);
     }
+  }
+
+  void _startResendCooldown() {
+    _resendTimer?.cancel();
+    setState(() => _resendCooldown = _resendCooldownSeconds);
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (_resendCooldown <= 0) {
+        t.cancel();
+      } else {
+        if (mounted) setState(() => _resendCooldown--);
+      }
+    });
   }
 
   String _friendlyError(String raw) {
@@ -225,6 +266,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _resendTimer?.cancel();
     for (final c in _controllers) {
       c.dispose();
     }
@@ -350,29 +392,41 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
               // ── Resend ────────────────────────────────────────────────────
               Column(
                 children: [
-                  RichText(
-                    text: TextSpan(
-                      text: "Didn't get it? ",
-                      style:
-                          GoogleFonts.nunito(fontSize: 13, color: textSecondary),
-                      children: [
-                        WidgetSpan(
-                          child: GestureDetector(
-                            onTap: _remainingSeconds == 0 ? _resend : null,
-                            child: Text(
-                              'Resend code',
-                              style: GoogleFonts.nunito(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: _remainingSeconds == 0
-                                    ? AppColors.derBlue
-                                    : textSecondary,
-                              ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "Didn't get it? ",
+                        style:
+                            GoogleFonts.nunito(fontSize: 13, color: textSecondary),
+                      ),
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _resendCooldown == 0 && !_isResending
+                            ? _resend
+                            : null,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 8,
+                          ),
+                          child: Text(
+                            _isResending
+                                ? 'Sending...'
+                                : (_resendCooldown > 0
+                                    ? 'Resend code (${_resendCooldown}s)'
+                                    : 'Resend code'),
+                            style: GoogleFonts.nunito(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: _resendCooldown == 0 && !_isResending
+                                  ? AppColors.derBlue
+                                  : textSecondary,
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(

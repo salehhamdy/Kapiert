@@ -552,7 +552,7 @@ Both the backend and Flutter applications maintain comprehensive automated test 
 cd backend
 python -m pytest tests/ -v
 
-# 2. Flutter Unit, Widget & Integration Tests (184 tests)
+# 2. Flutter Unit, Widget & Integration Tests (186 tests)
 cd flutter_app
 flutter test
 
@@ -597,7 +597,7 @@ flutter analyze
 | **History & SRS Reset** | [`flutter_app/test/features/history/history_srs_reset_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/history/history_srs_reset_test.dart) | 1 | Verifies that clearing history synchronously resets Spaced Repetition (SRS) provider state, wiping due items and resetting due count to zero. |
 | **Favorites** | [`flutter_app/test/features/favorites/favorites_widget_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/favorites/favorites_widget_test.dart) | 5 | Star toggling, history favorites tab, focused review quiz. |
 | **Legal Consent Gate** | [`flutter_app/test/features/legal/app_first_use_gate_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/legal/app_first_use_gate_test.dart) | 5 | First-launch lock, legal document markdown viewers, unlock upon acceptance. |
-| **Auth & Verification** | [`flutter_app/test/features/auth/verify_email_screen_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/auth/verify_email_screen_test.dart) | 7 | OTP inputs, pasting 6-digit codes, validation errors. |
+| **Auth & Verification** | [`flutter_app/test/features/auth/verify_email_screen_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/auth/verify_email_screen_test.dart) | 6 | OTP input navigation, paste 6-digit codes, friendly error formatting, decoupled resend cooldown countdown, and rate-limit feedback handling. |
 | **Suffix Quiz Provider** | [`flutter_app/test/features/quiz/suffix_quiz_provider_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/quiz/suffix_quiz_provider_test.dart) | 7 | Question generation, balanced rules selection, correct/incorrect scoring, answer immutability, next question index advancement, round completion, and round restart. |
 | **Suffix Quiz Screen Widget** | [`flutter_app/test/features/quiz/screens/suffix_quiz_screen_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/features/quiz/screens/suffix_quiz_screen_test.dart) | 5 | Header rendering, target box display, 3-button interaction, answer feedback card reveal with rule explanation, next question progression, round completion celebration, and multi-language localized rendering (`de`, `ar`). |
 

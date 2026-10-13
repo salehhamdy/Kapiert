@@ -109,5 +109,35 @@ void main() {
 
       expect(find.text('Incorrect code. Check your email and try again.'), findsOneWidget);
     });
+
+    testWidgets('tapping Resend code triggers resendOTP and enters cooldown', (tester) async {
+      when(() => mockAuthRepo.resendOTP(email: 'user@example.com'))
+          .thenAnswer((_) async {});
+
+      await tester.pumpWidget(createWidgetUnderTest(email: 'user@example.com'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Resend code'), findsOneWidget);
+      await tester.tap(find.text('Resend code'));
+      await tester.pump();
+
+      verify(() => mockAuthRepo.resendOTP(email: 'user@example.com')).called(1);
+      expect(find.textContaining('A new verification code was sent'), findsOneWidget);
+      expect(find.textContaining('Resend code ('), findsOneWidget);
+    });
+
+    testWidgets('tapping Resend code when rate limited displays rate limit message', (tester) async {
+      when(() => mockAuthRepo.resendOTP(email: 'user@example.com'))
+          .thenThrow(Exception('over_email_send_rate_limit: 429'));
+
+      await tester.pumpWidget(createWidgetUnderTest(email: 'user@example.com'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Resend code'));
+      await tester.pump();
+
+      expect(find.textContaining('Too many requests'), findsOneWidget);
+    });
   });
 }
+
