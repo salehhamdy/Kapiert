@@ -38,7 +38,8 @@ class AppConfig {
             'https://dydcdfzbynoeashxoerv.supabase.co');
     supabaseAnonKey = _supabaseAnonKeyDefine.isNotEmpty
         ? _supabaseAnonKeyDefine
-        : (prefs.getString(_prefsSupabaseAnonKey) ?? '');
+        : (prefs.getString(_prefsSupabaseAnonKey) ??
+            'sb_publishable_9v80E2pzTQbEHAsD_Ukb6w_--fREKmV');
   }
 
   /// Save Supabase credentials to SharedPreferences and update memory state.
