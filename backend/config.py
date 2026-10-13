@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -45,6 +46,24 @@ class Settings:
     supabase_url: str | None = os.environ.get("SUPABASE_URL")
     supabase_jwt_secret: str | None = os.environ.get("SUPABASE_JWT_SECRET")
     supabase_enabled: bool = bool(supabase_url and supabase_jwt_secret)
+
+    # OTP verification service (see docs/OTP_SERVICE.md)
+    otp_db_path: str = os.environ.get(
+        "OTP_DB_PATH", str(Path(__file__).with_name("otp.sqlite3"))
+    )
+    otp_pepper: str | None = os.environ.get("OTP_PEPPER")
+    otp_delivery: str = os.environ.get("OTP_DELIVERY", "mock").strip().lower()
+    otp_ttl_seconds: int = int(os.environ.get("OTP_TTL_SECONDS", "300"))
+    otp_max_attempts: int = int(os.environ.get("OTP_MAX_ATTEMPTS", "5"))
+    otp_resend_cooldown_seconds: int = int(os.environ.get("OTP_RESEND_COOLDOWN_SECONDS", "60"))
+    otp_max_sends_per_hour: int = int(os.environ.get("OTP_MAX_SENDS_PER_HOUR", "5"))
+
+    # SMTP (only used when OTP_DELIVERY=smtp)
+    smtp_host: str | None = os.environ.get("SMTP_HOST")
+    smtp_port: int = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_username: str | None = os.environ.get("SMTP_USERNAME")
+    smtp_password: str | None = os.environ.get("SMTP_PASSWORD")
+    smtp_from: str | None = os.environ.get("SMTP_FROM")
 
 
 @lru_cache

@@ -43,6 +43,7 @@
 | 📚 German suffix gender rule engine (24 rules in 4 languages) | ✅ Live |
 | 📖 German Grammar Rules Cheat Sheet (suffix reference, search & tap lookup) | ✅ Live |
 | 🧪 Suffix Grammar Rules Quiz (interactive 10-question pattern & word drill) | ✅ Live |
+| 🔢 Secure CSPRNG OTP Verification Service (HMAC-SHA256, 5-min TTL, rate-limited) | ✅ Live |
 | 🌐 Multi-language UI (English, Arabic RTL, Turkish, German) | ✅ Live |
 
 ---
@@ -249,7 +250,7 @@ All tables have **Row Level Security (RLS)** — users can only access their own
 ## 🧪 Tests
 
 ```bash
-# Backend API tests (21 tests)
+# Backend API, translation & OTP verification tests (51 tests)
 cd backend
 pip install -r requirements-dev.txt
 pytest tests/ -v
@@ -306,8 +307,10 @@ Kapiert/
 │   ├── dataset.py            # In-memory noun loader
 │   ├── wiktionary.py         # Wiktionary fallback
 │   ├── models.py             # Pydantic models
-│   ├── routes/               # health · lookup · random
-│   ├── tests/                # pytest API tests
+│   ├── otp_auth/             # Secure OTP verification engine (HMAC, crypto, SQLite/Pg)
+│   ├── routes/               # health · lookup · random · otp
+│   ├── static/               # otp_demo.html standalone demo frontend
+│   ├── tests/                # pytest API & OTP tests
 │   └── scripts/              # download_nouns.py
 ├── flutter_app/              # Flutter cross-platform app
 │   ├── lib/

@@ -15,6 +15,7 @@ from config import get_settings
 from dataset import load_dataset
 from routes.health import router as health_router
 from routes.lookup import router as lookup_router
+from routes.otp import router as otp_router
 from routes.random import router as random_router
 
 
@@ -45,6 +46,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(lookup_router)
     app.include_router(random_router)
+    app.include_router(otp_router)
 
     return app
 

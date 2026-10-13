@@ -27,5 +27,7 @@ async def health_check() -> HealthResponse:
             "GET /lookup/{word}",
             "GET /random",
             "GET /random/batch/{count}",
+            "POST /api/send-otp",
+            "POST /api/verify-otp",
         ],
     )

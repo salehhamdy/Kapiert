@@ -118,6 +118,20 @@ Implemented in [`backend/sentences.py`](file:///c:/Users/ASUS/Downloads/German_A
 | `/lookup/{word}` | `GET` | `WordResponse` | Queries dataset $\rightarrow$ Wiktionary $\rightarrow$ compound head. |
 | `/random` | `GET` | `WordResponse` | Returns a single random noun with equal 1/3 gender odds. |
 | `/random/batch/{count}` | `GET` | `list[WordResponse]` | Returns up to 50 balanced, anti-clumped nouns for quizzes. |
+| `/api/send-otp` | `POST` | `SendOtpResponse` | Generates a 6-digit CSPRNG code, stores HMAC-SHA256 hash with pepper/salt, sends via mock/SMTP. |
+| `/api/verify-otp` | `POST` | `VerifyOtpResponse` | Validates code in constant time, enforces 5-min TTL, single-use invalidation, and 5-attempt lockout. |
+| `/otp-demo` | `GET` | HTML | Interactive standalone demo UI with numeric keypad and auto-advance. |
+
+### Secure OTP Verification Service
+Implemented in [`backend/otp_auth/`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/otp_auth/) and [`backend/routes/otp.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/routes/otp.py) (see complete guide in [`docs/OTP_SERVICE.md`](file:///c:/Users/ASUS/Downloads/German_Articles/docs/OTP_SERVICE.md)):
+- **CSPRNG Generation**: 6-digit tokens generated using `secrets.randbelow(10**6)` from OS entropy.
+- **Keyed Hash Storage**: Codes are never stored plaintext; hashed with HMAC-SHA256 using an external `OTP_PEPPER`, 16-byte random salt, and recipient email binding.
+- **Constant-Time Verification**: Compares hashes with `hmac.compare_digest` to prevent timing side channels.
+- **5-Minute Expiration**: Automatic 300-second TTL.
+- **Single-Use Consumption**: Once verified or upon issuing a replacement code, previous tokens are immediately invalidated.
+- **Brute-Force Lockout**: Atomic attempt counting inside transactions locks out verification after 5 failed attempts (HTTP 429 `too_many_attempts`).
+- **Resend Cooldown & Cap**: 60-second cooldown between resends and 5 codes/hour cap with `Retry-After` headers.
+- **Delivery Providers**: Pluggable `MockDelivery` (console/memory) for development and `SmtpDelivery` (STARTTLS / SSL) for production.
 
 #### Sample Response (`WordResponse`)
 ```json
@@ -548,7 +562,7 @@ Both the backend and Flutter applications maintain comprehensive automated test 
 ### Test Execution Commands
 
 ```bash
-# 1. Backend API & Translation Tests (21 tests)
+# 1. Backend API, Translation & OTP Tests (51 tests)
 cd backend
 python -m pytest tests/ -v
 
@@ -564,6 +578,7 @@ flutter analyze
 
 | Test Suite | File | Tests | Validates |
 |---|---|---|---|
+| **Secure OTP Verification Engine** | [`backend/tests/test_otp.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/tests/test_otp.py) | 30 | CSPRNG 6-digit generation, HMAC-SHA256 salted+peppered hashing, constant-time validation, 5-minute TTL, single-use token consumption, 5-attempt brute-force lockout, 60s resend cooldown, 5/hour rate cap, email normalization, delivery error handling, and standalone demo UI. |
 | **API Contract & Sentences** | [`backend/tests/test_api.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/tests/test_api.py) | 13 | Query normalization, exact lookup, plural lookup, umlaut variants, Wiktionary fallback, random batch balance, anti-clumping, and multilingual example sentences (`de`, `en`, `ar`, `tr`). |
 | **Translation & Wiktionary Engine** | [`backend/tests/test_translations.py`](file:///c:/Users/ASUS/Downloads/German_Articles/backend/tests/test_translations.py) | 8 | Curated vocabulary bank (1,200+ words), clean HTML/markup definition formatter, transcription variant lookups, live/cached English translation retrieval, compound noun glosses, plural lemma resolution, and translated quiz batches. |
 | **Grammar Rule Hint Model** | [`flutter_app/test/domain/models/grammar_rule_hint_test.dart`](file:///c:/Users/ASUS/Downloads/German_Articles/flutter_app/test/domain/models/grammar_rule_hint_test.dart) | 6 | Suffix pattern matching for feminine (`-ung`, `-heit`, `-keit`, `-schaft`, `-tion`, `-tät`), neuter (`-chen`, `-lein`, `-ment`, `-um`), masculine (`-ismus`, `-ling`, `-or`, `-ist`), non-matching exception guards, full 24-rule catalog validation, reliability bounds, and 4-language localized explanations. |
