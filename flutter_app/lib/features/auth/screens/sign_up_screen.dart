@@ -139,10 +139,13 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     }
     if (lower.contains('error sending') ||
         lower.contains('unexpected_failure') ||
-        lower.contains('smtp')) {
-      return 'We could not send the verification email. Please try again later.';
+        lower.contains('smtp') ||
+        lower.contains('mail')) {
+      return 'Could not send verification email. Please check your email address or try again.';
     }
-    if (lower.contains('invalid') && lower.contains('email')) {
+    if ((lower.contains('invalid') && lower.contains('email')) ||
+        lower.contains('unable to validate email') ||
+        lower.contains('email_address_invalid')) {
       return 'Please enter a valid email address.';
     }
     if (lower.contains('socketexception') ||
@@ -154,7 +157,13 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (lower.contains('not configured') || lower.contains('stateerror')) {
       return 'Auth is not configured yet.';
     }
-    return 'Something went wrong. Please try again.';
+    final regex =
+        RegExp(r'Auth(?:Api)?Exception:\s*([^,\n]+)', caseSensitive: false);
+    final match = regex.firstMatch(raw);
+    if (match != null && match.group(1)?.isNotEmpty == true) {
+      return match.group(1)!.trim();
+    }
+    return 'Something went wrong. Please check your details and try again.';
   }
 
   Future<void> _signInWithGoogle() async {
@@ -291,6 +300,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
                       if (!emailRegex.hasMatch(v)) {
                         return 'Enter a valid email address';
+                      }
+                      final lower = v.trim().toLowerCase();
+                      if (lower.endsWith('@gamil.com') ||
+                          lower.endsWith('@gmial.com')) {
+                        return 'Did you mean @gmail.com?';
                       }
                       return null;
                     },
