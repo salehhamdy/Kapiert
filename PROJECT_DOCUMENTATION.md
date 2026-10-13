@@ -552,7 +552,7 @@ Both the backend and Flutter applications maintain comprehensive automated test 
 cd backend
 python -m pytest tests/ -v
 
-# 2. Flutter Unit, Widget & Integration Tests (165 tests)
+# 2. Flutter Unit, Widget & Integration Tests (184 tests)
 cd flutter_app
 flutter test
 

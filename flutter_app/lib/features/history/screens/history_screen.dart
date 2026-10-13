@@ -188,59 +188,62 @@ class HistoryScreen extends ConsumerWidget {
               ),
             ],
           ),
-          child: ListTile(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            leading: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: articleColor.withValues(alpha: isDark ? 0.15 : 0.10),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                word.article,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: articleColor,
+          child: Material(
+            color: Colors.transparent,
+            child: ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: articleColor.withValues(alpha: isDark ? 0.15 : 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  word.article,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: articleColor,
+                  ),
                 ),
               ),
-            ),
-            title: Text(
-              word.word,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: isDark
-                    ? AppColors.textPrimaryDark
-                    : AppColors.textPrimaryLight,
+              title: Text(
+                word.word,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
+                ),
               ),
-            ),
-            subtitle: Text(
-              word.plural != null && word.plural!.isNotEmpty
-                  ? '${l10n.pluralLabel}: ${word.plural}'
-                  : word.translation != null && word.translation!.isNotEmpty
-                      ? word.translation!
-                      : l10n.genderLabel(word.gender),
-              style: TextStyle(
-                fontSize: 12,
-                color: isDark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondaryLight,
+              subtitle: Text(
+                word.plural != null && word.plural!.isNotEmpty
+                    ? '${l10n.pluralLabel}: ${word.plural}'
+                    : word.translation != null && word.translation!.isNotEmpty
+                        ? word.translation!
+                        : l10n.genderLabel(word.gender),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
+                ),
               ),
-            ),
-            trailing: IconButton(
-              icon: const Icon(
-                Icons.star_rounded,
-                color: Color(0xFFFFB800),
-                size: 24,
+              trailing: IconButton(
+                icon: const Icon(
+                  Icons.star_rounded,
+                  color: Color(0xFFFFB800),
+                  size: 24,
+                ),
+                tooltip: l10n.removeFromFavorites,
+                onPressed: () {
+                  ref.read(favoritesProvider.notifier).removeFavorite(word.word);
+                },
               ),
-              tooltip: l10n.removeFromFavorites,
-              onPressed: () {
-                ref.read(favoritesProvider.notifier).removeFavorite(word.word);
-              },
             ),
           ),
         ).animate().fadeIn(

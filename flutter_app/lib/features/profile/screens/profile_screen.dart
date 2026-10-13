@@ -1133,27 +1133,30 @@ class _ProfileTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: _cardDecoration(isDark),
-      child: ListTile(
-        onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        leading: _IconBubble(icon: icon, color: AppColors.derBlue, size: 40),
-        title: Text(title, style: _subtitleStyle(isDark)),
-        subtitle: Text(
-          subtitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: _titleStyle(isDark).copyWith(fontSize: 15),
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          onTap: onTap,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+          leading: _IconBubble(icon: icon, color: AppColors.derBlue, size: 40),
+          title: Text(title, style: _subtitleStyle(isDark)),
+          subtitle: Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: _titleStyle(isDark).copyWith(fontSize: 15),
+          ),
+          trailing: onTap == null
+              ? null
+              : Icon(
+                  Icons.edit_outlined,
+                  size: 18,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
+                ),
         ),
-        trailing: onTap == null
-            ? null
-            : Icon(
-                Icons.edit_outlined,
-                size: 18,
-                color: isDark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondaryLight,
-              ),
       ),
     );
   }

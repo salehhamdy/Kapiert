@@ -106,6 +106,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         );
       }
     } catch (e) {
+      debugPrint('Sign-up failed: $e');
       setState(() => _errorMessage = _friendlyError(e.toString()));
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -113,13 +114,37 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 
   String _friendlyError(String raw) {
-    if (raw.contains('already registered') || raw.contains('already exists')) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('already registered') ||
+        lower.contains('already exists') ||
+        lower.contains('user_already_exists')) {
       return 'An account with this email already exists.';
     }
-    if (raw.contains('Password should be')) {
+    if (lower.contains('password should be') ||
+        lower.contains('weak_password')) {
       return 'Password must be at least 6 characters.';
     }
-    if (raw.contains('not configured') || raw.contains('StateError')) {
+    if (lower.contains('rate limit') ||
+        lower.contains('over_email_send_rate_limit') ||
+        lower.contains('too many requests') ||
+        lower.contains('429')) {
+      return 'Too many attempts. Please wait a few minutes and try again.';
+    }
+    if (lower.contains('error sending') ||
+        lower.contains('unexpected_failure') ||
+        lower.contains('smtp')) {
+      return 'We could not send the verification email. Please try again later.';
+    }
+    if (lower.contains('invalid') && lower.contains('email')) {
+      return 'Please enter a valid email address.';
+    }
+    if (lower.contains('socketexception') ||
+        lower.contains('clientexception') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('timeout')) {
+      return 'No internet connection. Check your network and try again.';
+    }
+    if (lower.contains('not configured') || lower.contains('stateerror')) {
       return 'Auth is not configured yet.';
     }
     return 'Something went wrong. Please try again.';

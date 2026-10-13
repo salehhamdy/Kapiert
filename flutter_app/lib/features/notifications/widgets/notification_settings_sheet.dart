@@ -109,14 +109,17 @@ class NotificationSettingsSheet extends ConsumerWidget {
                       .withValues(alpha: 0.06),
                 ),
               ),
-              child: SwitchListTile.adaptive(
-                key: const Key('notification_master_switch'),
-                value: settings.enabled,
-                onChanged: (_) => notifier.toggleEnabled(),
-                activeTrackColor: AppColors.derBlue,
-                title: Text(
-                  l10n.enableReminders,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+              child: Material(
+                color: Colors.transparent,
+                child: SwitchListTile.adaptive(
+                  key: const Key('notification_master_switch'),
+                  value: settings.enabled,
+                  onChanged: (_) => notifier.toggleEnabled(),
+                  activeTrackColor: AppColors.derBlue,
+                  title: Text(
+                    l10n.enableReminders,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
             ),
@@ -135,40 +138,43 @@ class NotificationSettingsSheet extends ConsumerWidget {
                         .withValues(alpha: 0.06),
                   ),
                 ),
-                child: ListTile(
-                  key: const Key('notification_time_tile'),
-                  leading: const Icon(Icons.schedule_rounded,
-                      color: AppColors.derBlue),
-                  title: Text(
-                    l10n.reminderTime,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.derBlue
-                          .withValues(alpha: isDark ? 0.2 : 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                child: Material(
+                  color: Colors.transparent,
+                  child: ListTile(
+                    key: const Key('notification_time_tile'),
+                    leading: const Icon(Icons.schedule_rounded,
+                        color: AppColors.derBlue),
+                    title: Text(
+                      l10n.reminderTime,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                    child: Text(
-                      settings.reminderTime.format(context),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.derBlue,
-                        fontSize: 15,
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.derBlue
+                            .withValues(alpha: isDark ? 0.2 : 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        settings.reminderTime.format(context),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.derBlue,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: settings.reminderTime,
+                      );
+                      if (picked != null) {
+                        await notifier.setReminderTime(picked);
+                      }
+                    },
                   ),
-                  onTap: () async {
-                    final picked = await showTimePicker(
-                      context: context,
-                      initialTime: settings.reminderTime,
-                    );
-                    if (picked != null) {
-                      await notifier.setReminderTime(picked);
-                    }
-                  },
                 ),
               ),
 
@@ -185,22 +191,25 @@ class NotificationSettingsSheet extends ConsumerWidget {
                         .withValues(alpha: 0.06),
                   ),
                 ),
-                child: SwitchListTile.adaptive(
-                  key: const Key('notification_streak_switch'),
-                  value: settings.streakAlerts,
-                  onChanged: (_) => notifier.toggleStreakAlerts(),
-                  activeTrackColor: AppColors.derBlue,
-                  title: Text(
-                    l10n.streakProtectionAlerts,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(
-                    l10n.streakProtectionAlertsDesc,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark
-                          ? AppColors.textSecondaryDark
-                          : AppColors.textSecondaryLight,
+                child: Material(
+                  color: Colors.transparent,
+                  child: SwitchListTile.adaptive(
+                    key: const Key('notification_streak_switch'),
+                    value: settings.streakAlerts,
+                    onChanged: (_) => notifier.toggleStreakAlerts(),
+                    activeTrackColor: AppColors.derBlue,
+                    title: Text(
+                      l10n.streakProtectionAlerts,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      l10n.streakProtectionAlertsDesc,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight,
+                      ),
                     ),
                   ),
                 ),
@@ -219,22 +228,25 @@ class NotificationSettingsSheet extends ConsumerWidget {
                         .withValues(alpha: 0.06),
                   ),
                 ),
-                child: SwitchListTile.adaptive(
-                  key: const Key('notification_srs_switch'),
-                  value: settings.srsAlerts,
-                  onChanged: (_) => notifier.toggleSrsAlerts(),
-                  activeTrackColor: AppColors.derBlue,
-                  title: Text(
-                    l10n.srsDueAlerts,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(
-                    l10n.srsDueAlertsDesc,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark
-                          ? AppColors.textSecondaryDark
-                          : AppColors.textSecondaryLight,
+                child: Material(
+                  color: Colors.transparent,
+                  child: SwitchListTile.adaptive(
+                    key: const Key('notification_srs_switch'),
+                    value: settings.srsAlerts,
+                    onChanged: (_) => notifier.toggleSrsAlerts(),
+                    activeTrackColor: AppColors.derBlue,
+                    title: Text(
+                      l10n.srsDueAlerts,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      l10n.srsDueAlertsDesc,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight,
+                      ),
                     ),
                   ),
                 ),

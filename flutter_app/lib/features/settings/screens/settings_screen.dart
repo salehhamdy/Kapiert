@@ -96,42 +96,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 .withValues(alpha: 0.06),
                       ),
                     ),
-                    child: ListTile(
-                      key: Key('lang_option_${lang.code}'),
-                      leading: Text(
-                        lang.flag,
-                        style: const TextStyle(fontSize: 24),
-                      ),
-                      title: Text(
-                        lang.nativeName,
-                        style: GoogleFonts.nunito(
-                          fontSize: 16,
-                          fontWeight:
-                              isSelected ? FontWeight.w800 : FontWeight.w600,
-                          color: isDark
-                              ? AppColors.textPrimaryDark
-                              : AppColors.textPrimaryLight,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: ListTile(
+                        key: Key('lang_option_${lang.code}'),
+                        leading: Text(
+                          lang.flag,
+                          style: const TextStyle(fontSize: 24),
                         ),
-                      ),
-                      subtitle: Text(
-                        lang.englishName,
-                        style: GoogleFonts.nunito(
-                          fontSize: 12,
-                          color: isDark
-                              ? AppColors.textSecondaryDark
-                              : AppColors.textSecondaryLight,
+                        title: Text(
+                          lang.nativeName,
+                          style: GoogleFonts.nunito(
+                            fontSize: 16,
+                            fontWeight:
+                                isSelected ? FontWeight.w800 : FontWeight.w600,
+                            color: isDark
+                                ? AppColors.textPrimaryDark
+                                : AppColors.textPrimaryLight,
+                          ),
                         ),
+                        subtitle: Text(
+                          lang.englishName,
+                          style: GoogleFonts.nunito(
+                            fontSize: 12,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondaryLight,
+                          ),
+                        ),
+                        trailing: isSelected
+                            ? const Icon(Icons.check_circle_rounded,
+                                color: AppColors.derBlue)
+                            : null,
+                        onTap: () {
+                          ref
+                              .read(settingsProvider.notifier)
+                              .setLanguage(lang.code);
+                          Navigator.pop(ctx);
+                        },
                       ),
-                      trailing: isSelected
-                          ? const Icon(Icons.check_circle_rounded,
-                              color: AppColors.derBlue)
-                          : null,
-                      onTap: () {
-                        ref
-                            .read(settingsProvider.notifier)
-                            .setLanguage(lang.code);
-                        Navigator.pop(ctx);
-                      },
                     ),
                   );
                 }),
@@ -705,36 +708,39 @@ class _LogOutTile extends StatelessWidget {
           color: AppColors.dieRed.withValues(alpha: isDark ? 0.18 : 0.12),
         ),
       ),
-      child: ListTile(
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.dieRed.withValues(alpha: isDark ? 0.15 : 0.10),
-            borderRadius: BorderRadius.circular(10),
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          onTap: onTap,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.dieRed.withValues(alpha: isDark ? 0.15 : 0.10),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.logout_rounded,
+              size: 20,
+              color: AppColors.dieRed,
+            ),
           ),
-          alignment: Alignment.center,
-          child: const Icon(
-            Icons.logout_rounded,
-            size: 20,
-            color: AppColors.dieRed,
+          title: Text(
+            l10n.logOut,
+            style: GoogleFonts.nunito(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.dieRed,
+            ),
           ),
-        ),
-        title: Text(
-          l10n.logOut,
-          style: GoogleFonts.nunito(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.dieRed,
-          ),
-        ),
-        subtitle: Text(
-          l10n.logOutSubtitle,
-          style: GoogleFonts.nunito(
-            fontSize: 12,
-            color: AppColors.dieRed.withValues(alpha: 0.65),
+          subtitle: Text(
+            l10n.logOutSubtitle,
+            style: GoogleFonts.nunito(
+              fontSize: 12,
+              color: AppColors.dieRed.withValues(alpha: 0.65),
+            ),
           ),
         ),
       ),
@@ -805,48 +811,51 @@ class _SettingsTile extends StatelessWidget {
           ),
         ],
       ),
-      child: ListTile(
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.derBlue.withValues(alpha: isDark ? 0.12 : 0.08),
-            borderRadius: BorderRadius.circular(10),
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          onTap: onTap,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.derBlue.withValues(alpha: isDark ? 0.12 : 0.08),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: Icon(icon, size: 20, color: AppColors.derBlue),
           ),
-          alignment: Alignment.center,
-          child: Icon(icon, size: 20, color: AppColors.derBlue),
-        ),
-        title: Text(
-          title,
-          style: GoogleFonts.nunito(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: isDark
-                ? AppColors.textPrimaryDark
-                : AppColors.textPrimaryLight,
+          title: Text(
+            title,
+            style: GoogleFonts.nunito(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
+            ),
           ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: GoogleFonts.nunito(
-            fontSize: 12,
-            color: isDark
-                ? AppColors.textSecondaryDark
-                : AppColors.textSecondaryLight,
+          subtitle: Text(
+            subtitle,
+            style: GoogleFonts.nunito(
+              fontSize: 12,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
+            ),
           ),
+          trailing:
+              trailing ??
+              (onTap != null
+                  ? Icon(
+                      Icons.chevron_right_rounded,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
+                    )
+                  : null),
         ),
-        trailing:
-            trailing ??
-            (onTap != null
-                ? Icon(
-                    Icons.chevron_right_rounded,
-                    color: isDark
-                        ? AppColors.textSecondaryDark
-                        : AppColors.textSecondaryLight,
-                  )
-                : null),
       ),
     );
   }

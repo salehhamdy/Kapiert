@@ -49,7 +49,9 @@ class HistoryTile extends ConsumerWidget {
           ),
         ],
       ),
-      child: ListTile(
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
           width: 44,
@@ -131,7 +133,8 @@ class HistoryTile extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }
 
