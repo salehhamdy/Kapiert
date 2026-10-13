@@ -9,6 +9,7 @@ import '../../../shared/widgets/auth_logo_header.dart';
 import '../../../shared/widgets/auth_widgets.dart';
 import '../widgets/configure_supabase_sheet.dart';
 import 'verify_email_screen.dart';
+import 'welcome_screen.dart';
 import '../../legal/screens/legal_document_screen.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
@@ -98,12 +99,18 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         password: _passwordController.text,
       );
       if (mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) =>
-                VerifyEmailScreen(email: _emailController.text.trim()),
-          ),
-        );
+        if (ref.read(authProvider).user != null) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+          );
+        } else {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) =>
+                  VerifyEmailScreen(email: _emailController.text.trim()),
+            ),
+          );
+        }
       }
     } catch (e) {
       debugPrint('Sign-up failed: $e');

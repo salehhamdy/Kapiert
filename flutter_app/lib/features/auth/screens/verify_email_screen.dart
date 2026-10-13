@@ -278,6 +278,14 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next.user != null && mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+        );
+      }
+    });
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
     final textPrimary =
@@ -287,9 +295,17 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
     return Scaffold(
       backgroundColor: bg,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new, size: 20, color: textPrimary),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -442,6 +458,20 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                   ),
                 ],
               ).animate().fadeIn(delay: 260.ms, duration: 350.ms),
+              const SizedBox(height: 24),
+
+              // ── Back to Sign In ──────────────────────────────────────────
+              TextButton(
+                onPressed: () => Navigator.of(context).maybePop(),
+                child: Text(
+                  'Back to Sign In',
+                  style: GoogleFonts.nunito(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: textSecondary,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
