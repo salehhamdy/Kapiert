@@ -18,12 +18,12 @@ class VerifyEmailScreen extends ConsumerStatefulWidget {
 }
 
 class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
-  static const int _otpLength = 6;
+  int _otpLength = 6;
   static const int _timerSeconds = 9 * 60 + 47; // 09:47 matching mockup
   static const int _resendCooldownSeconds = 45;
 
-  late final List<TextEditingController> _controllers;
-  late final List<FocusNode> _focusNodes;
+  late List<TextEditingController> _controllers;
+  late List<FocusNode> _focusNodes;
 
   bool _isLoading = false;
   bool _isResending = false;
@@ -36,11 +36,17 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   @override
   void initState() {
     super.initState();
+    _initFields();
+    _startTimer();
+  }
+
+  void _initFields() {
     _controllers = List.generate(_otpLength, (_) => TextEditingController());
     _focusNodes = List.generate(_otpLength, (_) => FocusNode());
+    _setupFocusListeners();
+  }
 
-    _startTimer();
-
+  void _setupFocusListeners() {
     for (int i = 0; i < _otpLength; i++) {
       final index = i;
       // Auto-select text on focus so typing immediately replaces it
@@ -69,6 +75,21 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     }
   }
 
+  void _setOtpLength(int newLength) {
+    if (_otpLength == newLength) return;
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
+    setState(() {
+      _otpLength = newLength;
+      _initFields();
+      _errorMessage = null;
+    });
+  }
+
   void _startTimer() {
     _countdownTimer?.cancel();
     setState(() => _remainingSeconds = _timerSeconds);
@@ -95,7 +116,31 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       return;
     }
 
-    // Case 1: Full 6-digit OTP pasted
+    // If an 8-digit code was pasted while in 6-digit mode, auto-switch to 8
+    if (digits.length == 8 && _otpLength != 8) {
+      _setOtpLength(8);
+      for (int k = 0; k < 8; k++) {
+        _controllers[k].text = digits[k];
+      }
+      _focusNodes.last.unfocus();
+      if (mounted) setState(() {});
+      if (_otpComplete) _verify();
+      return;
+    }
+
+    // If a 6-digit code was pasted while in 8-digit mode, auto-switch to 6
+    if (digits.length == 6 && _otpLength != 6) {
+      _setOtpLength(6);
+      for (int k = 0; k < 6; k++) {
+        _controllers[k].text = digits[k];
+      }
+      _focusNodes.last.unfocus();
+      if (mounted) setState(() {});
+      if (_otpComplete) _verify();
+      return;
+    }
+
+    // Case 1: Full OTP pasted (length == _otpLength)
     if (digits.length == _otpLength) {
       for (int k = 0; k < _otpLength; k++) {
         _controllers[k].text = digits[k];
@@ -330,7 +375,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
               RichText(
                 textAlign: TextAlign.center,
                 text: TextSpan(
-                  text: 'We sent a 6-digit code to\n',
+                  text: 'We sent a $_otpLength-digit code to\n',
                   style: GoogleFonts.nunito(
                     fontSize: 14,
                     color: textSecondary,
@@ -358,17 +403,40 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(_otpLength, (i) {
                   return Padding(
-                    padding: EdgeInsets.only(right: i < _otpLength - 1 ? 10 : 0),
+                    padding: EdgeInsets.only(
+                        right: i < _otpLength - 1 ? (_otpLength == 8 ? 6 : 10) : 0),
                     child: _OtpBox(
                       controller: _controllers[i],
                       focusNode: _focusNodes[i],
                       autofocus: i == 0,
+                      width: _otpLength == 8 ? 36 : 44,
                       onChanged: (val) => _onDigitInput(i, val),
                     ),
                   );
                 }),
               ).animate().fadeIn(delay: 160.ms, duration: 400.ms),
-              const SizedBox(height: 36),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  onPressed: () => _setOtpLength(_otpLength == 6 ? 8 : 6),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    _otpLength == 6
+                        ? 'Received an 8-digit code? Switch to 8 boxes'
+                        : 'Switch to 6-digit code',
+                    style: GoogleFonts.nunito(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.derBlue,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
 
               // ── Verify button ─────────────────────────────────────────────
               SizedBox(
@@ -507,12 +575,14 @@ class _OtpBox extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool autofocus;
+  final double width;
   final ValueChanged<String> onChanged;
 
   const _OtpBox({
     required this.controller,
     required this.focusNode,
     this.autofocus = false,
+    this.width = 44,
     required this.onChanged,
   });
 
@@ -531,7 +601,7 @@ class _OtpBox extends StatelessWidget {
 
         return AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          width: 44,
+          width: width,
           height: 52,
           decoration: BoxDecoration(
             color: isFilled
@@ -565,12 +635,12 @@ class _OtpBox extends StatelessWidget {
             keyboardType: TextInputType.number,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(6),
+              LengthLimitingTextInputFormatter(8),
             ],
             showCursor: isActive,
             onChanged: onChanged,
             style: GoogleFonts.nunito(
-              fontSize: 22,
+              fontSize: width <= 36 ? 18 : 22,
               fontWeight: FontWeight.w700,
               color: isFilled ? AppColors.dasGreen : textPrimary,
             ),

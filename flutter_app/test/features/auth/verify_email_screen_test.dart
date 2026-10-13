@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:derdiedas/features/auth/screens/verify_email_screen.dart';
+import 'package:derdiedas/features/auth/screens/welcome_screen.dart';
 import 'package:derdiedas/domain/repositories/i_auth_repository.dart';
 import 'package:derdiedas/core/di/providers.dart';
 
@@ -137,6 +138,40 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('Too many requests'), findsOneWidget);
+    });
+
+    testWidgets('tapping switch to 8 boxes button expands to 8 input fields', (tester) async {
+      await tester.pumpWidget(createWidgetUnderTest(email: 'user@example.com'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextFormField), findsNWidgets(6));
+      expect(find.text('Received an 8-digit code? Switch to 8 boxes'), findsOneWidget);
+
+      await tester.tap(find.text('Received an 8-digit code? Switch to 8 boxes'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextFormField), findsNWidgets(8));
+      expect(find.text('Switch to 6-digit code'), findsOneWidget);
+    });
+
+    testWidgets('pasting full 8-digit code auto-switches to 8 boxes and verifies', (tester) async {
+      when(() => mockAuthRepo.verifyOTP(
+            email: 'user@example.com',
+            token: '16623998',
+          )).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createWidgetUnderTest(email: 'user@example.com'));
+      await tester.pumpAndSettle();
+
+      final firstField = find.byType(TextFormField).first;
+      await tester.enterText(firstField, '16623998');
+      await tester.pumpAndSettle();
+
+      verify(() => mockAuthRepo.verifyOTP(
+            email: 'user@example.com',
+            token: '16623998',
+          )).called(1);
+      expect(find.byType(WelcomeScreen), findsOneWidget);
     });
   });
 }
